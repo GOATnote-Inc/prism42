@@ -29,7 +29,7 @@ export function DispatcherShell() {
     (async () => {
       setSseState("starting");
       try {
-        const r = await fetch("/api/session/start", { method: "POST" });
+        const r = await fetch("/prism42/api/session/start", { method: "POST" });
         if (!r.ok) throw new Error(`start ${r.status}`);
         const body = (await r.json()) as {
           session_id: string;
@@ -52,7 +52,7 @@ export function DispatcherShell() {
   function subscribe(id: string) {
     const ac = new AbortController();
     abortRef.current = ac;
-    const url = `/api/session/${encodeURIComponent(id)}/stream`;
+    const url = `/prism42/api/session/${encodeURIComponent(id)}/stream`;
     // Using fetch + ReadableStream instead of EventSource so we can pass
     // AbortController for clean unmount + Vercel's serverless SSE works
     // well with fetch streaming.

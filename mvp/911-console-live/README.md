@@ -60,20 +60,20 @@ anchors and the same HealthBench-aligned rubric shape.
 ```
 .
 ├── app/
-│   ├── layout.tsx           — root HTML + simulation banner
-│   ├── globals.css          — GOATnote dark console palette
-│   ├── page.tsx             — redirect to /prism42
-│   ├── prism42/
-│   │   ├── page.tsx         — dispatcher console (client component shell)
-│   │   ├── safety/page.tsx  — SP-001-010 + IRB trajectory
-│   │   └── evidence/page.tsx— 4-layer evidence dashboard
-│   └── api/
-│       ├── chat/completions/route.ts   — ElevenLabs custom-LLM SSE
-│       ├── rubric/grade/route.ts       — cross-vendor rubric grader
-│       └── session/
-│           ├── start/route.ts          — mint a new session id
-│           ├── [id]/stream/route.ts    — UI SSE subscription
-│           └── [id]/end/route.ts       — close session, trigger auditor
+│   ├── layout.tsx                      — root HTML + simulation banner
+│   ├── globals.css                     — GOATnote dark console palette
+│   ├── page.tsx                        — redirect to /prism42
+│   └── prism42/
+│       ├── page.tsx                    — dispatcher console shell
+│       ├── safety/page.tsx             — SP-001-010 + IRB trajectory
+│       ├── evidence/page.tsx           — 4-layer evidence dashboard
+│       └── api/
+│           ├── chat/completions/route.ts   — ElevenLabs custom-LLM SSE
+│           ├── rubric/grade/route.ts       — cross-vendor rubric grader
+│           └── session/
+│               ├── start/route.ts          — mint a new session id
+│               ├── [id]/stream/route.ts    — UI SSE subscription
+│               └── [id]/end/route.ts       — close session, trigger auditor
 ├── components/
 │   ├── DispatcherShell.tsx  — top-level layout + SSE subscriber
 │   ├── PhaseTimeline.tsx    — phase pill strip
@@ -102,7 +102,8 @@ npm run dev
 # App listens on http://localhost:3042/prism42
 ```
 
-Smoke-test the chat endpoint without ElevenLabs:
+Smoke-test the chat endpoint without ElevenLabs (every route lives
+under `/prism42/` — no `basePath`, the prefix is in the file tree):
 
 ```bash
 curl -N -X POST http://localhost:3042/prism42/api/chat/completions \
