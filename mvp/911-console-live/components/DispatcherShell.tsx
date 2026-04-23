@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AlertsPanel } from "./AlertsPanel";
+import { CallerWidget } from "./CallerWidget";
 import { PhaseTimeline } from "./PhaseTimeline";
 import { RubricStrip } from "./RubricStrip";
 import { Transcript } from "./Transcript";
@@ -119,6 +120,8 @@ export function DispatcherShell() {
       </header>
 
       <div>
+        <CallerWidget sessionId={sessionId} />
+        <div style={{ height: 16 }} />
         <PhaseTimeline current={phase} />
         <div style={{ height: 16 }} />
         <AlertsPanel alerts={alerts} />

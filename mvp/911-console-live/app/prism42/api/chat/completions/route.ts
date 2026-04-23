@@ -36,12 +36,30 @@ import type { CustomLLMRequest, PsapTurn } from "@/lib/types";
 export const runtime = "nodejs";
 export const maxDuration = 60; // seconds — Vercel Node cap.
 
+// Matches the session_id substring ElevenLabs templates into the
+// system prompt via the widget's `dynamic-variables` attribute. The
+// agent's dashboard-configured system prompt must include the line
+// `Session-ID: {{session_id}}` for this to fire. See
+// components/CallerWidget.tsx for the client-side contract.
+const SESSION_ID_FROM_SYSTEM = /Session-ID:\s*([0-9a-f]{4,}(?:-[0-9a-f]{4,})+)/i;
+
 function resolveSessionId(body: CustomLLMRequest): string {
-  // ElevenLabs passes the conversation id in the `user` field; the
-  // dispatcher UI also sets it there via an X-Session-ID hint (see
-  // app/prism42/page.tsx). Fall back to create-on-first-use so
-  // handcurl'd test requests still work.
+  // 1. Prefer an explicit body.user field — ElevenLabs populates
+  //    this with the conversation id on some plan tiers. Also
+  //    works for hand-curled smoke tests.
   if (body.user) return body.user;
+  // 2. Parse out the templated Session-ID from the system prompt —
+  //    the primary production path when the widget is mounted with
+  //    `dynamic-variables='{"session_id":"..."}'`.
+  const sys = body.messages.find((m) => m.role === "system");
+  if (sys?.content) {
+    const m = SESSION_ID_FROM_SYSTEM.exec(sys.content);
+    if (m?.[1]) return m[1];
+  }
+  // 3. Fallback: mint a fresh session. The dispatcher UI won't see
+  //    this session (it subscribes by id), so the turn stream will
+  //    be orphaned. Acceptable for isolated curl tests; a missing
+  //    Session-ID in production is a configuration bug to surface.
   return createSession().id;
 }
 

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "next build",
+  "devCommand": "next dev --port 3042",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "regions": ["iad1"],
+  "functions": {
+    "app/prism42/api/chat/completions/route.ts": {
+      "maxDuration": 60
+    },
+    "app/prism42/api/rubric/grade/route.ts": {
+      "maxDuration": 30
+    },
+    "app/prism42/api/session/[id]/stream/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}
