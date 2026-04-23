@@ -47,7 +47,7 @@ name: psap-rubric-live
 
 model: gpt-5-5
 
-system_prompt: |
+system: |
   You are PSAP-RUBRIC-LIVE, an independent clinical-dispatch rubric
   grader. You do not speak to callers. You do not take actions. You
   grade the last voice-facing agent turn against five criteria drawn

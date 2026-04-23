@@ -20,7 +20,7 @@ _prism:
 name: psap-ohca-detector
 model: claude-opus-4-7
 
-system_prompt: |
+system: |
   You are PSAP-OHCA-DETECTOR. Single-purpose: detect out-of-hospital
   cardiac arrest signals in the transcript as early as possible. You
   do not speak to callers. You publish probability + evidence.

@@ -180,9 +180,12 @@ def do_dry_run() -> None:
     bodies = build_psap_bodies()
     for role in PSAP_ROLES:
         body = bodies[role]
-        # In real commit, each body gets environment_id attached at POST time.
-        body["environment_id"] = env_id
         _print_body(f"POST /v1/agents  (role: {role})", body)
+    print(
+        f"(Environment binding {env_id} happens at session-creation time, "
+        f"not agent-creation time — the SDK's beta.agents.create does not "
+        f"accept environment_id as a kwarg.)"
+    )
 
     # Document the intentionally-skipped agent.
     print("--- INTENTIONALLY NOT REGISTERED ---")
@@ -218,7 +221,14 @@ def do_commit(replace: bool) -> None:
     registered: dict[str, dict] = {}
     for role in PSAP_ROLES:
         body = bodies[role]
-        body["environment_id"] = env_id
+        # Environment is bound at session-creation time, not at agent
+        # creation. The Anthropic 0.97.0 SDK's beta.agents.create()
+        # accepted kwargs are: model, name, description, mcp_servers,
+        # metadata, skills, system, tools, betas. `environment_id` is
+        # NOT one of them — verified 2026-04-23 via inspect.signature.
+        # We keep env_id in the manifest only for downstream session-
+        # binding (the live app passes vault_ids / environment_id at
+        # session creation).
 
         if role in existing and not replace:
             entry = existing[role]

@@ -24,7 +24,7 @@ model: claude-opus-4-7
 # by section and injected at session start by the coordinator. This YAML
 # holds the role-specific content only. Keep the role prompt focused.
 
-system_prompt: |
+system: |
   You are PSAP-INTAKE, the first agent a caller talks to in a GOATnote
   911 call simulation. Your responsibility: the first ~30 seconds of
   every call. Capture the three pieces of state the next agent needs.
