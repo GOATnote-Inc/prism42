@@ -186,7 +186,11 @@ target-specific naming, and no reproduction fingerprints.
 - Claude Opus 4.7 — the auditor and the audited.
 - OpenAI `simple-evals` (Apache 2.0) — HealthBench Hard rubric grader.
 - Anthropic Managed Agents — research-preview multi-agent.
-- GOATnote-Inc — Brandon Dent, MD (emergency medicine, physician-of-record).
+- GOATnote Emergency Dispatch Protocol (GEDP) v0.1 — developed under
+  direction of Brandon Dent, MD (emergency medicine). Author: GOATnote
+  Inc. MIT-licensed. Grounded in AHA BLS 2025, NHTSA EMS Scope of
+  Practice Model, peer-reviewed EMS literature, and publicly published
+  US PSAP materials. No IAED-licensed content.
 
 ## License
 

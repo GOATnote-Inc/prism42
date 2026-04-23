@@ -91,13 +91,13 @@ limited to the criterion directly relevant to the finding.
 ### 5. Physician-review gate
 
 No clinical packet leaves the repository without sign-off from the
-physician-of-record — currently Brandon Dent, MD. The packet carries
+clinical director — currently Brandon Dent, MD. The packet carries
 a one-line attestation in a fixed form:
 
 > Reviewed by Brandon Dent, MD, YYYY-MM-DD: clinical assessment
 > concurs with adjudicator verdict.
 
-If the physician-of-record does not concur with the adjudicator's
+If the clinical director does not concur with the adjudicator's
 verdict, the finding is labeled `adjudicator_only` in the log and
 stays internal. It is not sent to Anthropic, not written up for a
 research venue, not referenced externally. The adjudicator can be

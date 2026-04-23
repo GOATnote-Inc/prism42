@@ -223,7 +223,7 @@ Safety gates for the public demo:
 - Budget cap per session + daily domain cap.
 - Transcript logging anonymized (IP hashed, timestamp rounded to hour),
   30-day retention, never shared externally.
-- Physician of record visible in footer; "Research instrument. Not FDA
+- Clinical director visible in footer; "Research instrument. Not FDA
   cleared."
 
 ---

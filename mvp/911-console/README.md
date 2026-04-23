@@ -2,7 +2,7 @@
 
 A single-pane 911 call-taker console on the **IRB-pilot → SaMD** trajectory.
 Built on **ElevenLabs Conversational AI** over **Claude Opus 4.7**,
-physician-of-record accountable, every dispatcher turn rubric-graded against
+clinical director accountable, every dispatcher turn rubric-graded against
 HealthBench Hard-aligned clinical criteria in real time.
 
 **One console. One dispatcher. One physician in the loop.** AI is decision
@@ -40,7 +40,7 @@ measurable, physician-auditable amount:
 |---|---|---|
 | **Motorola** VESTA + Hyper (Apr 9 2026 acq) | Assist Agents for non-emergency offload + translation | Clinical rubric grading · physician-in-loop QI · MPDS-embedded determinant derivation |
 | **Axon** 911 (Prepared $800-900M + Carbyne) | 70+ languages, CAD-ready extraction, 1000+ agencies, 49 states | IRB-pathway design · HealthBench-aligned rubric · published Opus 4.7 baseline |
-| **Carbyne** APEX / Universe | Cloud-native NG911, 35+ languages, live video | Clinical trajectory · physician-of-record attestation · published benchmarks |
+| **Carbyne** APEX / Universe | Cloud-native NG911, 35+ languages, live video | Clinical trajectory · clinical director attestation · published benchmarks |
 | **Aurelian** (Ava) | AI handles 74% of non-emergency calls autonomously | Emergency-call clinical support (by design — they hand off to humans) |
 | **GOATnote (this console)** | **Emergency-call clinical decision-support, physician-accountable, rubric-graded in real time, IRB-pilot ready** | SOTA on everything above · ships today |
 
@@ -62,7 +62,7 @@ That's the gap we're closing.
 │ GOATnote mark  │  call timer · rec · line  │  SOTA capability strip │
 │  Transcribe · Translate · OHCA-sig · CAD-capture · Rubric 0.82      │
 ├─ IRB BAND ───────────────────────────────────────────────────────────┤
-│ RESEARCH INSTRUMENT · IRB 2026-GN-PSAP-001 · physician of record     │
+│ RESEARCH INSTRUMENT · IRB 2026-GN-PSAP-001 · clinical director     │
 ├─ LEFT ─────────────┬─ CENTER ─────────────────┬─ RIGHT ──────────────┤
 │ LIVE TRANSCRIPT    │ MPDS breadcrumbs         │ CAD incident         │
 │  · speaker diariz. │ DETERMINANT 11-D-2 ECHO  │  · ANI/ALI block     │
@@ -115,7 +115,7 @@ device today. The trajectory below is the deliberate path it walks:
    caller data. No PHI. Rubric cards carry `physician_review = null`
    until countersigned.
 2. **Phase 1 — IRB pilot.** Protocol `2026-GN-PSAP-001` (drafted;
-   pending IRB submission). Single PSAP, physician-of-record on
+   pending IRB submission). Single PSAP, clinical director on
    every shift, all dispositions made by the human dispatcher. AI
    surfaces are logged but not load-bearing. Primary outcome:
    dispatcher-rated clinical utility + rubric-pass-rate delta.
@@ -127,7 +127,7 @@ device today. The trajectory below is the deliberate path it walks:
    Novo depending on clinical-decision-support classification.
    Class II SaMD target.
 
-Physician of record: **Brandon Dent, MD** (emergency medicine).
+Clinical director: **Brandon Dent, MD** (emergency medicine).
 Physician-in-loop sign-off is enforced in the rubric adjudicator's
 `physician_review` field and in the UI's IRB band — the code never
 pre-signs it.
@@ -164,11 +164,11 @@ repo's `docs/` once Prism's public mirror syncs it).
 - Rubric design is physician-owned. The model never grades itself
   load-bearingly — grades go to a physician for attestation.
 - The AI cannot dispose of a call. Every disposition requires the
-  dispatcher's confirmation and carries a physician-of-record attestation.
+  dispatcher's confirmation and carries a clinical director attestation.
 
 ## Attribution
 
-- **Concept + physician of record** — Brandon Dent, MD · GOATnote-Inc ·
+- **Concept + clinical director** — Brandon Dent, MD · GOATnote-Inc ·
   `b@thegoatnote.com`
 - **Design system** — extracted from Prism dev-repo
   `results/demo/index.html`, typography upgraded per
