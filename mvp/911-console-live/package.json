@@ -1,0 +1,34 @@
+{
+  "name": "prism42-911-console-live",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Live GOATnote Prism42 PSAP console — ElevenLabs Conversational AI + Claude Opus 4.7 Managed Agents + cross-vendor rubric grader. Deployed at www.thegoatnote.com/prism42.",
+  "license": "MIT",
+  "author": "GOATnote Inc. <b@thegoatnote.com>",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "dev": "next dev --port 3042",
+    "build": "next build",
+    "start": "next start --port 3042",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.0",
+    "next": "^16.2.0",
+    "openai": "^6.34.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "^16.2.0",
+    "typescript": "^5.7.0"
+  }
+}
