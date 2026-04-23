@@ -1,33 +1,60 @@
-# Prism
+# Prism42
 
-**An Opus-4.7 auditor of Opus-4.7. Every finding ships with an executed artifact.**
+**A full-stack trust-and-performance pipeline for high-stakes voice AI.
+Find correctness failures. Optimize the compute path. Prove clinical-
+reasoning lift. Deploy the agent stack. Package into a 911 call-center
+demo anyone can interact with.**
 
-Prism is a Managed Agents harness built on Claude Opus 4.7 that audits two
-high-stakes targets under the same dialectic: numerical correctness in GPU
-inference kernels and clinical reasoning on HealthBench Hard. Every kernel
-finding is a PoC compiled and executed on real GPU hardware; every clinical
-finding is a rubric-graded model-behavior delta, physician-gated before it
-leaves the repo.
+Prism42 proves three things before the demo runs: the agents are
+**correct**, they are **fast**, and they are **clinically safer than
+baseline**. The pipeline is four stages composing into one deployable
+system — see [`docs/pipeline-narrative.md`](docs/pipeline-narrative.md)
+for the full thesis.
 
-No speculative findings. No benchmark numbers we didn't measure ourselves.
-No AI-slop.
+No speculative findings. No benchmark numbers we didn't measure
+ourselves. No AI-slop. Every claim on the landing page traces to a
+session ID; every session ID reproduces with a shell command; every
+agent the public talks to has an auditor running the same dialectic
+that found the kernel bugs.
 
-## Three chapters, one harness
+## Four stages, one pipeline
 
-1. **Kernel-correctness rail** — evolutionary MLA / NVFP4 kernel search
-   with a two-tier numerical validator and a clean-process rubric.
-   Cross-vendor portability target: flagship NVIDIA accelerators, Google TPU
-   via Pallas, AWS Trainium via NKI. See `mla/` for the package.
-2. **Clinical-reasoning harness** — Opus 4.7 baseline + five-agent
-   dialectic on HealthBench Hard. N ≥ 3 baseline runs with 95% CI;
-   paired design for the harness delta (CI excludes 0 gate). Safeguards:
-   physician-in-loop, no PHI, not for clinical use.
-3. **Voice surface** — ElevenLabs front-end on the clinical harness with
-   stopwatched p95 latency (Phase-V rule: cut at p95 > 4 s).
+1. **Find correctness failures — kernel layer.** Five-role adversarial
+   dialectic (defender / attacker / synthesizer / executor /
+   adjudicator, coordinated) running as Anthropic Managed Agents on
+   Claude Opus 4.7. Every finding compiles and runs on real GPU
+   hardware before shipping. See `mla/` + `scripts/`.
+2. **Optimize the compute path — inference layer.** Clean-process
+   measurement rubric: fresh subprocess per run, 200 CUDA-event samples,
+   3 replicates, full p10/p50/p90/p99 distribution. Six
+   benchmark-gaming detectors (`mla/prism/gaming_patterns.py`). Six
+   mechanisms counter the "AI-slop benchmark number" pattern.
+3. **Prove clinical-reasoning lift — reasoning layer.** HealthBench Hard
+   (OpenAI `simple-evals`, Apache 2.0, vendored) as the primary rubric
+   grader. First public Opus 4.7 HealthBench Hard baseline: `0.196 ±
+   0.068` (N = 3, 95 % CI, 30-example subset). Canonical 1000-example
+   parent set pinned at `corpus/pins/healthbench-hard-1000.yaml`.
+   Paired-design harness delta gates on CI-excludes-zero.
+4. **Deploy the agent stack — voice / product layer.** ElevenLabs
+   Conversational AI front end over the Managed Agents session layer.
+   Live-call voice-facing agents phased by call stage (intake → triage
+   → dispatch → PDI → handoff). In-session oversight agents
+   (safety-monitor, OHCA-detector, intent-verifier, rubric-live) on
+   every turn. Post-session auditor runs the dialectic over the call
+   transcript for the physician-readable QI summary. Packaged as a
+   public 911 call-center simulation at `www.thegoatnote.com/prism42`.
 
-The five-agent design (coordinator / defender / attacker / synthesizer /
-executor / adjudicator) is rail-agnostic — the executor branches on
-`case.rail`.
+## The continuity claim
+
+The agents visitors interact with at `www.thegoatnote.com/prism42` are
+the same ones whose correctness, performance, and clinical-reasoning
+lift were measured in stages 1–3. No "benchmark agent" vs "demo agent"
+bait-and-switch. Every public call produces a structured post-call
+verdict from the same dialectic that audits the kernels.
+
+That continuity is the credibility mechanism. See
+[`docs/pipeline-narrative.md`](docs/pipeline-narrative.md) for how the
+stages compose.
 
 ## Clinical rail — HealthBench Hard
 
