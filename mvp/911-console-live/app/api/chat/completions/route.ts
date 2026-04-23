@@ -28,7 +28,8 @@ import {
   tryParseTurn,
 } from "@/lib/coordinator";
 import { coordinatorFallbackStream, getCoordinatorAgentId } from "@/lib/anthropic";
-import { createSession, getSession, recordTurn } from "@/lib/session-store";
+import { gradeTurnOpenAI, OpenAIGraderUnavailable } from "@/lib/openai";
+import { createSession, getSession, recordGrade, recordTurn } from "@/lib/session-store";
 import { createSseWriter, makeOpenAIChunk, sseHeaders } from "@/lib/sse";
 import type { CustomLLMRequest, PsapTurn } from "@/lib/types";
 
@@ -100,6 +101,10 @@ export async function POST(req: NextRequest) {
           debug: { ...(turn.debug ?? {}), ts_ms: Date.now(), session_id: resolvedSessionId },
         };
         recordTurn(resolvedSessionId, annotated);
+        // Fire async rubric grade — do NOT await. The grader runs on
+        // a different vendor (GPT-5.5) for cross-grader independence;
+        // its latency must never block the ElevenLabs response stream.
+        fireAsyncRubricGrade(resolvedSessionId, annotated, callerText);
       } else {
         // Malformed JSON — record a synthetic defer turn so the UI
         // shows what happened. Don't block the caller.
@@ -182,6 +187,54 @@ export async function POST(req: NextRequest) {
   })();
 
   return new Response(sse.readable, { headers: sseHeaders() });
+}
+
+// Fire-and-forget per-turn rubric grade. Landed here rather than as a
+// client-triggered call so the dispatcher UI doesn't have to know the
+// cross-vendor grader exists. If the OpenAI chain exhausts, a
+// verify-failed alert is published on the session stream so the
+// dispatcher sees that rubric data is unavailable this turn — Phase
+// 2b invokes the psap-rubric-live-shim (Opus 4.7) here instead of
+// recording the failure.
+function fireAsyncRubricGrade(
+  sessionId: string,
+  turn: PsapTurn,
+  callerText: string,
+): void {
+  // Skip grading turns that didn't produce caller-facing content —
+  // defer / escalate / handoff turns aren't gradeable against the
+  // R4 clarity-for-caller criterion.
+  if (turn.action !== "speak" || !turn.content) return;
+  void (async () => {
+    try {
+      const grade = await gradeTurnOpenAI({
+        turn,
+        callerText,
+        phase: turn.next_phase?.name ?? "unknown",
+        gedpSection: turn.cites.find((c) => c.startsWith("kb:")),
+      });
+      recordGrade(sessionId, grade);
+    } catch (err) {
+      const kind =
+        err instanceof OpenAIGraderUnavailable
+          ? "openai_grader_unavailable"
+          : "rubric_error";
+      // Publish a verify-failed alert so the UI sees the grader drop.
+      // Guard the publish itself — if the session was already reaped
+      // we swallow to avoid an unhandled rejection.
+      try {
+        const { recordAlert } = await import("@/lib/session-store");
+        recordAlert(sessionId, {
+          kind: "verify-failed",
+          severity: "medium",
+          detail: `rubric grader unavailable (${kind}); turn ${turn.turn_id} ungraded`,
+          source_agent: "psap-rubric-live",
+        });
+      } catch {
+        /* session gone — nothing to do */
+      }
+    }
+  })();
 }
 
 function decideSpokenContent(
