@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/GOATnote-Inc/prism42/blob/main/schemas/psap-turn.schema.json",
+  "title": "PSAP agent turn output",
+  "description": "Typed output contract every PSAP agent emits per turn. The voice-facing agents stream caller-facing text to ElevenLabs separately; this schema describes the structured verification record that sits alongside the streamed text and is consumed by the session coordinator, safety monitor, and rubric grader.",
+  "type": "object",
+  "required": ["agent", "turn_id", "action", "rationale", "cites", "confidence", "confidence_basis", "self_verify"],
+  "additionalProperties": false,
+  "properties": {
+    "agent": {
+      "type": "string",
+      "pattern": "^psap-[a-z-]+$",
+      "description": "Agent identifier; must match a registered agent in agents/manifest.yaml"
+    },
+    "turn_id": {
+      "type": "string",
+      "description": "Monotonic turn identifier within the session; uniquely identifies this turn across the 20-agent topology"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["speak", "defer", "refuse", "escalate", "handoff", "end"],
+      "description": "Primary action the agent is taking this turn. speak: caller-facing utterance streamed to ElevenLabs. defer: agent declines to act, passes to coordinator. refuse: agent refuses on safety / scope grounds; includes reason + alternative. escalate: surface to safety-monitor for interrupt decision. handoff: transfer control to named next-phase agent. end: close the session."
+    },
+    "content": {
+      "type": ["string", "null"],
+      "description": "Caller-facing text — REQUIRED when action=speak, MUST be null otherwise. Streamed to ElevenLabs as SSE content chunks; must contain no JSON, no XML, no code blocks, no references to other turns by ID. Prose only."
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Internal reasoning; never spoken. Must cite inputs — which prior turns, which knowledge-pack sections drove this decision."
+    },
+    "cites": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(turn:[a-z0-9-]+|kb:[a-z0-9/_.-]+#[a-z0-9-]+|clinical:[a-z]+-[0-9]+)$"
+      },
+      "minItems": 0,
+      "description": "Evidence anchors. turn:<turn_id> references prior conversation. kb:<path>#<section> references the tracked knowledge pack (docs/dispatch-protocol-v0.1.md, docs/aha-bls-2025-pdi.md, etc.). clinical:<guideline>-<section> references a specific clinical guideline section."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Agent's self-reported confidence in this turn's action + content. 0.0 = must-defer territory; 1.0 = ironclad."
+    },
+    "confidence_basis": {
+      "type": "string",
+      "enum": ["citation", "inference", "default", "uncertain"],
+      "description": "How confidence was derived. citation = cited evidence supports it directly. inference = reasoning from cited evidence. default = no citation, using training-grade knowledge. uncertain = low confidence, calling this out."
+    },
+    "next_phase": {
+      "type": ["string", "null"],
+      "enum": ["intake", "triage", "dispatch", "pdi", "handoff", "end", null],
+      "description": "Suggested next phase for the session coordinator. May be overridden by safety-monitor or ohca-detector signals."
+    },
+    "alerts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "severity", "reason"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["real-emergency-claimed", "ohca-signal", "caller-distress-crossed", "contraindicated-instruction", "phi-detected", "intent-ambiguous", "verify-failed", "latency-breach"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "informational"]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 5
+          },
+          "suggested_action": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Flags fired to the session coordinator + safety-monitor. Each alert routes per the topology in docs/agents/topology.md."
+    },
+    "refuse": {
+      "type": ["object", "null"],
+      "description": "Present when action=refuse. Describes the refusal reason + the alternative offered to the caller.",
+      "properties": {
+        "reason": { "type": "string", "minLength": 10 },
+        "category": {
+          "type": "string",
+          "enum": ["real-emergency-detected", "out-of-scope", "phi-refuse", "malicious-intent", "instructions-unsafe"]
+        },
+        "caller_message": { "type": "string", "minLength": 10 }
+      },
+      "required": ["reason", "category", "caller_message"]
+    },
+    "self_verify": {
+      "type": "object",
+      "required": ["checks", "all_passed"],
+      "additionalProperties": false,
+      "properties": {
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "passed"],
+            "properties": {
+              "name": { "type": "string" },
+              "passed": { "type": "boolean" },
+              "detail": { "type": "string" }
+            }
+          }
+        },
+        "all_passed": {
+          "type": "boolean",
+          "description": "Shorthand: are all checks in `checks` passed? If false, action MUST be 'defer' or 'refuse' or 'escalate'."
+        }
+      },
+      "description": "Agent's self-verification record, checked by the coordinator before the turn's content streams to the caller. This is the frontier-lab gate: nothing the caller hears bypasses this record."
+    },
+    "debug": {
+      "type": ["object", "null"],
+      "description": "Optional developer-only context; stripped from public logs. Not caller-facing. Not guaranteed to be stable."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "action": { "const": "speak" } } },
+      "then": { "required": ["content"], "properties": { "content": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "action": { "const": "refuse" } } },
+      "then": { "required": ["refuse"] }
+    },
+    {
+      "if": { "properties": { "action": { "const": "handoff" } } },
+      "then": { "required": ["next_phase"], "properties": { "next_phase": { "not": { "type": "null" } } } }
+    }
+  ]
+}
