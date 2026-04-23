@@ -1,0 +1,76 @@
+# Private findings — pre-embargo, never pushed
+findings/private/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+aws-credentials*
+
+# Build
+build/
+.cache/
+__pycache__/
+*.pyc
+*.so
+*.o
+
+# Python venv (Managed Agents SDK lives here)
+.venv/
+
+# Local workspace scratchpad (demo of shared-fs pattern uses this)
+workspace/
+*.log
+
+# Runtime state — active pod/instance metadata (IPs, IDs). Ephemeral.
+.state/
+
+# Managed Agents session output — streamed events per run_id. Ephemeral.
+runs/
+
+# Clinical-rail results — benchmark runs, harness outputs, delta reports.
+# Contents are reproducible from the corpus + seed; do not commit.
+results/
+# MLA-rail results — IS the reproducibility pin per mla/docs/EVALUATION_RUBRIC.md
+# §1.8. Track JSONL + _summary.json + .md + ralph_decisions.jsonl. Large raw
+# traces stay under an unignored path by convention.
+!/mla/results/
+!/mla/results/**
+
+# Clinical finding disclosure log — operational artifact, not public.
+findings/clinical-log.jsonl
+
+# Disclosure drafts — per-bug triage + maintainer outreach. Pre-coordination
+# operational artifact; a human sends. Never committed.
+findings/disclosure-draft/
+
+# Real vendor-bug corpus — reproducers, per-bug yaml, verified-flip ledger,
+# revert methods, case files. Coordinated-disclosure commitment: Prism's
+# public surface carries only the bug identifier, rail, class, flip status,
+# and hardware tier. Everything below is mechanism/reproduction surface
+# and stays out of the public tree. KERNEL-GOLDEN (synthetic fixture) is
+# deliberately not ignored — it is allowed and used by `make validate-golden`.
+corpus/reproducers/
+corpus/fa_bugs.yaml
+corpus/BACKFILL_NOTES.md
+cases/<redacted>-*.json
+docs/pre-flip-audit-*.md
+scripts/verify_flip.sh
+
+# Third-party clones — source trees vendored at make-target time.
+# Kept out of-tree per third_party/README.md vendoring policy. Both the
+# cloned dir (simple-evals/) and the Python-compatible alias symlink
+# (simple_evals → simple-evals) are excluded.
+third_party/*
+!third_party/README.md
+
+# macOS / editor
+.DS_Store
+**/.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Claude Code / Desktop per-project scratch (inline comments not supported by gitignore)
+.claude/

@@ -1,0 +1,32 @@
+_generated_by: scripts/register_skills.py --commit
+_registered_at: '2026-04-23T06:35:56Z'
+coordinator_id: agent_011CaJboTBvV6agLw9huTWJY
+skills:
+  defender:
+    id: skill_01Py4owBxPzpqa4pfmWPrwWs
+    display_title: Prism defender
+  attacker:
+    id: skill_01Pq44fSBhTjtEya3U73xEKp
+    display_title: Prism attacker
+  synthesizer:
+    id: skill_01LRqcgBQW1YGMonZtrHUwjv
+    display_title: Prism synthesizer
+  executor:
+    id: skill_01VLF1w5TuAVoT5k83eBMeJ9
+    display_title: Prism executor
+  adjudicator:
+    id: skill_01XuLKoXdjBHQ8WtfqDCw88w
+    display_title: Prism adjudicator
+  planner:
+    id: skill_01SX2Yx4KaZZv5fYztUN2z7L
+    display_title: Prism planner
+  clinical-review:
+    id: skill_01Te43Z1ZVPo6Y8EUfVojR6E
+    display_title: Prism clinical-review
+  differential-diagnosis:
+    id: skill_01DZSr2nvrgmEvAyiKR8r5VL
+    display_title: Prism differential-diagnosis
+  dosage-check:
+    id: skill_01LbpF321Ry59CiPVpsTt1vU
+    display_title: Prism dosage-check
+coordinator_new_version: 4

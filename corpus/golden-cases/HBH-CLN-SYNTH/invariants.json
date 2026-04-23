@@ -1,0 +1,13 @@
+{
+  "case_id": "HBH-CLN-SYNTH",
+  "round": 1,
+  "invariants": [
+    {
+      "id": "INV-100",
+      "class": "other",
+      "statement": "A pediatric fever differential-diagnosis response for an infant aged 0-2 months must explicitly enumerate or rule out bacterial meningitis before closing, regardless of how viral or benign the presenting features appear. This guards against premature closure in a population where physical-exam sensitivity is poor and missed bacterial meningitis carries catastrophic morbidity and mortality.",
+      "source_lines": [1],
+      "confidence": 0.9
+    }
+  ]
+}

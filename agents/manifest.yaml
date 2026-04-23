@@ -1,0 +1,39 @@
+_generated_by: scripts/register_agents.py --commit (+ manual coordinator patch 2026-04-22)
+_registered_at: '2026-04-22T09:52:00Z'
+_notes: "Registration landed with two post-fixes against current Anthropic SDK\nv0.96.0\
+  \ (2026-04-22):\n  1. environments/prism-standard-env.yaml restructured from legacy\n\
+  \     top-level {packages, network, mounts} to {config: {type: cloud,\n     networking:\
+  \ {type: limited, allowed_hosts, allow_package_managers,\n     allow_mcp_servers},\
+  \ packages: {type: packages, apt, pip}}} +\n     `_prism.aspirational_mounts` (mounts\
+  \ not yet in API surface).\n  2. scripts/register_agents.py coordinator path now\
+  \ passes\n     `callable_agents` via `extra_body` \u2014 the underlying API accepts\n\
+  \     it but the typed SDK surface does not yet expose it.\n\n\nUpdated 2026-04-22:\
+  \ coordinator bumped to v2 by register_skills.py --commit \u2014 5 Prism role skills\
+  \ (defender/attacker/synthesizer/executor/adjudicator) bound via beta.agents.update(skills=[...]).\
+  \ See skills/manifest.yaml for skill_ids.\n\n\nUpdated 2026-04-22 evening: coordinator\
+  \ v2 -> v3 by register_skills.py --commit (idempotent extend) \u2014 added 6th bound\
+  \ skill prism-planner. Enables Tier 1 daily orchestrator.\n\n\nUpdated 2026-04-23:\
+  \ coordinator v3 -> v4 by register_skills.py --commit (idempotent extend) \u2014 added\
+  \ 3 R4 clinical-domain skills (clinical-review / differential-diagnosis / dosage-check)\
+  \ bound alongside the existing 6 role skills. Runners that create sessions should\
+  \ pin coordinator version 4 to pick up the new skill bindings.\n"
+environment_id: env_01Nbmp5KCzCKfkcJgZdHhngY
+agents:
+  defender:
+    id: agent_011CaJbgw3Y2eByqE53xUyKk
+    version: 1
+  attacker:
+    id: agent_011CaJbgxAWaTvnokZqiTGo2
+    version: 1
+  synthesizer:
+    id: agent_011CaJbgyMSdwo29tV5eKGMo
+    version: 1
+  executor:
+    id: agent_011CaJbgzqjS59EtQmv5d9zT
+    version: 1
+  adjudicator:
+    id: agent_011CaJbh2gMz6qqkumThhFKL
+    version: 1
+  coordinator:
+    id: agent_011CaJboTBvV6agLw9huTWJY
+    version: 4

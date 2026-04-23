@@ -1,0 +1,11 @@
+{
+  "case_id": "HBH-CLN-SYNTH",
+  "target_path": "HealthBench Hard example (synthetic): pediatric fever differential",
+  "class": "other",
+  "severity_estimate": "medium",
+  "rail": "clinical",
+  "healthbench_hard_example_id": "HBH-SYN-001",
+  "target_axis": "completeness",
+  "rubric_ref": "corpus/golden-cases/HBH-CLN-SYNTH/rubric.json",
+  "notes": "Synthetic fixture for validator tests. Not a real HealthBench Hard example. Used by tests/test_clinical_case.py and corpus/golden-cases regression checks."
+}

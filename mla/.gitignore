@@ -1,0 +1,47 @@
+# --- secrets / env ---
+.env
+.env.*
+*.key
+*.pem
+credentials.json
+secrets.yaml
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- jupyter ---
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- build artifacts ---
+build/
+dist/
+*.whl
+
+# --- ephemeral results (large / machine-specific) ---
+# Keep _summary.json and .md reports; drop raw JSONL > 1MB if they accumulate.
+# For now: keep everything under results/ — the reproducibility pin needs it.
+
+# --- local scratch ---
+/tmp_scratch/
+*.tmp
+scratch_*

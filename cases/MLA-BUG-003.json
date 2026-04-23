@@ -1,0 +1,9 @@
+{
+  "case_id": "MLA-BUG-003",
+  "target_domain": "gpu",
+  "target_path": "corpus/mla/reproducers/MLA_BUG_003_flashinfer_3047.py",
+  "rail": "cute-mla",
+  "class": "precision",
+  "severity_estimate": "high",
+  "notes": "FlashInfer #3047 — MLA chunked-prefill batch-composition-dependent outputs on Blackwell. Batch composition should not affect per-example outputs; current kernel has this correctness gap. Severity=high because output non-determinism under batching is a harder class of failure than raw precision loss. Oracle tolerance preset: fp8."
+}

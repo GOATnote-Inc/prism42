@@ -1,0 +1,12 @@
+# LaTeX build artifacts. Regenerate via:
+#   cd docs/papers/mla-oracle && pdflatex paper && bibtex paper && pdflatex paper && pdflatex paper
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+paper.pdf

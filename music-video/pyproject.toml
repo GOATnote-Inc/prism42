@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prism-edit"
+version = "0.1.0"
+description = "Claude Opus 4.7 as your music-video editor — beat-matched video splicing."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "bGOATnote", email = "b@thegoatnote.com" }]
+keywords = ["claude", "opus", "anthropic", "video", "music", "beat", "ffmpeg", "editor"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Multimedia :: Sound/Audio :: Analysis",
+]
+dependencies = [
+    "anthropic>=0.40.0",
+    "librosa>=0.10.0",
+    "numpy>=1.26",
+    "opencv-python>=4.8",
+    "pydantic>=2.6",
+    "soundfile>=0.12",
+    "typer>=0.12",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+ui = ["streamlit>=1.30"]
+dev = ["pytest>=8", "ruff>=0.4"]
+
+[project.scripts]
+prism = "prism.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/GOATnote-Inc/prism/tree/main/music-video"
+Issues = "https://github.com/GOATnote-Inc/prism/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prism.goatnote.ai/schemas/clinical-rubric.schema.json",
+  "title": "Prism Clinical Rubric",
+  "description": "Rubric document governing how a clinical (HealthBench Hard) case is scored. Referenced by case.rubric_ref when case.rail == 'clinical'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["rubric_id", "axes", "criteria"],
+  "properties": {
+    "rubric_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier for this rubric document."
+    },
+    "axes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["accuracy", "completeness", "context_awareness", "instruction_following", "communication"]
+      },
+      "description": "Subset of the five HealthBench rubric axes this document scores."
+    },
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "weight"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Criterion identifier unique within this rubric."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable criterion statement."
+          },
+          "weight": {
+            "type": "number",
+            "description": "Criterion weight; sign indicates reward (positive) or penalty (negative)."
+          }
+        }
+      },
+      "description": "Weighted list of rubric criteria applied by the grader."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional free-form provenance or authoring notes."
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "case_id": "MLA-BUG-001",
+  "target_domain": "gpu",
+  "target_path": "corpus/mla/reproducers/MLA_BUG_001_sglang_10284.py",
+  "rail": "cute-mla",
+  "class": "precision",
+  "severity_estimate": "medium",
+  "notes": "SGLang #10284 — FP4 accuracy issue with B200 + FlashInfer MLA. Reproducer guards on REQUIRED_CC=(10, 0) and emits a `deferred` verdict on non-SM100 hardware. Oracle tolerance preset: nvfp4."
+}

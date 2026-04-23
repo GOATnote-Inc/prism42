@@ -1,0 +1,23 @@
+Prism
+Copyright (c) 2026 GOATnote Autonomous Research Lab
+
+This product includes software developed by third parties, listed below.
+Each third-party component retains its original copyright and license.
+
+================================================================================
+Third-party attributions (see third_party/README.md for pin list).
+================================================================================
+
+simple-evals
+  Source : https://github.com/openai/simple-evals
+  Pin    : ee3b0318d8d1d9d72755a4120879be65f7c07e9e
+  License: MIT (Copyright (c) 2024 OpenAI)
+  Used   : HealthBench rubric grader (RubricItem, calculate_score,
+           GRADER_TEMPLATE). Cloned into third_party/simple-evals/ at
+           setup-third-party time; never committed in-tree. Prism's
+           scripts/_healthbench_grader_bridge.py derives from this
+           upstream under MIT terms.
+
+  Full upstream LICENSE text is preserved at
+  third_party/simple-evals/LICENSE after clone.
+================================================================================

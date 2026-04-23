@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prism.goatnote.ai/schemas/verdict.schema.json",
+  "title": "Prism Verdict",
+  "description": "Adjudicator output: final judgement on whether the attack confirmed a real defect, including disclosure routing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "run_id", "verdict", "severity", "cross_checks", "disclosure_target", "embargo_channel"],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,}-[A-Z]+-[A-Z0-9]{3,}$",
+      "description": "Must equal case.json/case_id."
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Must equal exec.json/run_id."
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["confirmed", "denied", "inconclusive"],
+      "description": "Final adjudication."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "informational"],
+      "description": "Calibrated severity; required even when verdict is denied or inconclusive."
+    },
+    "cross_checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["poc_matches_claim", "citations_valid", "severity_consistent"],
+      "properties": {
+        "poc_matches_claim": { "type": "boolean" },
+        "citations_valid": { "type": "boolean" },
+        "severity_consistent": { "type": "boolean" }
+      },
+      "description": "All three must be true when verdict == 'confirmed'."
+    },
+    "disclosure_target": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Who receives the finding (e.g. upstream maintainer, clinical ops)."
+    },
+    "embargo_channel": {
+      "type": "string",
+      "enum": ["GHSA", "direct-email", "N/A"],
+      "description": "Disclosure channel; N/A when verdict is denied or informational."
+    },
+    "rationale": {
+      "type": "string",
+      "description": "Optional adjudicator explanation, typically 1-3 sentences."
+    },
+    "adjudicator_notes": {
+      "type": "string",
+      "description": "Optional free-form notes captured during review."
+    }
+  }
+}

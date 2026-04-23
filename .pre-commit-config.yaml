@@ -1,0 +1,50 @@
+# Pre-commit hooks for GOATnote-Inc/prism42.
+#
+# Purpose: enforce repo-wide hygiene on identifier, path, and secret
+# patterns. Runs before every local commit; CI replicates at push time
+# in .github/workflows/verify.yml (mirror-maintained).
+#
+# Install once: `pip install pre-commit && pre-commit install`
+# Run manually: `pre-commit run --all-files`
+#
+# Excluded from scans: this file itself (must legitimately reference
+# the patterns it enforces), .github/workflows/ (CI replication),
+# findings/private/ (already gitignored; defensive exclusion only).
+
+repos:
+  - repo: local
+    hooks:
+      - id: block-vendor-identifiers
+        name: Block vendor-identifier strings
+        entry: bash -c 'hits=$(grep -rE "FA[_-]?BUG|FLASH[_-]?ATTENTION|DAO[_-]?AILAB|FlashAttention|[Ff]lash[_-]attn|flash_attention|dao-ailab|Tri[ _]Dao|tridao" --include="*.py" --include="*.md" --include="*.yaml" --include="*.yml" --include="*.json" --include="*.txt" --include="*.sh" --include="*.bib" --exclude=".pre-commit-config.yaml" --exclude-dir=".git" --exclude-dir=".github" --exclude-dir="node_modules" --exclude-dir="findings/private" . 2>/dev/null || true); if [ -n "$hits" ]; then echo "Vendor-identifier hit in tracked content:"; echo "$hits"; echo ""; echo "Remove the reference. Internal research material belongs under findings/private/ (gitignored)."; exit 1; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: block-personal-identifiers
+        name: Block personal-identifier strings
+        entry: bash -c 'hits=$(grep -rE "tri@tridao|tridao\.me|princeton\.edu|dao@" --include="*.py" --include="*.md" --include="*.yaml" --include="*.yml" --include="*.json" --include="*.txt" --include="*.sh" --include="*.bib" --exclude=".pre-commit-config.yaml" --exclude-dir=".git" --exclude-dir=".github" --exclude-dir="node_modules" --exclude-dir="findings/private" . 2>/dev/null || true); if [ -n "$hits" ]; then echo "Personal-identifier hit in tracked content:"; echo "$hits"; echo ""; echo "Remove email addresses and organizational identifiers."; exit 1; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: block-internal-paths
+        name: Block internal-path references in staged adds
+        entry: bash -c 'blocked=$(git diff --cached --name-only --diff-filter=AM 2>/dev/null | grep -E "^(corpus/reproducers/|corpus/fa_bugs\.yaml$|corpus/kernel_bugs\.yaml$|findings/disclosure-draft/|findings/private/|scripts/verify_flip\.sh$|scripts/pre_flip_audit\.|docs/disclosure-playbook\.md$|docs/mla-corpus/)" || true); if [ -n "$blocked" ]; then echo "Staged path is on the internal-paths denylist:"; echo "$blocked"; echo ""; echo "These paths are reserved for off-tree/private use and must not be committed."; exit 1; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: block-upstream-sha-pins
+        name: Block upstream-SHA pins in tracked content
+        entry: bash -c 'hits=$(grep -rE "3a7694c04748e3ba1cd954eb5dfdfd4b6646a234|71c737929f2567bd0a094ae140f8f60f390b1232|9f7adfb8461d68ef5e18479f61cc6919b7f80c3d|b46b16d003484063bca4ed365e44095c4c6ed633|e4ee48da2d24c502a7e16606f871e12ef1e1fa3d|97165993838c86dddb2c809ed22ad607991004b6" --include="*.py" --include="*.md" --include="*.yaml" --include="*.yml" --include="*.json" --include="*.txt" --include="*.sh" --include="*.bib" --exclude=".pre-commit-config.yaml" --exclude-dir=".git" --exclude-dir=".github" --exclude-dir="node_modules" --exclude-dir="findings/private" . 2>/dev/null || true); if [ -n "$hits" ]; then echo "Upstream-SHA-pin hit in tracked content:"; echo "$hits"; echo ""; echo "Specific upstream commit SHAs are reproduction fingerprints. Use a symbolic reference (HEAD / main / version tag) or pin in a gitignored file."; exit 1; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: block-secrets
+        name: Block obvious secrets
+        entry: bash -c 'hits=$(grep -rE "sk-ant-[A-Za-z0-9]{30,}|sk-proj-[A-Za-z0-9]{30,}|sk-or-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN (RSA |DSA |EC |OPENSSH |PGP )?PRIVATE KEY-----" --include="*.py" --include="*.md" --include="*.yaml" --include="*.yml" --include="*.json" --include="*.txt" --include="*.sh" --include=".env*" --exclude-dir=".git" --exclude-dir="node_modules" --exclude-dir="findings/private" . 2>/dev/null || true); if [ -n "$hits" ]; then echo "Possible secret in tracked content:"; echo "$hits"; exit 1; fi'
+        language: system
+        pass_filenames: false
+        always_run: true

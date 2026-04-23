@@ -1,0 +1,89 @@
+# Prism standard environment — Managed Agents create-environment request body.
+#
+# One environment template, shared by every thread the coordinator spawns
+# (defender / attacker / synthesizer / executor / adjudicator). All threads
+# get the same container filesystem, so /workspace/<case_id>/ is the
+# canonical scratchpad across roles.
+#
+# Shape matches the anthropic v0.96.0 SDK's BetaCloudConfigParams (verified
+# 2026-04-22): {type, networking, packages}. `mounts` is NOT in the current
+# API surface; it stays under `_prism.aspirational_mounts` as a documented
+# Prism-design intent for when Managed Agents gains host-file-mount support.
+# Prism-specific metadata lives under `_prism:` and is stripped by
+# scripts/register_agents.py before the API call.
+
+_prism:
+  name: prism-standard-env
+  version: 0.2.0
+  used_by:
+    - prism-coordinator
+    - prism-defender
+    - prism-attacker
+    - prism-synthesizer
+    - prism-executor
+    - prism-adjudicator
+  # Aspirational: the Managed Agents API as of 2026-04-22 does not expose
+  # host-file mounts. These entries document the design intent so that
+  # when the feature lands, the existing harness wiring + invariants
+  # (check_env_mounts_no_secrets) already have the right source-of-truth.
+  aspirational_mounts:
+    - source: .state/runpod-current.json
+      target: /mnt/prism/runpod-current.json
+      mode: ro
+    - source: scripts/ssh_exec.sh
+      target: /mnt/prism/ssh_exec.sh
+      mode: ro
+    - source: schemas/
+      target: /workspace/schemas/
+      mode: ro
+    - source: scripts/validate_artifacts.py
+      target: /workspace/scripts/validate_artifacts.py
+      mode: ro
+
+# Actual API request body below. Top-level keys mirror BetaEnvironmentCreateParams
+# (name, config, description?, metadata?, betas?); nested config.* mirrors
+# BetaCloudConfigParams (type, networking, packages).
+
+name: prism-standard-env
+
+config:
+  type: cloud
+
+  # Limited networking with an explicit runtime allowlist. Package-manager
+  # egress must be `true` because the `packages:` block below is resolved
+  # at container-build time by pip/apt (API enforces this: 400 if
+  # packages present + allow_package_managers=false). MCP-server egress
+  # stays disabled — Prism has no MCP servers in the current design; see
+  # CLAUDE.md §8 "Credential vaults — deferred".
+  networking:
+    type: limited
+    allowed_hosts:
+      - api.anthropic.com
+      - api.openai.com
+      - rest.runpod.io
+      - cloud.lambdalabs.com
+      # GCP surface for Phase M (MLA oracle on Trillium). Added 2026-04-22.
+      # Needed when the executor dispatches to GCP TPU via gcp_tpu_exec.sh.
+      - compute.googleapis.com
+      - tpu.googleapis.com
+      - storage.googleapis.com
+      - oauth2.googleapis.com
+    allow_package_managers: true
+    allow_mcp_servers: false
+
+  # Runtime + build tooling. Python packages needed for the clinical
+  # baseline (simple-evals grader) and the executor's ssh shell-out to
+  # the GPU rail.
+  packages:
+    type: packages
+    apt:
+      - git
+      - jq
+      - openssh-client
+      - curl
+    pip:
+      - anthropic>=0.60.0
+      - openai>=1.30.0
+      - pyyaml>=6.0
+      - requests>=2.31
+      - jsonschema>=4.22

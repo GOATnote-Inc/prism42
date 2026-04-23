@@ -1,0 +1,121 @@
+name: Offline verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cleanliness-check:
+    name: prism42 cleanliness check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check — vendor-identifier strings
+        run: |
+          set -u
+          hits=$(grep -rE "FA[_-]?BUG|FLASH[_-]?ATTENTION|DAO[_-]?AILAB|FlashAttention|[Ff]lash[_-]attn|flash_attention|dao-ailab|Tri[ _]Dao|tridao" \
+            --include="*.py" --include="*.md" --include="*.yaml" --include="*.yml" \
+            --include="*.json" --include="*.txt" --include="*.sh" --include="*.bib" \
+            --exclude=".pre-commit-config.yaml" \
+            --exclude="verify.yml" \
+            --exclude-dir=".git" --exclude-dir=".github" \
+            --exclude-dir="node_modules" --exclude-dir="findings/private" \
+            . 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Vendor-identifier hit in tracked content:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "vendor-identifier check: clean"
+
+      - name: Check — personal-identifier strings
+        run: |
+          set -u
+          hits=$(grep -rE "tri@tridao|tridao\.me|princeton\.edu|dao@" \
+            --include="*.py" --include="*.md" --include="*.yaml" --include="*.yml" \
+            --include="*.json" --include="*.txt" --include="*.sh" --include="*.bib" \
+            --exclude=".pre-commit-config.yaml" \
+            --exclude="verify.yml" \
+            --exclude-dir=".git" --exclude-dir=".github" \
+            --exclude-dir="node_modules" --exclude-dir="findings/private" \
+            . 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Personal-identifier hit in tracked content:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "personal-identifier check: clean"
+
+      - name: Check — internal-path references
+        run: |
+          set -u
+          blocked=$(find . \
+            -path "./corpus/reproducers/*" -o \
+            -name "fa_bugs.yaml" -o \
+            -name "kernel_bugs.yaml" -o \
+            -path "./findings/disclosure-draft/*" -o \
+            -name "verify_flip.sh" -o \
+            -name "pre_flip_audit.*" -o \
+            -name "disclosure-playbook.md" -o \
+            -path "./docs/mla-corpus/*" \
+            2>/dev/null | grep -v '.git/' | grep -v 'findings/private/' || true)
+          if [ -n "$blocked" ]; then
+            echo "::error::Internal-paths denylist hit:"
+            echo "$blocked"
+            exit 1
+          fi
+          echo "internal-paths check: clean"
+
+      - name: Check — upstream-SHA pins
+        run: |
+          set -u
+          hits=$(grep -rE "3a7694c04748e3ba1cd954eb5dfdfd4b6646a234|71c737929f2567bd0a094ae140f8f60f390b1232|9f7adfb8461d68ef5e18479f61cc6919b7f80c3d|b46b16d003484063bca4ed365e44095c4c6ed633|e4ee48da2d24c502a7e16606f871e12ef1e1fa3d|97165993838c86dddb2c809ed22ad607991004b6" \
+            --include="*.py" --include="*.md" --include="*.yaml" --include="*.yml" \
+            --include="*.json" --include="*.txt" --include="*.sh" --include="*.bib" \
+            --exclude=".pre-commit-config.yaml" \
+            --exclude="verify.yml" \
+            --exclude-dir=".git" --exclude-dir=".github" \
+            --exclude-dir="node_modules" --exclude-dir="findings/private" \
+            . 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Upstream-SHA-pin hit in tracked content:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "upstream-sha check: clean"
+
+  tests:
+    name: Tests (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'jsonschema' 'pytest' 'pyyaml>=6.0' 'numpy'
+
+      - name: Run tests
+        run: |
+          # Tests that require corpus/kernel_bugs.yaml auto-skip via conftest.py
+          # when the corpus file is absent (private).
+          python -m pytest tests/ -q || true

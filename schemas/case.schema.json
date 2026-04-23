@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prism.goatnote.ai/schemas/case.schema.json",
+  "title": "Prism Case",
+  "description": "Initial case descriptor written by the coordinator before sub-agents run. Defines the target under audit and constrains the downstream rail/domain.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "target_path"],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,}-[A-Z]+-[A-Z0-9]{3,}$",
+      "description": "Stable case identifier, e.g. HB-HARD-042 or KERNEL-GOLDEN (synthetic fixture). Numeric suffix for auto-minted cases; alphabetic suffix for named fixtures."
+    },
+    "target_domain": {
+      "type": "string",
+      "enum": ["gpu", "tpu", "clinical"],
+      "description": "Broad audit domain selecting defender/attacker behaviour. 'gpu' covers CUDA / CuTe / NKI kernel rails; 'tpu' covers JAX/Pallas kernels on Google TPU. Required for non-clinical rails; clinical cases may omit it in favour of the rail/target_axis pairing."
+    },
+    "target_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path (absolute or repo-relative) to the artifact under audit."
+    },
+    "rail": {
+      "type": "string",
+      "enum": ["cuda", "cute", "cute-mla", "nki", "tpu-pallas", "clinical"],
+      "description": "Executor rail discriminator. 'cuda' / 'cute' / 'nki' are the original GPU/Trainium kernel rails; 'cute-mla' is the Blackwell (sm_100) MLA decode rail using CUTLASS CuTe DSL; 'tpu-pallas' is the Google Trillium (v6e) MLA decode rail using JAX/Pallas. When 'clinical', additional fields become required (see allOf)."
+    },
+    "rail_hint": {
+      "type": ["string", "null"],
+      "description": "Optional hint for executor rail (cuda/cute/cute-mla/nki/tpu-pallas/clinical). May be null when coordinator has no preference."
+    },
+    "class": {
+      "type": "string",
+      "enum": ["numerical", "memory", "concurrency", "precision", "other"],
+      "description": "Optional taxonomic class (mirrors invariants.items.class enum)."
+    },
+    "severity_estimate": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "informational"],
+      "description": "Optional coordinator severity estimate (mirrors verdict.severity enum)."
+    },
+    "healthbench_hard_example_id": {
+      "type": "string",
+      "pattern": "^HBH-[A-Z]{2,}-[0-9]{3,}$",
+      "description": "HealthBench Hard example identifier. Required when rail == 'clinical'."
+    },
+    "target_axis": {
+      "type": "string",
+      "enum": ["accuracy", "completeness", "context_awareness", "instruction_following", "communication"],
+      "description": "HealthBench rubric axis under audit. Required when rail == 'clinical'."
+    },
+    "rubric_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reference (repo-relative path or URI) to the rubric document governing the clinical grade. Required when rail == 'clinical'."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional free-form note from the operator or coordinator."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"rail": {"const": "clinical"}},
+        "required": ["rail"]
+      },
+      "then": {
+        "required": ["healthbench_hard_example_id", "target_axis", "rubric_ref"]
+      },
+      "else": {
+        "required": ["target_domain"]
+      }
+    }
+  ]
+}

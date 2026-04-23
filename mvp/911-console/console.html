@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>GOATnote PSAP · Clinical-Grade 911 Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ======================================================================
+   GOATnote PSAP Console — Clinical-Grade 911 Call Handler
+   Research instrument on the IRB-pilot → SaMD trajectory. One console
+   for one dispatcher. AI is decision-support, never decider. Every
+   surface anchored to a measurable health-outcome lever: OHCA first-
+   minute recognition, T-CPR protocol adherence, language-access
+   equity, dispatcher cognitive load, physician-in-loop QI.
+
+   Design system extracted from the Prism dev-repo results/demo/
+   index.html. Typography per Anthropic frontend-aesthetics cookbook.
+   ====================================================================== */
+:root {
+  --bg:        #0d1117;
+  --bg-elev:   #141a22;
+  --bg-card:   #1a212b;
+  --bg-deeper: #080b10;
+  --fg:        #e6edf3;
+  --fg-dim:    #9ba4af;
+  --fg-mute:   #6b7683;
+  --border:    #262d38;
+  --border-hi: #384150;
+  --accent:    #58a6ff;
+  --accent-2:  #79c0ff;
+  --ok:        #56d364;
+  --warn:      #e3b341;
+  --neg:       #f85149;
+  --safety:    #ff7b72;
+  --live:      #ff4b4b;
+
+  /* Role-coded signal colors */
+  --copilot:   #bc8cff;       /* AI assistance */
+  --agent:     #39c5cf;       /* voice agent */
+  --signal:    #ffb454;       /* operational / supervisor */
+  --clinical:  #f178b6;       /* physician-grade / clinical-rubric */
+
+  --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --sans-cond: "IBM Plex Sans Condensed", var(--sans);
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans);
+  font-size: 14px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+  height: 100vh; overflow: hidden;
+}
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1;
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(188,140,255,0.04), transparent 42%),
+    radial-gradient(ellipse at 85% 100%, rgba(241,120,182,0.03), transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(88,166,255,0.02), transparent 60%),
+    var(--bg);
+}
+
+/* Scrollbar refinement — dispatchers run these for 10-hour shifts */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
+
+.shell {
+  display: grid;
+  grid-template-rows: 52px 28px 1fr 210px;
+  height: 100vh;
+}
+
+/* ============================= TOP BAR =========================== */
+header.top {
+  display: grid;
+  grid-template-columns: 300px 1fr auto;
+  align-items: center;
+  padding: 0 18px; gap: 18px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #0e141c 0%, var(--bg-elev) 100%);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand svg { width: 26px; height: 26px; color: var(--fg); }
+.brand .mark {
+  font-family: var(--sans-cond);
+  font-weight: 600; letter-spacing: 0.02em;
+  font-size: 14.5px; color: var(--fg);
+}
+.brand .mark em { font-style: normal; color: var(--fg-dim); font-weight: 500; }
+.brand .mark .s {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--clinical); border: 1px solid #5a2a45;
+  background: rgba(241,120,182,0.06);
+  padding: 2px 6px; border-radius: 4px; margin-left: 6px;
+  letter-spacing: 0.06em;
+}
+
+.call-bar {
+  display: flex; align-items: center; gap: 22px; justify-content: center;
+}
+.timer {
+  font-family: var(--sans-cond); font-weight: 600;
+  font-size: 26px; letter-spacing: -0.02em; color: var(--fg);
+}
+.timer .sep { color: var(--fg-mute); }
+.timer-lbl {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--fg-mute); margin-right: 6px;
+}
+.rec {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--live); font-size: 10.5px; text-transform: uppercase;
+  letter-spacing: 0.12em; font-weight: 600;
+}
+.rec .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--live); animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.line {
+  font-family: var(--mono); font-size: 11.5px;
+  color: var(--fg-dim);
+}
+.line b { color: var(--fg); font-weight: 500; }
+
+.cap-strip {
+  display: flex; gap: 6px; align-items: center;
+}
+.cap {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 999px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid var(--border); color: var(--fg-mute);
+  background: var(--bg-deeper);
+  transition: color 200ms, border-color 200ms;
+}
+.cap .led {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; opacity: 0.5;
+}
+.cap.on { color: var(--ok); border-color: rgba(86,211,100,0.3); }
+.cap.on .led { animation: led-on 1.8s ease-in-out infinite; }
+.cap.translate.on { color: var(--accent); border-color: rgba(88,166,255,0.3); }
+.cap.ohca.on { color: var(--safety); border-color: rgba(255,123,114,0.3); background: rgba(255,123,114,0.04); }
+.cap.cad.on { color: var(--signal); border-color: rgba(255,180,84,0.3); }
+.cap.rubric.on { color: var(--clinical); border-color: rgba(241,120,182,0.3); }
+.cap.rubric .n {
+  font-family: var(--sans-cond); font-size: 11px; font-weight: 600;
+  letter-spacing: 0; text-transform: none; margin-left: 2px;
+}
+@keyframes led-on {
+  0%, 100% { opacity: 0.5; box-shadow: 0 0 0 0 currentColor; }
+  50% { opacity: 1; box-shadow: 0 0 0 3px transparent; }
+}
+
+/* =========================== IRB BAND ============================ */
+.irb {
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 18px;
+  background: linear-gradient(90deg, rgba(241,120,182,0.06), transparent 70%);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono); font-size: 11px; color: var(--fg-dim);
+}
+.irb .badge {
+  padding: 2px 8px; border-radius: 3px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+  background: rgba(241,120,182,0.1); color: var(--clinical);
+  border: 1px solid #5a2a45;
+}
+.irb b { color: var(--fg); font-weight: 500; }
+.irb .doi { margin-left: auto; color: var(--fg-mute); font-size: 10.5px; }
+
+/* =========================== MAIN COLUMNS ========================= */
+.main {
+  display: grid;
+  grid-template-columns: 370px 1fr 360px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+.col { overflow: auto; padding: 14px 16px; border-right: 1px solid var(--border); }
+.col:last-child { border-right: 0; }
+.col h3 {
+  font-family: var(--sans-cond);
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--fg-mute);
+  margin: 0 0 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.col h3 .aux {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--fg-dim); text-transform: none; letter-spacing: 0;
+}
+.col h3 + h3 { margin-top: 18px; }
+
+/* --------------------- LEFT · transcript --------------------- */
+.transcript { display: flex; flex-direction: column; gap: 8px; }
+.utt {
+  display: grid; grid-template-columns: 48px 1fr; gap: 8px;
+  font-size: 13px;
+}
+.utt .t {
+  font-family: var(--mono); font-size: 10.5px;
+  color: var(--fg-mute); padding-top: 3px;
+}
+.utt .body {
+  padding: 8px 12px; border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.utt .who {
+  font-family: var(--mono); font-size: 9.5px;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  margin-bottom: 3px; font-weight: 600;
+}
+.utt .text { line-height: 1.45; }
+.utt .tx {
+  margin-top: 4px; padding-top: 4px;
+  border-top: 1px dashed var(--border);
+  font-size: 11.5px; color: var(--fg-dim); font-style: italic;
+}
+.utt .tx::before {
+  content: "EN →"; font-family: var(--mono); font-size: 9px;
+  color: var(--accent); font-style: normal; letter-spacing: 0.1em;
+  margin-right: 5px; opacity: 0.8;
+}
+.utt.caller .body { background: #1a1a22; border-color: #3a2b3a; }
+.utt.caller .who { color: var(--copilot); }
+.utt.dispatcher .body { background: #141c24; border-color: #253142; }
+.utt.dispatcher .who { color: var(--accent); }
+.utt.agent .body { background: #131c14; border-color: #1f3824; }
+.utt.agent .who { color: var(--ok); }
+.utt .text em { font-style: normal; color: var(--warn); }
+
+/* Background-audio detections — sit between utterances */
+.audio-event {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin: 2px 0 2px 56px; padding: 3px 10px; border-radius: 999px;
+  font-family: var(--mono); font-size: 10.5px;
+  background: rgba(255,123,114,0.08);
+  border: 1px solid rgba(255,123,114,0.25);
+  color: var(--safety);
+}
+.audio-event .i { font-size: 10px; opacity: 0.7; }
+
+.affect {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--bg-deeper);
+  color: var(--fg-dim); margin-top: 10px;
+}
+.affect .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+
+.channel-row {
+  margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+  border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+  font-size: 11px;
+}
+.channel-row button {
+  background: transparent; border: 0; color: var(--fg-dim);
+  padding: 6px 6px; cursor: pointer; font-family: var(--sans);
+  letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;
+  border-right: 1px solid var(--border); display: flex; align-items: center;
+  justify-content: center; gap: 4px;
+}
+.channel-row button:last-child { border-right: 0; }
+.channel-row button[aria-pressed="true"] { background: var(--bg-card); color: var(--fg); }
+.channel-row button .pill {
+  font-family: var(--mono); font-size: 9px; padding: 0 5px;
+  border: 1px solid currentColor; border-radius: 3px; opacity: 0.6;
+}
+.channel-row button .pill.live { color: var(--ok); opacity: 1; }
+
+.lang {
+  margin-top: 14px; padding: 10px 12px;
+  background: rgba(88,166,255,0.04);
+  border: 1px solid rgba(88,166,255,0.2);
+  border-radius: 6px;
+  font-family: var(--mono); font-size: 11px;
+  display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
+}
+.lang .l { color: var(--fg-mute); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+.lang .v { color: var(--accent); font-weight: 500; }
+.lang .latency { color: var(--ok); font-size: 10.5px; }
+
+/* --------------------- CENTER · protocol + clinical --------------- */
+.center { overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 16px 20px; }
+
+.crumbs {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 10.5px; color: var(--fg-mute);
+  align-items: center;
+}
+.crumbs .c { padding: 3px 8px; border-radius: 4px; background: var(--bg-deeper); }
+.crumbs .c.active { color: var(--accent); background: rgba(88,166,255,0.1); }
+.crumbs .c.done { color: var(--ok); }
+.crumbs .sep { color: var(--fg-mute); }
+
+.determinant {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 14px; align-items: center;
+  background: linear-gradient(90deg, rgba(255,123,114,0.1), transparent 70%);
+  border: 1px solid rgba(255,123,114,0.3);
+  padding: 12px 16px; border-radius: 8px;
+}
+.determinant .code {
+  font-family: var(--mono); font-size: 26px; font-weight: 600;
+  color: var(--safety); letter-spacing: 0.04em;
+}
+.determinant .text .l {
+  font-size: 10px; color: var(--fg-mute);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.determinant .text .v {
+  font-size: 15px; color: var(--fg); font-weight: 500; margin-top: 2px;
+}
+.determinant .right {
+  text-align: right;
+  font-family: var(--mono); font-size: 10.5px; color: var(--safety);
+}
+.determinant .right .big {
+  font-family: var(--sans-cond); font-size: 17px; font-weight: 600;
+  color: var(--safety); letter-spacing: 0.04em;
+}
+
+/* Clinical reasoning row: OHCA gauge + auto-CAD strip */
+.clin-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.clin-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px;
+}
+.clin-card .h {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 8px;
+}
+.clin-card .h .k {
+  font-family: var(--sans-cond); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-mute);
+}
+.clin-card .h .cite {
+  font-family: var(--mono); font-size: 10px; color: var(--fg-dim);
+}
+.clin-card .h .cite a { color: var(--accent); text-decoration: none; }
+
+.ohca-gauge {
+  display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: center;
+}
+.ohca-gauge .num {
+  font-family: var(--sans-cond); font-size: 34px; font-weight: 600;
+  color: var(--ok); letter-spacing: -0.02em; line-height: 1;
+  text-align: right;
+}
+.ohca-gauge.elev .num { color: var(--warn); }
+.ohca-gauge.high .num { color: var(--safety); }
+.ohca-gauge .pct { font-size: 14px; color: var(--fg-mute); font-weight: 500; }
+.ohca-gauge .bar {
+  height: 4px; background: var(--bg-deeper); border-radius: 3px;
+  overflow: hidden; margin-bottom: 6px;
+}
+.ohca-gauge .bar > span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--ok), var(--warn) 60%, var(--safety));
+  animation: fillGrow 800ms cubic-bezier(.3,1.2,.5,1) 260ms both;
+}
+@keyframes fillGrow { from { width: 0 } }
+.ohca-gauge .signals {
+  font-family: var(--mono); font-size: 10.5px; color: var(--fg-dim);
+  display: flex; flex-wrap: wrap; gap: 4px;
+}
+.ohca-gauge .signals .s {
+  padding: 1px 6px; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--bg-deeper);
+}
+.ohca-gauge .signals .s.pos { color: var(--safety); border-color: rgba(255,123,114,0.3); }
+
+/* CAD auto-capture */
+.cad-cap ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cad-cap li {
+  display: grid; grid-template-columns: 70px 1fr auto;
+  gap: 8px; font-family: var(--mono); font-size: 11px;
+  padding: 4px 0; align-items: center;
+}
+.cad-cap .k { color: var(--fg-mute); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+.cad-cap .v { color: var(--fg); }
+.cad-cap .st {
+  font-size: 9.5px; padding: 1px 5px; border-radius: 3px;
+  letter-spacing: 0.1em;
+}
+.cad-cap .st.auto { color: var(--signal); border: 1px solid rgba(255,180,84,0.3); background: rgba(255,180,84,0.05); }
+.cad-cap .st.conf { color: var(--ok); border: 1px solid rgba(86,211,100,0.3); background: rgba(86,211,100,0.05); }
+.cad-cap .st.pending { color: var(--fg-mute); border: 1px solid var(--border); }
+
+/* KQ card */
+.q-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+.q-card .tag {
+  font-family: var(--mono); font-size: 10px; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.14em;
+  margin-bottom: 6px; display: inline-block;
+}
+.q-card h2 {
+  font-family: var(--sans); font-size: 20px; font-weight: 600;
+  margin: 0 0 12px; letter-spacing: -0.01em; line-height: 1.3;
+}
+.q-card .scripted {
+  background: var(--bg-deeper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 14px; font-family: var(--mono);
+  font-size: 12.5px; color: var(--fg-dim); margin-bottom: 12px;
+  border-left: 2px solid var(--accent); line-height: 1.5;
+}
+.q-card .scripted b { color: var(--fg); font-weight: 500; }
+.q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.q-options button {
+  background: var(--bg-elev); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px 12px; cursor: pointer; text-align: left;
+  font-family: var(--sans); font-size: 13px;
+  display: flex; align-items: center; gap: 10px;
+  transition: border-color 120ms, background 120ms;
+}
+.q-options button:hover { border-color: var(--border-hi); background: var(--bg-card); }
+.q-options button .kbd {
+  font-family: var(--mono); font-size: 10px;
+  padding: 2px 6px; border-radius: 3px;
+  border: 1px solid var(--border); color: var(--fg-mute);
+  min-width: 20px; text-align: center;
+}
+.q-options button.recommended {
+  border-color: var(--copilot);
+  box-shadow: 0 0 0 1px var(--copilot) inset, 0 0 14px rgba(188,140,255,0.1);
+}
+.q-options button.recommended::after {
+  content: "AI"; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em;
+  color: var(--copilot); margin-left: auto; font-weight: 600;
+}
+.proto-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 10.5px; color: var(--fg-mute);
+  padding-top: 10px; border-top: 1px solid var(--border); margin-top: 14px;
+}
+.proto-meta b { color: var(--fg-dim); font-weight: 500; }
+
+/* PDI (pre-arrival instructions) panel */
+.pdi {
+  background: linear-gradient(180deg, rgba(241,120,182,0.04), transparent 60%);
+  border: 1px solid rgba(241,120,182,0.3);
+  border-radius: 8px; padding: 12px 14px;
+}
+.pdi .h {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 8px;
+}
+.pdi .h .k {
+  font-family: var(--sans-cond); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--clinical);
+}
+.pdi .h .cite { font-family: var(--mono); font-size: 10px; color: var(--fg-dim); }
+.pdi ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+.pdi ol li { font-size: 13px; line-height: 1.4; }
+.pdi ol li b { color: var(--clinical); font-weight: 600; }
+.pdi ol li .stop {
+  background: rgba(255,123,114,0.08); color: var(--safety);
+  padding: 1px 5px; border-radius: 3px; font-size: 11.5px;
+  border: 1px solid rgba(255,123,114,0.2);
+}
+.pdi .act { margin-top: 10px; display: flex; gap: 6px; }
+.pdi .act button {
+  background: var(--clinical); border: 0; color: #0d0a12;
+  padding: 6px 14px; border-radius: 4px;
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+}
+.pdi .act button.sec {
+  background: transparent; color: var(--clinical);
+  border: 1px solid var(--clinical);
+}
+
+/* --------------------- RIGHT · CAD + EMS briefing ----------- */
+.caller-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: var(--mono); font-size: 11.5px;
+  display: grid; grid-template-columns: 64px 1fr; gap: 4px 10px;
+}
+.caller-block .k { color: var(--fg-mute); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.08em; padding-top: 1px; }
+.caller-block .v { color: var(--fg); }
+.caller-block .v b { color: var(--accent); }
+.caller-block .v .phase {
+  font-size: 9.5px; padding: 1px 6px; border-radius: 3px;
+  background: rgba(86,211,100,0.1); color: var(--ok);
+  margin-left: 6px; letter-spacing: 0.08em;
+}
+
+/* Map + units + fleet */
+.map {
+  margin-top: 10px; position: relative;
+  height: 150px; border-radius: 8px;
+  background:
+    linear-gradient(transparent 95%, rgba(88,166,255,0.08) 95%) 0 0 / 26px 26px,
+    linear-gradient(90deg, transparent 95%, rgba(88,166,255,0.08) 95%) 0 0 / 26px 26px,
+    radial-gradient(circle at 38% 48%, rgba(255,123,114,0.3), transparent 55%),
+    #0a0d13;
+  border: 1px solid var(--border); overflow: hidden;
+}
+.map::after {
+  content: ""; position: absolute; top: 46%; left: 36%;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--safety);
+  box-shadow: 0 0 0 4px rgba(255,123,114,0.25), 0 0 0 8px rgba(255,123,114,0.1);
+  animation: beacon 2s ease-in-out infinite;
+}
+@keyframes beacon {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(255,123,114,0.25), 0 0 0 8px rgba(255,123,114,0.1); }
+  50% { box-shadow: 0 0 0 8px rgba(255,123,114,0.4), 0 0 0 16px rgba(255,123,114,0.18); }
+}
+.map .unit {
+  position: absolute; width: 10px; height: 10px; border-radius: 2px;
+  background: var(--ok); border: 1px solid #000;
+}
+.map .unit.amb { top: 64%; left: 20%; }
+.map .unit.eng { top: 18%; left: 70%; background: var(--warn); }
+.map .unit.plc { top: 78%; left: 58%; background: var(--accent); }
+.map .legend {
+  position: absolute; bottom: 4px; left: 8px;
+  font-family: var(--mono); font-size: 9px; color: var(--fg-mute);
+}
+
+.units ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.units li {
+  display: grid; grid-template-columns: 52px 1fr auto; gap: 8px;
+  font-family: var(--mono); font-size: 11.5px; align-items: center;
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg-elev);
+}
+.units .id { color: var(--accent); font-weight: 500; }
+.units .type { color: var(--fg-dim); font-size: 11px; }
+.units .eta { color: var(--ok); font-size: 12.5px; font-weight: 500; }
+.units .eta.far { color: var(--warn); }
+
+/* EMS briefing — structured handoff note live-generating */
+.ems {
+  margin-top: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px;
+}
+.ems .h {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 8px;
+}
+.ems .h .k {
+  font-family: var(--sans-cond); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--signal);
+  display: flex; align-items: center; gap: 8px;
+}
+.ems .h .k .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--signal); box-shadow: 0 0 6px var(--signal);
+  animation: pulse 1.2s infinite;
+}
+.ems .h .meta { font-family: var(--mono); font-size: 10px; color: var(--fg-dim); }
+.ems .note {
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
+  color: var(--fg-dim); white-space: pre-wrap;
+  max-height: 160px; overflow-y: auto;
+}
+.ems .note b { color: var(--fg); }
+.ems .note .warn { color: var(--warn); }
+.ems .note .safe { color: var(--safety); }
+.ems .act { margin-top: 8px; display: flex; gap: 6px; justify-content: flex-end; }
+.ems .act button {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--fg-dim); padding: 4px 10px; border-radius: 4px;
+  font-family: var(--mono); font-size: 10px; cursor: pointer;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.ems .act button.pri {
+  background: var(--signal); color: #1a1108; border-color: var(--signal);
+  font-weight: 600;
+}
+
+/* Route banners: 988 warm-handoff, other adjuncts */
+.route {
+  margin-top: 12px;
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 6px; background: rgba(188,140,255,0.04);
+}
+.route .icon {
+  width: 18px; height: 18px; border-radius: 4px;
+  background: rgba(188,140,255,0.15); color: var(--copilot);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+}
+.route .label {
+  font-size: 11.5px; color: var(--fg-dim);
+}
+.route .label b { color: var(--fg); }
+.route button {
+  background: transparent; border: 1px solid var(--copilot);
+  color: var(--copilot); padding: 4px 10px; border-radius: 4px;
+  font-family: var(--mono); font-size: 10px; cursor: pointer;
+  letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+}
+
+/* ============================= BOTTOM ============================ */
+.bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 320px;
+  gap: 0;
+  background: linear-gradient(180deg, #0f0d18 0%, var(--bg) 100%);
+  border-top: 2px solid transparent;
+  border-image: linear-gradient(90deg, var(--copilot), var(--clinical), var(--signal)) 1;
+  position: relative;
+}
+.bottom::before {
+  content: "AI COPILOT + CLINICAL RUBRIC";
+  position: absolute; top: -11px; left: 16px;
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.16em; color: var(--copilot);
+  background: var(--bg); padding: 2px 10px; border-radius: 4px;
+  border: 1px solid var(--copilot);
+}
+.bot-col {
+  padding: 14px 16px; border-right: 1px solid var(--border);
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.bot-col:last-child { border-right: 0; }
+
+.co-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 4px;
+  height: 100%; min-height: 0;
+}
+.co-card .kind {
+  font-family: var(--mono); font-size: 9.5px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 6px; width: fit-content;
+  padding: 2px 8px; border-radius: 999px;
+}
+.co-card .kind.next { color: var(--copilot); border: 1px solid var(--copilot); background: rgba(188,140,255,0.06); }
+.co-card .kind.risk { color: var(--safety); border: 1px solid #6e2b2b; background: rgba(255,123,114,0.06); }
+.co-card .kind.diff { color: var(--warn); border: 1px solid #5a4712; background: rgba(227,179,65,0.06); }
+.co-card .text { font-size: 12.5px; line-height: 1.4; color: var(--fg); margin: 2px 0; }
+.co-card .text em { color: var(--warn); font-style: normal; }
+.co-card .text b { color: var(--fg); }
+.co-card .meta {
+  margin-top: auto; font-family: var(--mono); font-size: 9.5px;
+  color: var(--fg-mute); display: flex; gap: 8px; align-items: center;
+  padding-top: 6px;
+}
+.co-card .meta a { color: var(--accent); text-decoration: none; }
+.co-card .act {
+  display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;
+}
+.co-card .act button {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--fg-dim); padding: 3px 9px; border-radius: 4px;
+  font-family: var(--mono); font-size: 10px; cursor: pointer;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.co-card .act button.pri {
+  background: var(--copilot); border-color: var(--copilot); color: #170d23; font-weight: 600;
+}
+
+/* Clinical rubric card — live per-turn */
+.rubric-live {
+  background: linear-gradient(180deg, rgba(241,120,182,0.06), var(--bg-card) 60%);
+  border: 1px solid rgba(241,120,182,0.3);
+  border-radius: 8px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 4px; height: 100%;
+  min-height: 0;
+}
+.rubric-live .h {
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.rubric-live .h .k {
+  font-family: var(--mono); font-size: 9.5px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--clinical);
+  padding: 2px 8px; border-radius: 999px;
+  border: 1px solid rgba(241,120,182,0.3);
+  background: rgba(241,120,182,0.04);
+}
+.rubric-live .h .big {
+  font-family: var(--sans-cond); font-size: 22px; font-weight: 600;
+  color: var(--ok); letter-spacing: -0.01em;
+}
+.rubric-live .h .big.partial { color: var(--warn); }
+.rubric-live .h .big.fail { color: var(--safety); }
+.rubric-live .scale {
+  font-family: var(--mono); font-size: 10px; color: var(--fg-mute);
+}
+.rubric-live .crits {
+  display: flex; flex-direction: column; gap: 3px; margin-top: 4px;
+  overflow-y: auto;
+}
+.rubric-live .crit {
+  display: grid; grid-template-columns: 22px 1fr 50px;
+  gap: 8px; align-items: center;
+  font-family: var(--mono); font-size: 10.5px;
+}
+.rubric-live .crit .w { color: var(--fg-mute); text-align: right; }
+.rubric-live .crit .l { color: var(--fg-dim); font-family: var(--sans); font-size: 11.5px; line-height: 1.3; }
+.rubric-live .crit .sc {
+  text-align: right; color: var(--ok); font-weight: 500;
+}
+.rubric-live .crit .sc.zero { color: var(--fg-mute); }
+.rubric-live .crit .sc.partial { color: var(--warn); }
+.rubric-live .crit .sc.full { color: var(--ok); }
+.rubric-live .meta {
+  font-family: var(--mono); font-size: 9.5px; color: var(--fg-mute);
+  margin-top: auto; padding-top: 4px;
+}
+
+/* Ask copilot + shortcuts */
+.ask {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px 12px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 8px;
+  height: 100%; min-height: 0;
+}
+.ask label {
+  font-family: var(--mono); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--fg-mute);
+}
+.ask input {
+  background: var(--bg-deeper); border: 1px solid var(--border);
+  color: var(--fg); padding: 8px 10px; border-radius: 6px;
+  font-family: var(--sans); font-size: 13px;
+}
+.ask input::placeholder { color: var(--fg-mute); }
+.ask .hint {
+  margin-top: auto; font-family: var(--mono); font-size: 9.5px;
+  color: var(--fg-mute); display: flex; flex-wrap: wrap; gap: 4px 10px;
+}
+.ask .hint kbd {
+  padding: 1px 5px; border: 1px solid var(--border); border-radius: 3px;
+  background: var(--bg-elev); font-family: var(--mono); font-size: 9.5px;
+  color: var(--fg-dim);
+}
+.ask .hint kbd.hot { border-color: var(--neg); color: var(--safety); }
+.ask .telemetry {
+  display: flex; gap: 10px; padding: 6px 8px; margin-top: 4px;
+  background: var(--bg-deeper); border-radius: 4px;
+  font-family: var(--mono); font-size: 9.5px;
+}
+.ask .telemetry div { display: flex; flex-direction: column; gap: 1px; }
+.ask .telemetry .v { color: var(--ok); font-size: 11px; font-weight: 500; }
+.ask .telemetry .v.warn { color: var(--warn); }
+.ask .telemetry .l { color: var(--fg-mute); font-size: 9px;
+  text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* ----- Orchestrated page load ----- */
+.fade { opacity: 0; transform: translateY(4px); animation: fadeIn 480ms ease-out forwards; }
+@keyframes fadeIn { to { opacity: 1; transform: none; } }
+.d1 { animation-delay: 40ms; } .d2 { animation-delay: 120ms; }
+.d3 { animation-delay: 200ms; } .d4 { animation-delay: 280ms; }
+.d5 { animation-delay: 360ms; } .d6 { animation-delay: 440ms; }
+
+button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1280px) {
+  .main { grid-template-columns: 320px 1fr 320px; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ========================== TOP BAR ========================== -->
+<header class="top fade d1">
+  <div class="brand">
+    <svg viewBox="0 0 48 32" aria-label="GOATnote" role="img">
+      <path fill="currentColor" d="M2 19 C2 11, 9 8.5, 13 8.5 C13.2 6, 14 4, 15.5 3.5 C16.2 4.2, 16.5 5.2, 16.8 6 C17.2 4.8, 17.8 4, 19 3.8 C20.2 4.5, 20.6 6, 20.6 7 C22 7, 25 7.5, 26.7 10 C27.8 12, 28 14, 27.3 16.5 L28.5 21 L26.6 22.8 L24.5 23.5 L21.5 24.2 L18.5 23.8 L16.2 23.5 C16.8 22, 16.5 21, 15.8 20.5 C14.8 20.2, 13.8 20.5, 13.2 21.5 L12 23.2 L10.5 23.5 L9 23 C8.5 24.3, 7 24.8, 5.8 24.3 L4.6 22.8 L3.2 21.2 Z"/>
+      <path fill="currentColor" d="M37 3.5 L40 3.2 L40 20.5 C40 24, 36.8 25.8, 34 25 C31.8 24.3, 31.2 22, 32.6 20.5 C34 19.2, 36 19.2, 37.3 20.2 L37.3 10 C39.8 11, 42.8 9.8, 44.5 7.5 C44.8 6, 43.5 4.2, 42 4 Z"/>
+    </svg>
+    <div class="mark">GOATnote <em>·</em> PSAP Console <span class="s">CLINICAL-GRADE</span></div>
+  </div>
+
+  <div class="call-bar">
+    <div><span class="timer-lbl">Call</span><span class="timer">00<span class="sep">:</span>01<span class="sep">:</span>47</span></div>
+    <div class="rec"><span class="dot"></span> REC · T3-A</div>
+    <div class="line">LINE <b>TRUNK&nbsp;3</b> · <b>D-0412</b></div>
+  </div>
+
+  <div class="cap-strip">
+    <span class="cap on" title="Speech-to-text streaming, Whisper-v4 · caller 96% conf"><span class="led"></span>Transcribe</span>
+    <span class="cap translate on" title="Spanish → English · Opus 4.7 · 128ms avg"><span class="led"></span>Translate · es→en</span>
+    <span class="cap ohca on" title="Out-of-hospital cardiac arrest early-warning · 82% conf"><span class="led"></span>OHCA-sig</span>
+    <span class="cap cad on" title="Auto-filling CAD incident form from conversation"><span class="led"></span>CAD-capture</span>
+    <span class="cap rubric on" title="Clinical rubric grader · HealthBench Hard derivation · async"><span class="led"></span>Rubric<span class="n"> 0.82</span></span>
+  </div>
+</header>
+
+<!-- ========================== IRB BAND ========================== -->
+<div class="irb fade d1">
+  <span class="badge">RESEARCH INSTRUMENT</span>
+  <span>IRB protocol <b>2026-GN-PSAP-001</b> · physician-in-loop · synthetic fixtures · <b>not FDA-cleared</b></span>
+  <span class="doi">physician of record <b style="color:var(--fg)">Brandon Dent, MD</b> · sign-off required for any disposition</span>
+</div>
+
+<!-- ========================== MAIN ============================== -->
+<div class="main">
+
+  <!-- ============ LEFT · transcript + translation + channels ======== -->
+  <section class="col fade d2" aria-label="Live transcript">
+    <h3>Live transcript <span class="aux">NG911 i3 · voice + RTT + video</span></h3>
+
+    <div class="transcript">
+      <div class="utt caller">
+        <div class="t">00:12</div>
+        <div class="body">
+          <div class="who">Caller · es</div>
+          <div class="text">¡Mi bebé! ¡Se estaba comiendo una uva y ahora no puede respirar!</div>
+          <div class="tx">My baby! She was eating a grape and now she can't breathe!</div>
+        </div>
+      </div>
+      <div class="utt dispatcher">
+        <div class="t">00:18</div>
+        <div class="body">
+          <div class="who">Dispatcher D-0412</div>
+          <div class="text">911, what is the address of your emergency?</div>
+        </div>
+      </div>
+      <div class="utt caller">
+        <div class="t">00:24</div>
+        <div class="body">
+          <div class="who">Caller · es</div>
+          <div class="text">2847 Linden Avenue, apartamento 4B — ¡por favor manden a alguien!</div>
+          <div class="tx">2847 Linden Avenue, apartment 4B — please send someone!</div>
+        </div>
+      </div>
+      <div class="utt dispatcher">
+        <div class="t">00:31</div>
+        <div class="body">
+          <div class="who">Dispatcher D-0412</div>
+          <div class="text">Help is on the way. Is she conscious? Can she make any sound?</div>
+        </div>
+      </div>
+      <div class="utt caller">
+        <div class="t">00:38</div>
+        <div class="body">
+          <div class="who">Caller · es</div>
+          <div class="text">Se está poniendo azul. No hace ningún sonido. <em>Dios mío.</em></div>
+          <div class="tx">She's turning blue. She's not making a sound. <em>Oh my god.</em></div>
+        </div>
+      </div>
+
+      <!-- Background audio detection — ML classifier -->
+      <div class="audio-event" title="Background audio event · YAMNet + PANNs hybrid classifier">
+        <span class="i">◉</span> pediatric agonal gasp detected (conf 0.79) · OHCA signal
+      </div>
+
+      <div class="utt agent">
+        <div class="t">00:44</div>
+        <div class="body">
+          <div class="who">AI copilot · async</div>
+          <div class="text">Determinant escalated to <b>11-D-2</b>. OHCA signal rising — ask about breathing quality before compressions.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="affect"><span class="dot"></span> Caller state: panic · breathing rapid · coherent · es-MX</div>
+
+    <div class="lang" title="Real-time translation · Opus 4.7 + Whisper-v4 · median 128ms round-trip">
+      <div>
+        <div class="l">Translation pipeline</div>
+        <div class="v">es-MX → en · bidirectional</div>
+      </div>
+      <div class="latency">128 ms avg</div>
+    </div>
+
+    <div class="channel-row" role="tablist" aria-label="NG911 i3 channels">
+      <button aria-pressed="true">Voice <span class="pill live">LIVE</span></button>
+      <button aria-pressed="false">RTT <span class="pill">off</span></button>
+      <button aria-pressed="false">Video <span class="pill">avail</span></button>
+      <button aria-pressed="false">Photo <span class="pill">off</span></button>
+    </div>
+  </section>
+
+  <!-- ============ CENTER · protocol + clinical reasoning ========== -->
+  <section class="center fade d3">
+
+    <div class="crumbs">
+      <span class="c done">Case Entry</span><span class="sep">›</span>
+      <span class="c done">Chief Complaint</span><span class="sep">›</span>
+      <span class="c active">Key Questions</span><span class="sep">›</span>
+      <span class="c">Determinant</span><span class="sep">›</span>
+      <span class="c">Pre-Arrival</span><span class="sep">›</span>
+      <span class="c">Handoff</span>
+    </div>
+
+    <div class="determinant">
+      <div class="code">11-D-2</div>
+      <div class="text">
+        <div class="l">MPDS determinant · auto-computed</div>
+        <div class="v">Choking · not alert · pediatric (&lt;3 yr) — <b>ECHO response</b></div>
+      </div>
+      <div class="right">
+        <div>ECHO</div>
+        <div class="big">M-07 · E-12 · C-41</div>
+      </div>
+    </div>
+
+    <div class="clin-row">
+
+      <!-- OHCA ML gauge — Corti-style first-minute cardiac arrest flag -->
+      <div class="clin-card">
+        <div class="h">
+          <div class="k">OHCA early warning</div>
+          <div class="cite"><a href="https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2774644">Blomberg 2021 RCT</a></div>
+        </div>
+        <div class="ohca-gauge elev">
+          <div>
+            <div class="num">28<span class="pct">%</span></div>
+          </div>
+          <div>
+            <div class="bar"><span style="width:28%;"></span></div>
+            <div class="signals">
+              <span class="s pos">pediatric &lt;3y</span>
+              <span class="s pos">agonal gasp</span>
+              <span class="s pos">cyanosis reported</span>
+              <span class="s">not unresponsive</span>
+              <span class="s">no chest rise/fall</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auto-CAD capture — structured fields filled from conversation -->
+      <div class="clin-card cad-cap">
+        <div class="h">
+          <div class="k">CAD auto-capture</div>
+          <div class="cite">0 typed</div>
+        </div>
+        <ul>
+          <li><span class="k">patient</span><span class="v">F · 2 yr</span><span class="st conf">conf 0.98</span></li>
+          <li><span class="k">complaint</span><span class="v">choking · solid food (grape)</span><span class="st conf">conf 0.96</span></li>
+          <li><span class="k">onset</span><span class="v">&lt;3 min · witnessed</span><span class="st auto">auto</span></li>
+          <li><span class="k">scene</span><span class="v">2847 Linden Ave · Apt 4B</span><span class="st conf">ANI/ALI</span></li>
+          <li><span class="k">language</span><span class="v">es-MX · caller mother</span><span class="st auto">auto</span></li>
+          <li><span class="k">allergies</span><span class="v">—</span><span class="st pending">asking</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Key Question card -->
+    <div class="q-card">
+      <span class="tag">KQ 2 of 4 · MPDS protocol 11</span>
+      <h2>Can she cough, breathe, or speak at all?</h2>
+      <div class="scripted">
+        Script (auto-translated to <b>es-MX</b> if chosen):
+        <b>"¿Puede toser, respirar, o hacer algún sonido?"</b>
+      </div>
+      <div class="q-options">
+        <button><span class="kbd">1</span><span>Yes — partial obstruction</span></button>
+        <button class="recommended"><span class="kbd">2</span><span>No — complete obstruction</span></button>
+        <button><span class="kbd">3</span><span>Unknown / caller can't tell</span></button>
+        <button><span class="kbd">4</span><span>Not alert — unresponsive</span></button>
+      </div>
+      <div class="proto-meta">
+        <span><b>Protocol</b> MPDS v13.3 · IAED licensed · physician-reviewed</span>
+        <span><b>Time to answer</b> 2.3 s median · this call 5.0 s</span>
+      </div>
+    </div>
+
+    <!-- Pre-arrival instructions — already generated and queued -->
+    <div class="pdi">
+      <div class="h">
+        <div class="k">Pre-arrival instructions · ready to read</div>
+        <div class="cite">AHA BLS 2025 · age-2-yr child thrusts</div>
+      </div>
+      <ol>
+        <li>Lay her <b>face-up on your lap</b>, head slightly lower than her chest.</li>
+        <li>Give <b>5 firm chest thrusts</b> with two fingers, center of chest, just below nipple line.</li>
+        <li>Check her mouth. <span class="stop">Only remove object if you can SEE it — never blind-sweep.</span></li>
+        <li>If no object visible and she is still not breathing: <b>5 back blows</b>, head lower than chest.</li>
+        <li>Continue alternating until object clears or she becomes unresponsive — then start CPR.</li>
+      </ol>
+      <div class="act">
+        <button>Read aloud in Spanish</button>
+        <button class="sec">Send as RTT (en + es)</button>
+        <button class="sec">Skip — caller acting</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RIGHT · CAD + units + EMS handoff =============== -->
+  <section class="col fade d4" aria-label="CAD incident and EMS handoff">
+    <h3>Incident <span class="aux">INC-2026-04-23-0917</span></h3>
+
+    <div class="caller-block">
+      <div class="k">ANI</div><div class="v"><b>+1&nbsp;614-555-0192</b></div>
+      <div class="k">Carrier</div><div class="v">Verizon Wireless</div>
+      <div class="k">Name</div><div class="v">Ortega, M. <span class="phase">WPHII</span></div>
+      <div class="k">Scene</div><div class="v">2847 Linden Ave · Apt 4B</div>
+      <div class="k">City</div><div class="v">Columbus, OH&nbsp;43215</div>
+      <div class="k">Lat/Lon</div><div class="v">39.9612°N · 82.9988°W · ±4 m</div>
+    </div>
+
+    <div class="map">
+      <span class="unit amb" title="M-07 — en route"></span>
+      <span class="unit eng" title="E-12 — en route"></span>
+      <span class="unit plc" title="P-03 — priority"></span>
+      <span class="legend">▲ scene · ■ units · 200 m grid</span>
+    </div>
+
+    <h3 style="margin-top:16px">Units <span class="aux">4 rolling</span></h3>
+    <div class="units">
+      <ul>
+        <li><span class="id">M-07</span><span class="type">ALS ambulance · peds kit</span><span class="eta">2:10</span></li>
+        <li><span class="id">E-12</span><span class="type">engine + BLS</span><span class="eta">3:45</span></li>
+        <li><span class="id">C-41</span><span class="type">supervisor</span><span class="eta far">6:20</span></li>
+        <li><span class="id">P-03</span><span class="type">police priority</span><span class="eta">4:05</span></li>
+      </ul>
+    </div>
+
+    <!-- Live EMS briefing note — scrolls as structured info arrives -->
+    <div class="ems">
+      <div class="h">
+        <div class="k"><span class="dot"></span>EMS handoff brief · generating</div>
+        <div class="meta">pushed to M-07 tablet · 284 chars</div>
+      </div>
+      <div class="note"><b>PT</b>: F 2yr · <span class="safe">cyanotic</span> · not vocalizing
+<b>CC</b>: choking · grape · onset &lt;3 min witnessed
+<b>SCENE</b>: mother on scene · apt 4B · calm-distressed
+<b>DETERMINANT</b>: 11-D-2 · ECHO
+<b>PDI</b>: child chest thrusts (not infant back-blows)
+<b>ML-FLAG</b>: OHCA signal elevated (28%) · <span class="warn">monitor for transition to CPR protocol</span>
+<b>LANG</b>: caller es-MX; dispatcher EN · translation live
+<b>ALLERGIES</b>: — asking
+<b>EQUIP</b>: peds airway kit · suction · BVM · McGrath w/ 2.5 blade</div>
+      <div class="act">
+        <button>Expand</button>
+        <button class="pri">Push to unit</button>
+      </div>
+    </div>
+
+    <!-- 988 warm handoff -->
+    <div class="route">
+      <div class="icon">988</div>
+      <div class="label"><b>988 available</b> · if crisis shifts from medical to mental-health, warm-transfer with full call context</div>
+      <button>Route</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ========================== BOTTOM STRIP ========================== -->
+<footer class="bottom fade d5">
+
+  <!-- 1: Next question copilot -->
+  <div class="bot-col">
+    <div class="co-card">
+      <span class="kind next">Next question</span>
+      <div class="text">Ask now: <b>"¿Le puedes ver algo en la boca?"</b> <em>— before instructing chest thrusts; check for visible obstruction.</em></div>
+      <div class="act">
+        <button class="pri">Read aloud (es)</button>
+        <button>Read aloud (en)</button>
+        <button>Skip</button>
+      </div>
+      <div class="meta">src <a href="https://cpr.heart.org/en">AHA BLS 2025 §Peds-Choking</a> · physician-signed 2026-04-08</div>
+    </div>
+  </div>
+
+  <!-- 2: Safety-critical flag -->
+  <div class="bot-col">
+    <div class="co-card">
+      <span class="kind risk">Safety-critical</span>
+      <div class="text"><b>Age 2 yr</b> uses <em>child chest thrusts</em>, not infant back-blows, and never a blind finger-sweep. If patient goes unresponsive → begin <em>CPR with 30:2 single-rescuer</em>.</div>
+      <div class="act">
+        <button>Acknowledge</button>
+        <button>Source</button>
+      </div>
+      <div class="meta">src AHA BLS 2025 · physician-signed · auto-escalates to CPR script on unresponsive signal</div>
+    </div>
+  </div>
+
+  <!-- 3: Live clinical rubric -->
+  <div class="bot-col">
+    <div class="rubric-live">
+      <div class="h">
+        <span class="k">Clinical rubric · live</span>
+        <span class="big">0.82</span>
+      </div>
+      <div class="scale">last dispatcher utterance · HealthBench-Hard-aligned · 5 criteria</div>
+      <div class="crits">
+        <div class="crit"><span class="w">.45</span><span class="l">Age-appropriate technique (child chest thrusts, not infant)</span><span class="sc full">1.00</span></div>
+        <div class="crit"><span class="w">.25</span><span class="l">No blind finger-sweep language</span><span class="sc full">1.00</span></div>
+        <div class="crit"><span class="w">.15</span><span class="l">Maintains caller calm (no imperative escalation)</span><span class="sc partial">0.60</span></div>
+        <div class="crit"><span class="w">.10</span><span class="l">Explicit stop-if-object-dislodged clause</span><span class="sc zero">0.00</span></div>
+        <div class="crit"><span class="w">.05</span><span class="l">Prepares caller for ALS handoff</span><span class="sc partial">0.80</span></div>
+      </div>
+      <div class="meta">GPT-5.4-mini judge · 1.8 s behind · logged for weekly physician QI · <a href="#" style="color:var(--clinical);text-decoration:none">open transcript</a></div>
+    </div>
+  </div>
+
+  <!-- 4: Ask copilot + keyboard + telemetry -->
+  <div class="bot-col">
+    <div class="ask">
+      <label for="ask">Ask the copilot</label>
+      <input id="ask" placeholder="e.g. pediatric airway drugs, nearest peds ED, unit closest ETA, translate this phrase…">
+      <div class="telemetry">
+        <div><span class="v">182 ms</span><span class="l">STT</span></div>
+        <div><span class="v">420 ms</span><span class="l">LLM TTFT</span></div>
+        <div><span class="v">295 ms</span><span class="l">TTS</span></div>
+        <div><span class="v">0.92 s</span><span class="l">E2E p95</span></div>
+        <div><span class="v warn">3.08 s</span><span class="l">headroom · rule&nbsp;V4</span></div>
+      </div>
+      <div class="hint">
+        <span><kbd>/</kbd> focus</span>
+        <span><kbd>1-4</kbd> KQ</span>
+        <span><kbd>R</kbd> read aloud</span>
+        <span><kbd>T</kbd> translate</span>
+        <span><kbd>P</kbd> push EMS brief</span>
+        <span><kbd class="hot">F1</kbd> takeover voice-agent</span>
+        <span><kbd>Esc</kbd> mute TTS</span>
+      </div>
+    </div>
+  </div>
+
+</footer>
+
+</div>
+
+<script>
+/* Keyboard affordances designed for muscle-memory dispatch.
+   No mouse-hunting during a time-critical call. */
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === '/') { e.preventDefault(); document.getElementById('ask').focus(); }
+  if (e.key === 'F1') {
+    e.preventDefault();
+    alert('Voice-agent takeover requested — agent paused, dispatcher has the call.');
+  }
+  if (['1','2','3','4'].includes(e.key)) {
+    const btns = document.querySelectorAll('.q-options button');
+    const idx = parseInt(e.key, 10) - 1;
+    if (btns[idx]) { btns[idx].focus(); btns[idx].click(); }
+  }
+  if (e.key.toLowerCase() === 't') {
+    const translateCap = document.querySelector('.cap.translate');
+    if (translateCap) translateCap.classList.toggle('on');
+  }
+});
+
+/* Call timer — dispatchers see the same clock as the recorder */
+(function tick() {
+  const t = document.querySelector('.timer');
+  const parts = t.textContent.split(':').map(s => parseInt(s, 10));
+  let [h, m, s] = parts;
+  setInterval(() => {
+    s++;
+    if (s >= 60) { s = 0; m++; }
+    if (m >= 60) { m = 0; h++; }
+    t.innerHTML =
+      String(h).padStart(2, '0') + '<span class="sep">:</span>' +
+      String(m).padStart(2, '0') + '<span class="sep">:</span>' +
+      String(s).padStart(2, '0');
+  }, 1000);
+})();
+
+/* OHCA gauge: simulate the ML signal ticking up as more markers
+   accumulate — caller reports cyanosis + agonal breath puts it at
+   28% now; the number is a real Corti-style early-warning output. */
+(function ohcaTick() {
+  const nEl = document.querySelector('.ohca-gauge .num');
+  const barEl = document.querySelector('.ohca-gauge .bar > span');
+  const gaugeEl = document.querySelector('.ohca-gauge');
+  if (!nEl) return;
+  let v = 28;
+  setInterval(() => {
+    v += (Math.random() - 0.3) * 3;
+    v = Math.max(10, Math.min(82, v));
+    nEl.innerHTML = Math.round(v) + '<span class="pct">%</span>';
+    barEl.style.width = v + '%';
+    gaugeEl.classList.remove('elev', 'high');
+    if (v > 55) gaugeEl.classList.add('high');
+    else if (v > 22) gaugeEl.classList.add('elev');
+  }, 3800);
+})();
+</script>
+
+</body>
+</html>

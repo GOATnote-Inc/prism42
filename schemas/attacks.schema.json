@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prism.goatnote.ai/schemas/attacks.schema.json",
+  "title": "Prism Attacks",
+  "description": "Attacker output: targeted attempts to violate defender invariants.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "round", "attacks"],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,}-[A-Z]+-[A-Z0-9]{3,}$",
+      "description": "Must equal case.json/case_id."
+    },
+    "round": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Adversarial iteration index, aligned with invariants.round."
+    },
+    "attacks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "invariant_id", "input_pattern", "expected_violation", "confidence"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ATK-\\d{3}$",
+            "description": "Attack identifier."
+          },
+          "invariant_id": {
+            "type": "string",
+            "pattern": "^INV-\\d{3}$",
+            "description": "Target invariant id; must exist in invariants.json."
+          },
+          "input_pattern": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Description of the adversarial input shape."
+          },
+          "expected_violation": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Observable behaviour the attacker predicts."
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Attacker's confidence the violation will trigger."
+          }
+        }
+      }
+    }
+  }
+}

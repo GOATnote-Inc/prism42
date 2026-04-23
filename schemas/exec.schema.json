@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prism.goatnote.ai/schemas/exec.schema.json",
+  "title": "Prism Execution Report",
+  "description": "Executor output: reproducible compile+run record for a proof-of-concept attack.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "run_id", "rail", "run", "verdict"],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,}-[A-Z]+-[A-Z0-9]{3,}$",
+      "description": "Must equal case.json/case_id."
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "UUID identifying this execution run."
+    },
+    "rail": {
+      "type": "string",
+      "enum": ["cuda", "cute", "nki", "clinical"],
+      "description": "Backend selected by coordinator/executor."
+    },
+    "compile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duration_sec", "exit", "stderr"],
+      "properties": {
+        "duration_sec": { "type": "number" },
+        "exit": { "type": "integer" },
+        "stderr": { "type": "string" }
+      },
+      "description": "Compile step record; optional when rail is 'clinical' (no compile step)."
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duration_sec", "exit", "stdout", "stderr"],
+      "properties": {
+        "duration_sec": { "type": "number" },
+        "exit": { "type": "integer" },
+        "stdout": { "type": "string" },
+        "stderr": { "type": "string" }
+      },
+      "description": "Runtime record; always required."
+    },
+    "verdict": {
+      "type": "string",
+      "pattern": "^(attack_succeeded|attack_failed|poc_compile_error|execution_timeout|execution_deferred_[a-z_]+)$",
+      "description": "Executor's structural verdict; the adjudicator consumes this."
+    },
+    "host": {
+      "type": "object",
+      "description": "Optional runtime-host metadata (pod id, gpu model, driver version)."
+    }
+  }
+}

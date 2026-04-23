@@ -1,0 +1,87 @@
+name: Daily orchestrator (Tier-1 autonomy)
+
+# Runs scripts/orchestrator.py once per day in the cloud — no laptop-on
+# requirement. The orchestrator plans → executes → verifies → opens a
+# draft PR. Never auto-merges. See findings/long-horizon-architecture-2026-04-22.md
+# for the full design.
+#
+# Trigger: cron 09:00 UTC daily. During PDT (Mar-Nov) that's 02:00 PT;
+# during PST (Nov-Mar) that's 01:00 PT. Both are in the "overnight"
+# band the user specified.
+#
+# Also exposes workflow_dispatch for manual runs (e.g. post-PR-close
+# to verify the fresh orchestrator produces a clean PR).
+
+on:
+  # Scheduled trigger disabled 2026-04-23 pending two preconditions:
+  #   1. ANTHROPIC_API_KEY secret provisioned in repo Actions settings.
+  #   2. `make verify-all` green on a fresh runner (PY fallback landed).
+  # Re-enable by restoring the `schedule:` block below. Manual runs
+  # remain available via the Actions UI (workflow_dispatch).
+  # schedule:
+  #   - cron: "0 9 * * *"   # 09:00 UTC = 01:00 PST / 02:00 PDT
+  workflow_dispatch:       # manual trigger
+
+# The job needs to create branches, push, and open PRs.
+permissions:
+  contents: write
+  pull-requests: write
+
+# Prevent overlapping runs.
+concurrency:
+  group: daily-orchestrator
+  cancel-in-progress: false
+
+jobs:
+  orchestrator:
+    name: Plan → execute → verify → draft PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Secrets — set these in repo settings → Secrets and variables → Actions
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      PRISM_ORCHESTRATOR_COMMIT: "1"
+      # GH CLI auth comes free from GITHUB_TOKEN.
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0       # full history — orchestrator reads git log --since
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.email "orchestrator@goatnote.app"
+          git config user.name "Prism orchestrator"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'jsonschema' 'pytest' 'pyyaml>=6.0' 'anthropic>=0.96.0'
+
+      - name: Preflight — manifests present?
+        run: |
+          test -f agents/manifest.yaml || { echo "::error::agents/manifest.yaml missing; register_agents.py --commit has not run"; exit 1; }
+          test -f skills/manifest.yaml || { echo "::error::skills/manifest.yaml missing; register_skills.py --commit has not run"; exit 1; }
+          echo "manifests OK"
+
+      - name: Preflight — verify-all green?
+        run: make verify-all
+
+      - name: Run orchestrator
+        run: python scripts/orchestrator.py --commit
+
+      - name: Upload run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orchestrator-run-${{ github.run_id }}
+          path: results/orchestrator/
+          retention-days: 30
+          if-no-files-found: warn

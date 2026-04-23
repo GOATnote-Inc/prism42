@@ -1,0 +1,7 @@
+{
+  "case_id": "KERNEL-GOLDEN",
+  "target_domain": "gpu",
+  "target_path": "kernel/hopper/fmha_fwd_fp8.cu",
+  "rail_hint": "cuda",
+  "notes": "Golden-case regression anchor. Synthetic fp8 attention-forward fixture used to exercise every schema and every cross-reference rule in the Prism L3 verification layer. Not a real vendor finding."
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prism.goatnote.ai/schemas/report.frontmatter.schema.json",
+  "title": "Prism Report Front-matter",
+  "description": "YAML front-matter parsed from report.md. Mirrors the smallest structured index a downstream reader needs without parsing the full prose body.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "target", "class", "severity_estimate", "invariant_id", "attack_id"],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,}-[A-Z]+-[A-Z0-9]{3,}$",
+      "description": "Must equal case.json/case_id."
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-friendly target description (often echoes case.target_path)."
+    },
+    "class": {
+      "type": "string",
+      "enum": ["numerical", "memory", "concurrency", "precision", "other"],
+      "description": "Matches invariant.class taxonomy."
+    },
+    "severity_estimate": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "informational"],
+      "description": "Severity claimed in the report body."
+    },
+    "invariant_id": {
+      "type": "string",
+      "pattern": "^INV-\\d{3}$",
+      "description": "Must exist in invariants.json/invariants[].id."
+    },
+    "attack_id": {
+      "type": "string",
+      "pattern": "^ATK-\\d{3}$",
+      "description": "Must exist in attacks.json/attacks[].id."
+    },
+    "rail": {
+      "type": "string",
+      "enum": ["cuda", "cute", "nki", "clinical"],
+      "description": "Optional mirror of exec.json/rail."
+    },
+    "status": {
+      "type": "string",
+      "description": "Optional disposition annotation (e.g., 'draft', 'final', 'embargoed')."
+    },
+    "disclosure_target": {
+      "type": "string",
+      "description": "Optional mirror of verdict.disclosure_target."
+    },
+    "embargo_channel": {
+      "type": "string",
+      "enum": ["GHSA", "direct-email", "N/A"],
+      "description": "Optional mirror of verdict.embargo_channel."
+    }
+  }
+}

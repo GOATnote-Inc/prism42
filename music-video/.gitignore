@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+build/
+dist/
+.venv/
+venv/
+
+# Prism
+.prism-cache/
+out/
+*.mp4
+*.mov
+*.mp3
+*.wav
+*.m4a
+
+# Generated example assets (regenerate with `make assets`)
+examples/clips/*
+!examples/clips/.gitkeep
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
