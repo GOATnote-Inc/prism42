@@ -193,75 +193,81 @@ by ~50–100 ms. Worth the migration once the demo is load-tested.
 
 ## 4. Create the ElevenLabs ConvAI agent
 
-### 4.1 Agent creation (multi-step wizard, April 2026)
+### 4.1 Agent creation — API-driven (recommended)
 
-The ConvAI dashboard is a wizard, not a flat single-page config.
-Verified via live setup 2026-04-23.
+The dashboard GUI preselects an LLM (Claude Sonnet 4.6 as of
+2026-04-23) and a telehealth-themed system prompt template, and
+there's no guided wizard to swap them out. Use the REST API
+instead, driven by the same double-gate pattern as Anthropic:
 
-1. Go to <https://elevenlabs.io/app/conversational-ai>.
-2. Click **Create new assistant**. Choose **Blank template**.
-3. **Name**: `prism42` (or any identifier).
-4. **First message** — the spoken greeting. Example:
-   > "9-1-1 what is the location of your emergency?"
-   Keep it terse; the caller will feel interrogated if the
-   greeting is long.
-5. **System prompt** — this is the prompt ElevenLabs passes to
-   our custom-LLM endpoint in `messages[0].content`. Paste:
-   ```
-   You are a PSAP call-taker simulation. Follow the routing
-   instructions from the custom-LLM backend verbatim — the
-   backend coordinates a 14-agent stack and returns the exact
-   words you should speak.
+```bash
+# Dry-run — no network, prints the exact POST body
+.venv/bin/python3 scripts/register_elevenlabs_agent.py
 
-   Session-ID: {{session_id}}
-   ```
-   The **Session-ID line is mandatory** — our endpoint greps
-   it out (see `app/prism42/api/chat/completions/route.ts`
-   `SESSION_ID_FROM_SYSTEM`) so the dispatcher console
-   subscribes to the right session stream. ElevenLabs templates
-   `{{session_id}}` from the widget's `dynamic-variables`
-   attribute at call time.
-6. **Knowledge base**: skip. Our custom-LLM backend owns
-   retrieval.
-7. **Select voice**: pick any neutral American-English preset.
-   Do NOT use a voice clone (healthcare-compliance posture).
-8. **Test AI agent** button — speak a test utterance. The
-   agent's response at this stage uses ElevenLabs' default
-   LLM; Step 10 switches it to ours.
-9. **Complete your agent** wizard step — this is the
-   evaluation-criteria bootstrap. Fields:
-   - **Agent Name**: (carried from step 3)
-   - **Website** (optional): `https://www.thegoatnote.com/prism42`
-   - **Main Goal**: this is the goal ElevenLabs feeds to its
-     evaluation-criteria auto-generator. Paste:
-     ```
-     Guide a 911-style simulated caller through GEDP v0.1 dispatch
-     protocol turns while our custom-LLM backend handles clinical
-     content. Every turn must pass the backend's self_verify gate
-     before being spoken. Never claim to be a real emergency line.
-     ```
-     ElevenLabs will generate evaluation criteria from this
-     text; review + accept.
-   - **Chat only** toggle: OFF (we want voice).
-10. **LLM** tab → select **Custom LLM**. Endpoint URL:
-    ```
-    https://www.thegoatnote.com/prism42/api/chat/completions
-    ```
-    (or `https://prism42-console.vercel.app/prism42/api/chat/completions`
-    — both work; production uses the domain once the rewrite is
-    in place.) No API key needed — the endpoint is public and
-    returns OpenAI-compatible SSE.
-11. **Security** tab:
-    - Disable **Authentication** (required for public widget
-      embed; the custom element can't carry auth).
-    - Add `www.thegoatnote.com` to the **Allowlist** of
-      hostnames (add preview URLs for testing).
-12. **Analysis** tab → **Evaluation Criteria**: review the
-    auto-generated criteria from Main Goal. Confirm they fire
-    on the conversations you care about. You can add custom
-    ones like `hallucination_kb`.
-13. **Save** the agent. Copy the agent id from the top of the
-    page (URL pattern: `elevenlabs.io/app/conversational-ai/<agent-id>`).
+# Real create (requires PRISM_ELEVENLABS_COMMIT=1 + ELEVENLABS_API_KEY sourced)
+(set -a; source .env; set +a; \
+  PRISM_ELEVENLABS_COMMIT=1 \
+  .venv/bin/python3 scripts/register_elevenlabs_agent.py --commit)
+```
+
+On success the script:
+
+- POSTs to `https://api.elevenlabs.io/v1/convai/agents/create`
+  with the body from `agents/prism42-elevenlabs.yaml`
+- Writes `agents/elevenlabs-manifest.yaml` with the returned
+  `agent_id`
+- Prints the agent id for you to paste into Vercel
+  (`NEXT_PUBLIC_ELEVENLABS_AGENT_ID`)
+
+The agent's system prompt is the minimum to pass-through the
+`Session-ID: {{session_id}}` dynamic variable — our custom-LLM
+backend REPLACES it with the 14-role coordinator prompt
+anyway. Voice / first message / turn timing / language are all
+set at create time; the user can override any of them in the
+dashboard post-hoc without risk of this script clobbering them
+on re-run (PATCH is additive when the manifest carries an id).
+
+### 4.2 Re-running — PATCH over POST
+
+Once `agents/elevenlabs-manifest.yaml` exists, the script
+auto-switches to `PATCH /v1/convai/agents/:id`. Useful when:
+
+- Rotating the custom-LLM URL (say, after wiring
+  `www.thegoatnote.com/prism42` rewrite)
+- Tightening SP-001 language in the ElevenLabs pass-through
+- Adding a new dynamic variable beyond `session_id`
+
+`--replace` forces a fresh POST (the old agent is left orphaned
+— clean it up from the dashboard, or leave it, ElevenLabs
+doesn't charge per idle agent).
+
+### 4.3 Dashboard post-hoc tweaks (safe)
+
+These settings are NOT in `prism42-elevenlabs.yaml` by design —
+omitting them means PATCH leaves whatever the dashboard has set:
+
+- **Voice** (the user's current pick: "Eric - Smooth,
+  Trustworthy") — stays unless explicitly overridden in YAML
+- **First message** — the widget's spoken greeting
+- **Security → Allowlist** — add `www.thegoatnote.com` +
+  preview domains to restrict widget embed origin
+- **Security → Authentication** — must be disabled for the
+  public `<elevenlabs-convai>` widget embed to work
+
+### 4.4 Current live agent (2026-04-23)
+
+```
+agent_id: agent_4501kpybsax0fwab52xybfaa9mna
+```
+
+Already set in the Vercel project's
+`NEXT_PUBLIC_ELEVENLABS_AGENT_ID` env var (Production +
+Development). Smoke-test verified — calling
+`/prism42/api/chat/completions` with `Session-ID:
+aaaa-bbbb-cccc-dddd-eeee` and the user utterance "my husband
+just collapsed in the kitchen" returned the PSAP-intake agent's
+correct first response: "Okay, help is on the way. What is the
+address of the emergency?"
 
 ### 4.2 Paste the agent id into Vercel env
 

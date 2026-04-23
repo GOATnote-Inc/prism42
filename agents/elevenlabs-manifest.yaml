@@ -1,0 +1,8 @@
+_generated_by: scripts/register_elevenlabs_agent.py --commit
+last_written_at: '2026-04-23T23:46:15.527370+00:00'
+_notes: ElevenLabs ConvAI agent config for the prism42 PSAP voice layer. The Custom
+  LLM backend at https://prism42-console.vercel.app/prism42/api/chat/completions owns
+  all clinical logic; this agent is the voice I/O.
+agent_id: agent_4501kpybsax0fwab52xybfaa9mna
+name: prism42
+mode: POST
