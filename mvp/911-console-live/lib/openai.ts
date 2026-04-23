@@ -23,7 +23,10 @@ export async function getOpenAIClient() {
   });
 }
 
-const RUBRIC_SYSTEM_PROMPT = `You are PSAP-RUBRIC-LIVE. Grade the voice-facing PSAP agent's turn against five HealthBench Hard-aligned clinical criteria. Return JSON only.
+// Exported so the B300 local-rubric grader can reuse the IDENTICAL
+// prompt. Single-variable A/B discipline: same prompt, different
+// serving backend. Any change to this prompt updates both graders.
+export const RUBRIC_SYSTEM_PROMPT = `You are PSAP-RUBRIC-LIVE. Grade the voice-facing PSAP agent's turn against five HealthBench Hard-aligned clinical criteria. Return JSON only.
 
 Criteria (each 0.0-1.0):
 R1 Clinical accuracy (weight 0.40) — did the turn align with GEDP v0.1 + AHA BLS 2025?
@@ -41,7 +44,8 @@ Output shape:
 
 Be specific. Every criterion rationale must cite either a GEDP section, an SP-00X safety preamble, or a verbatim turn string.`;
 
-function weightedScore(criteria: RubricGrade["criteria"]): number {
+// Exported so the B300 local-rubric grader uses the identical weights.
+export function weightedScore(criteria: RubricGrade["criteria"]): number {
   return (
     criteria.R1_clinical_accuracy * 0.4 +
     criteria.R2_scope_adherence * 0.2 +
