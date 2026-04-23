@@ -1,0 +1,54 @@
+_generated_by: scripts/register_psap_agents.py --commit
+_registered_at: '2026-04-23T23:24:06.987142+00:00'
+_notes: "Registers the 14-agent PSAP stack plus 2 governance agents. psap-rubric-live\
+  \ (the GPT-5.5 hot path) is intentionally NOT here \u2014 it runs as a runtime OpenAI\
+  \ chat-completion call outside Managed Agents for cross-vendor independence. The\
+  \ psap-rubric-live-shim is the Anthropic-hosted circuit-breaker fallback that fires\
+  \ when both OpenAI models are unavailable (expected < 0.5% of sessions)."
+environment_id: env_01Nbmp5KCzCKfkcJgZdHhngY
+agents:
+  psap-intake:
+    id: agent_011CaMZieUiRPdS7veqNFHb4
+    version: 1
+  psap-triage:
+    id: agent_011CaMZifdvLtARqFExnd2kG
+    version: 1
+  psap-dispatch:
+    id: agent_011CaMZigpc9Bh2HFByzRVfQ
+    version: 1
+  psap-pdi:
+    id: agent_011CaMZihrNc6P667xnAPPN9
+    version: 1
+  psap-handoff:
+    id: agent_011CaMZiisPq8TBybeKmRfpJ
+    version: 1
+  psap-safety-monitor:
+    id: agent_011CaMZijuePQcWFNPtn6EhC
+    version: 1
+  psap-ohca-detector:
+    id: agent_011CaMZim477J1y5dHzGyyWo
+    version: 1
+  psap-intent-verifier:
+    id: agent_011CaMZin5ruusXcYoVAmRvQ
+    version: 1
+  psap-rubric-live-shim:
+    id: agent_011CaMZioKXJWzgiCKiPBKDM
+    version: 1
+  psap-auditor:
+    id: agent_011CaMZipM3sLnYtQkyTnnXN
+    version: 1
+  psap-qi-reviewer:
+    id: agent_011CaMZiqYyRwXoHx6kQrcWf
+    version: 1
+  psap-team-coordinator:
+    id: agent_011CaMZirdiPJkw1nBmeyK63
+    version: 1
+  prism-ci-safety-expert:
+    id: agent_011CaMZisss3WaiNxbi8yJLC
+    version: 1
+  prism-release-gate:
+    id: agent_011CaMZitw8Ary3cBTCuEtwr
+    version: 1
+not_registered:
+  psap-rubric-live: runs as runtime OpenAI chat-completion call (GPT-5.5 primary,
+    GPT-5.4 fallback); the Anthropic-hosted shim above is the emergency-only circuit-breaker
