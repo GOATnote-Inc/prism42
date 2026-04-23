@@ -30,7 +30,7 @@ repos:
 
       - id: block-internal-paths
         name: Block internal-path references in staged adds
-        entry: bash -c 'blocked=$(git diff --cached --name-only --diff-filter=AM 2>/dev/null | grep -E "^(corpus/reproducers/|corpus/fa_bugs\.yaml$|corpus/kernel_bugs\.yaml$|findings/disclosure-draft/|findings/private/|scripts/verify_flip\.sh$|scripts/pre_flip_audit\.|docs/disclosure-playbook\.md$|docs/mla-corpus/)" || true); if [ -n "$blocked" ]; then echo "Staged path is on the internal-paths denylist:"; echo "$blocked"; echo ""; echo "These paths are reserved for off-tree/private use and must not be committed."; exit 1; fi'
+        entry: bash -c 'blocked=$(git diff --cached --name-only --diff-filter=AM 2>/dev/null | grep -E "^(corpus/reproducers/|corpus/kernel_bugs\.yaml$|findings/disclosure-draft/|findings/private/|scripts/verify_flip\.sh$|scripts/pre_flip_audit\.|docs/disclosure-.*\.md$|docs/mla-corpus/)" || true); if [ -n "$blocked" ]; then echo "Staged path is on the internal-paths denylist:"; echo "$blocked"; echo ""; echo "These paths are reserved for off-tree/private use and must not be committed."; exit 1; fi'
         language: system
         pass_filenames: false
         always_run: true

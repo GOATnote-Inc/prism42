@@ -52,9 +52,9 @@ findings/disclosure-draft/
 # and stays out of the public tree. KERNEL-GOLDEN (synthetic fixture) is
 # deliberately not ignored — it is allowed and used by `make validate-golden`.
 corpus/reproducers/
-corpus/fa_bugs.yaml
+corpus/kernel_bugs.yaml
 corpus/BACKFILL_NOTES.md
-cases/<redacted>-*.json
+cases/KERNEL-BUG-*.json
 docs/pre-flip-audit-*.md
 scripts/verify_flip.sh
 

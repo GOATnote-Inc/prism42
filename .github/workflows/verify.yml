@@ -63,12 +63,11 @@ jobs:
           set -u
           blocked=$(find . \
             -path "./corpus/reproducers/*" -o \
-            -name "fa_bugs.yaml" -o \
             -name "kernel_bugs.yaml" -o \
             -path "./findings/disclosure-draft/*" -o \
             -name "verify_flip.sh" -o \
             -name "pre_flip_audit.*" -o \
-            -name "disclosure-playbook.md" -o \
+            -name "disclosure-*.md" -o \
             -path "./docs/mla-corpus/*" \
             2>/dev/null | grep -v '.git/' | grep -v 'findings/private/' || true)
           if [ -n "$blocked" ]; then

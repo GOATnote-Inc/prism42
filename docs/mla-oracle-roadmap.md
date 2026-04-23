@@ -136,13 +136,9 @@ Phase M **never touches**:
 
 ## 5. Disclosure posture
 
-The three target bugs (SGLang #10284, vLLM #38439, FlashInfer #3047) are **already public** GitHub issues filed by other users. Prism's role is **executed verification**, not zero-day disclosure. The arxiv paper cites them by issue number directly; `embargo_channel` in each verdict is `"N/A"`.
+The three target bugs (SGLang #10284, vLLM #38439, FlashInfer #3047) are **already public** GitHub issues filed by other users. Prism's role is **executed verification**, not zero-day disclosure. The arxiv paper cites them by issue number directly.
 
-If M6/M7 runs surface **novel** correctness failures (not mentioned in any public issue), those route through `docs/disclosure-playbook.md`:
-- Drafts land in `findings/private/drafts/` (gitignored).
-- Held until 90-day embargo expires post-maintainer-ack.
-- Referenced in arxiv v1 only as generic "N additional unconfirmed divergences under disclosure embargo".
-- Public arxiv v2 adds details once embargo lifts.
+Novel correctness failures (not covered by any public issue) route off-tree via the research posture described in `docs/kernel-research-posture.md` — private channels maintained by the research lead, never through this repo.
 
 ## 6. Budget
 

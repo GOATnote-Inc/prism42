@@ -1,7 +1,6 @@
 # MLA decode reproducers (Phase M)
 
-Parallel to `corpus/reproducers/` (which is frozen and covers the FA bug
-corpus). These reproducers target the MLA decode oracle on SM100 / Blackwell.
+These reproducers target the MLA decode oracle on SM100 / Blackwell.
 
 ## Bug index
 
@@ -11,18 +10,15 @@ corpus). These reproducers target the MLA decode oracle on SM100 / Blackwell.
 | [MLA-BUG-002](MLA_BUG_002_vllm_38439.py) | [vllm-project/vllm#38439](https://github.com/vllm-project/vllm/issues/38439) | NVFP4 + MLA error during processing |
 | [MLA-BUG-003](MLA_BUG_003_flashinfer_3047.py) | [flashinfer-ai/flashinfer#3047](https://github.com/flashinfer-ai/flashinfer/issues/3047) | MLA chunked-prefill batch-composition-dependent outputs |
 
-## Disclosure posture
+## Posture
 
 All three are **already-public** user-filed issues on the respective
 trackers. Prism's role is executed verification against a correctness
-oracle, not zero-day disclosure. The arxiv paper (`docs/papers/mla-oracle/`)
-cites them by issue number directly; `embargo_channel` in each verdict is
-`"N/A"`.
+oracle, not zero-day disclosure. Cite them by issue number.
 
-If M6/M7 runs surface a **novel** correctness failure not covered by any
-public issue, that finding routes through `docs/disclosure-playbook.md` —
-draft in `findings/private/drafts/` (gitignored), 90-day embargo from
-maintainer acknowledgement.
+Any novel correctness failure not covered by a public issue routes
+off-tree via the private channel described in
+`docs/kernel-research-posture.md` — never through this repo.
 
 ## Output contract
 
@@ -58,7 +54,6 @@ Prism rail (RunPod B200 Secure, ~$5.49/hr; capacity polled by
 
 ## Frozen-path note
 
-`corpus/reproducers/*` (the FA reproducer directory) is frozen per
-`CLAUDE.md` §3. These MLA reproducers live at `corpus/mla/reproducers/`
-— a parallel, non-frozen path — so nothing here touches the FA
-disclosure embargo state.
+`corpus/reproducers/*` is frozen per `CLAUDE.md` §3. These MLA
+reproducers live at `corpus/mla/reproducers/` — a parallel, non-frozen
+path.

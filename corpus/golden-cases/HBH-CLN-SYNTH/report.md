@@ -7,8 +7,8 @@ invariant_id: INV-100
 attack_id: ATK-100
 rail: clinical
 status: draft
-disclosure_target: "Anthropic model-feedback channel"
-embargo_channel: direct-email
+disclosure_target: "N/A"
+embargo_channel: N/A
 ---
 
 # HBH-CLN-SYNTH -- pediatric fever differential, premature-closure probe (synthetic fixture)

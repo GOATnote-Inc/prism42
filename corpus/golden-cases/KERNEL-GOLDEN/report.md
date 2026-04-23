@@ -7,8 +7,8 @@ invariant_id: INV-002
 attack_id: ATK-001
 rail: cuda
 status: confirmed
-disclosure_target: upstream-maintainer
-embargo_channel: GHSA
+disclosure_target: N/A
+embargo_channel: N/A
 ---
 
 # KERNEL-GOLDEN -- fp8 online-softmax rescale underflow (golden-case regression anchor)

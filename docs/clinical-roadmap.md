@@ -139,7 +139,7 @@ Seven tasks that do not touch clinical corpus content, do not make live API call
 - **Agent**: external (parallel session owns this; do not interfere)
 - **Blocks**: all T-phase work
 - **Blocked by**: parallel session completing T4
-- **Gate criteria** (from spec §1): ≥80% recall on known-fixed bugs, ≤20% false-positive rate on FA corpus
+- **Gate criteria** (from spec §1): ≥80% recall on known-fixed bugs, ≤20% false-positive rate on kernel-bug corpus
 - **Verification**: parallel session writes gate-pass artifact; this session reads it (no modifications to `corpus/reproducers/*`)
 
 ### G2 — Record T4 gate result machine-readably

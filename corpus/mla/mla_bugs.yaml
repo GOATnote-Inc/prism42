@@ -2,17 +2,19 @@
 #
 # Phase M (MLA decode oracle). See docs/mla-oracle-roadmap.md §3 M5.
 #
-# Structural parallel to corpus/kernel_bugs.yaml. Unlike the FA corpus (which
-# tracks historical fixed bugs with fix_sha + PR), the MLA corpus tracks
-# OPEN bugs — user-filed reports on the SGLang / vLLM / FlashInfer trackers
-# that remain unresolved. Prism's role is executed verification against a
-# correctness oracle, not zero-day disclosure: every entry here is a public
-# GitHub issue that any reader can open in a browser.
+# Structural parallel to the gitignored kernel-bug corpus. Unlike that
+# corpus (which tracks historical fixed bugs with fix_sha + PR), the MLA
+# corpus tracks OPEN bugs — user-filed reports on the SGLang / vLLM /
+# FlashInfer trackers that remain unresolved. Prism's role is executed
+# verification against a correctness oracle, not zero-day disclosure:
+# every entry here is a public GitHub issue that any reader can open
+# in a browser.
 #
-# Disclosure posture (docs/disclosure-playbook.md):
-#   - These three bugs cite directly; embargo_channel="N/A".
-#   - Any NOVEL correctness failure surfaced by the oracle during M6/M7
-#     runs routes through findings/private/drafts/ instead (90-day embargo).
+# Disclosure posture: see docs/kernel-research-posture.md.
+#   - These three bugs are already public; cite directly.
+#   - Any NOVEL correctness failure surfaced by the oracle during
+#     M6/M7 runs routes off-tree via the private channel described
+#     in the research-posture doc, never through this repo.
 #
 # All three bugs are SM100-specific (require B200/GB200 hardware to
 # trigger). Reproducers guard on REQUIRED_CC=(10, 0) and defer cleanly

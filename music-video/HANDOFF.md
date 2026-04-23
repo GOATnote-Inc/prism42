@@ -123,7 +123,7 @@ for the music-video rules.
 1. **Live Claude smoke test** — `make demo` with `ANTHROPIC_API_KEY` set. Inspect `out/song__16x9__director.json` — is Claude's reasoning coherent? Does the plan respect `best_use`? If not, tune `SYSTEM` prompts in `src/prism/vision/tag.py` and `src/prism/director/plan.py`.
 2. **Replace synthetic assets for the real demo** — find ~20 CC-BY clips + one CC-BY song (Pixabay Music, Pexels, FMA). Save to `examples/clips/` and `examples/song.mp3`. These are gitignored so no licensing risk to the repo.
 3. **Record the 3-min demo video** — shot list in `docs/DEMO_SCRIPT.md`.
-4. **Repo already exists** at `GOATnote-Inc/prism` (umbrella). `music-video/` is a subtree; push normally with `git push origin main`. Flip umbrella public at submission only if embargo allows (see root `CLAUDE.md` §6).
+4. **Repo already exists** at `GOATnote-Inc/prism42` (umbrella). `music-video/` is a subtree; push normally with `git push origin main`.
 5. **Fill submission form** — summary ready in `docs/SUBMISSION.md`.
 
 ## Stretch improvements (if time allows)

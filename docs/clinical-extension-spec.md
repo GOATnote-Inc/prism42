@@ -16,7 +16,7 @@ Two domains, one harness, one cinematic methodology beat in the demo video. This
 
 The hackathon problem-statement fit is **"Build From What You Know"**: an emergency physician noticed the failure modes of GPU kernels (numerical, boundary, race) map structurally onto the failure modes of clinical reasoning (premature closure, context loss under distraction, safety-rail bypass) — and built one harness that audits both.
 
-**This extension does not reduce the GPU primary.** It is gated: no work on clinical target begins until the T4 FA-corpus validation gate passes (≥80% recall on known-fixed bugs, ≤20% false-positive rate). If T4 slips past Friday local time, the clinical extension is cut, Prism ships single-target, and no apology is owed — the gate exists precisely to prevent scope-creep regret.
+**This extension does not reduce the GPU primary.** It is gated: no work on clinical target begins until the T4 kernel-bug-corpus validation gate passes (≥80% recall on known-fixed bugs, ≤20% false-positive rate). If T4 slips past Friday local time, the clinical extension is cut, Prism ships single-target, and no apology is owed — the gate exists precisely to prevent scope-creep regret.
 
 ---
 
