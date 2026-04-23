@@ -46,37 +46,60 @@ Anthropic fallback that raises `self_grade_flag`.
 
 ## 2. Deploy mvp/911-console-live/ to Vercel
 
-### 2.1 Create the project
+### Current state (2026-04-23)
+
+- Project linked: `goatnote/prism42-console`
+- Production URL: <https://prism42-console.vercel.app>
+- Latest deployment ID: `dpl_HBP7Uwve7kSiz8LjNQ4EVfMKGFSL`
+- Env vars set: **NONE** — this is the outstanding blocker
+- Static pages (`/prism42`, `/prism42/safety`, `/prism42/evidence`)
+  return 200 and render; API endpoints return 500 until env vars
+  land (the Anthropic / OpenAI clients throw on empty keys).
+
+### 2.1 Add env vars via dashboard
+
+Vercel CLI's `vercel env add` is interactive and can't accept a
+piped secret value from this repo's `.env` without reading the
+file — which violates the hard rule on credential reads. Use the
+dashboard:
+
+1. <https://vercel.com/goatnote/prism42-console/settings/environment-variables>
+2. Add each of the following, scope = **Production, Preview, Development**:
+
+   | Key | Value source |
+   |---|---|
+   | `ANTHROPIC_API_KEY` | repo `.env` (`ANTHROPIC_API_KEY=…`) |
+   | `OPENAI_API_KEY` | repo `.env` (`OPENAI_API_KEY=…`) |
+   | `PRISM42_COORDINATOR_AGENT_ID` | `agent_011CaMZirdiPJkw1nBmeyK63` (the psap-team-coordinator id from `agents/psap-manifest.yaml`, 2026-04-23) |
+   | `NEXT_PUBLIC_ELEVENLABS_AGENT_ID` | set after Step 4 (ElevenLabs agent creation) |
+
+3. Mark the two API keys as **Sensitive**.
+
+### 2.2 Re-deploy so the env vars take effect
 
 ```bash
 cd mvp/911-console-live
-vercel link              # select or create project "prism42-console"
-vercel env add           # add each key below (Production + Preview)
+vercel deploy --prod --yes
 ```
 
-Required env vars:
-
-| Key | Value | Scope |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | your Anthropic key | Production, Preview |
-| `OPENAI_API_KEY` | your OpenAI key (for the rubric grader) | Production, Preview |
-| `PRISM42_COORDINATOR_AGENT_ID` | from `agents/psap-manifest.yaml` | Production |
-| `NEXT_PUBLIC_ELEVENLABS_AGENT_ID` | set after Step 3 | Production, Preview |
-
-### 2.2 Deploy
+### 2.3 Create the project from scratch (if starting fresh)
 
 ```bash
-vercel deploy             # preview URL — smoke-test here first
-vercel deploy --prod      # promote to production
+cd mvp/911-console-live
+vercel link --yes --project prism42-console
+# Then the env-vars setup above, then:
+vercel deploy --yes
+
 ```
 
 The deploy reads `mvp/911-console-live/vercel.json` for per-function
-timeouts (60 s for `/api/chat/completions`, 300 s for SSE streams).
+timeouts (60 s for `/prism42/api/chat/completions`, 300 s for SSE
+streams).
 
-### 2.3 Smoke-test the preview
+### 2.4 Smoke-test the live endpoint
 
 ```bash
-curl -N -X POST https://<preview-url>/prism42/api/chat/completions \
+curl -N -X POST https://prism42-console.vercel.app/prism42/api/chat/completions \
   -H 'Content-Type: application/json' \
   -d '{"model":"prism42-coordinator","stream":true,
        "messages":[{"role":"user","content":"hello"}],
@@ -84,7 +107,9 @@ curl -N -X POST https://<preview-url>/prism42/api/chat/completions \
 ```
 
 You should see SSE chunks in the OpenAI `chat.completion.chunk`
-format ending with `data: [DONE]`.
+format ending with `data: [DONE]`. If you get a 500, check
+`vercel logs --prod` — most likely cause is a missing env var
+from §2.1.
 
 ---
 
@@ -168,32 +193,75 @@ by ~50–100 ms. Worth the migration once the demo is load-tested.
 
 ## 4. Create the ElevenLabs ConvAI agent
 
-### 4.1 Agent creation (dashboard)
+### 4.1 Agent creation (multi-step wizard, April 2026)
+
+The ConvAI dashboard is a wizard, not a flat single-page config.
+Verified via live setup 2026-04-23.
 
 1. Go to <https://elevenlabs.io/app/conversational-ai>.
-2. Click **Create agent**, pick a preset (we use a neutral
-   American-English voice; no voice cloning for healthcare
-   posture).
-3. In the agent's **LLM** tab, select **Custom LLM**. Point at:
+2. Click **Create new assistant**. Choose **Blank template**.
+3. **Name**: `prism42` (or any identifier).
+4. **First message** — the spoken greeting. Example:
+   > "9-1-1 what is the location of your emergency?"
+   Keep it terse; the caller will feel interrogated if the
+   greeting is long.
+5. **System prompt** — this is the prompt ElevenLabs passes to
+   our custom-LLM endpoint in `messages[0].content`. Paste:
    ```
-   https://www.thegoatnote.com/prism42/api/chat/completions
-   ```
-   (or `https://prism42-console.vercel.app/prism42/api/chat/completions`
-   for the direct URL — both work.)
-4. In the **Security** tab:
-   - Disable authentication (required for public widget embed).
-   - Add `www.thegoatnote.com` to the **Allowlist** of hostnames
-     (add preview URLs for testing).
-5. In the agent's **System prompt**, include this single line so our
-   custom-LLM endpoint can route turns to the dispatcher console:
-   ```
+   You are a PSAP call-taker simulation. Follow the routing
+   instructions from the custom-LLM backend verbatim — the
+   backend coordinates a 14-agent stack and returns the exact
+   words you should speak.
+
    Session-ID: {{session_id}}
    ```
-   ElevenLabs templates `{{session_id}}` from the widget's
-   `dynamic-variables` attribute. Our endpoint greps it out of
-   `messages[0].content` (see `app/prism42/api/chat/completions/
-   route.ts:SESSION_ID_FROM_SYSTEM`).
-6. **Save** the agent. Copy the agent id (top of the page).
+   The **Session-ID line is mandatory** — our endpoint greps
+   it out (see `app/prism42/api/chat/completions/route.ts`
+   `SESSION_ID_FROM_SYSTEM`) so the dispatcher console
+   subscribes to the right session stream. ElevenLabs templates
+   `{{session_id}}` from the widget's `dynamic-variables`
+   attribute at call time.
+6. **Knowledge base**: skip. Our custom-LLM backend owns
+   retrieval.
+7. **Select voice**: pick any neutral American-English preset.
+   Do NOT use a voice clone (healthcare-compliance posture).
+8. **Test AI agent** button — speak a test utterance. The
+   agent's response at this stage uses ElevenLabs' default
+   LLM; Step 10 switches it to ours.
+9. **Complete your agent** wizard step — this is the
+   evaluation-criteria bootstrap. Fields:
+   - **Agent Name**: (carried from step 3)
+   - **Website** (optional): `https://www.thegoatnote.com/prism42`
+   - **Main Goal**: this is the goal ElevenLabs feeds to its
+     evaluation-criteria auto-generator. Paste:
+     ```
+     Guide a 911-style simulated caller through GEDP v0.1 dispatch
+     protocol turns while our custom-LLM backend handles clinical
+     content. Every turn must pass the backend's self_verify gate
+     before being spoken. Never claim to be a real emergency line.
+     ```
+     ElevenLabs will generate evaluation criteria from this
+     text; review + accept.
+   - **Chat only** toggle: OFF (we want voice).
+10. **LLM** tab → select **Custom LLM**. Endpoint URL:
+    ```
+    https://www.thegoatnote.com/prism42/api/chat/completions
+    ```
+    (or `https://prism42-console.vercel.app/prism42/api/chat/completions`
+    — both work; production uses the domain once the rewrite is
+    in place.) No API key needed — the endpoint is public and
+    returns OpenAI-compatible SSE.
+11. **Security** tab:
+    - Disable **Authentication** (required for public widget
+      embed; the custom element can't carry auth).
+    - Add `www.thegoatnote.com` to the **Allowlist** of
+      hostnames (add preview URLs for testing).
+12. **Analysis** tab → **Evaluation Criteria**: review the
+    auto-generated criteria from Main Goal. Confirm they fire
+    on the conversations you care about. You can add custom
+    ones like `hallucination_kb`.
+13. **Save** the agent. Copy the agent id from the top of the
+    page (URL pattern: `elevenlabs.io/app/conversational-ai/<agent-id>`).
 
 ### 4.2 Paste the agent id into Vercel env
 
