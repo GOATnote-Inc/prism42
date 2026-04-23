@@ -205,3 +205,60 @@ Apply the principle from [6] as async infrastructure, not live blocking:
 **Explicitly unverified / follow-up:**
 - ElevenLabs p95 voice round-trip target (no primary-source number; rely on empirical stopwatch telemetry).
 - BAA availability for ElevenLabs healthcare deployment (HIPAA certification stated; BAA not explicitly documented — confirm via sales before production PHI).
+
+---
+
+## 5. Decode-latency budget (measured — 2026-04-23)
+
+The MLA-decode kernel is one link in a longer real-time voice chain. Before optimizing it further, this section wires the measured kernel numbers into the full-stack latency budget so we know where the bottleneck actually lives.
+
+### Measured kernel anchors
+
+| Hardware | Backend | Config | p50 decode | Source |
+|:---|:---|:---|---:|:---|
+| NVIDIA H100 SXM5 | FlashInfer fa3 | DeepSeek-V3 MLA, bf16, T=4096 | **22.53 µs** | CLAIM_001 (3-pod cite-grade) |
+| NVIDIA H100 SXM5 | torch.compile | same as above | 76–92 µs | H2.3 HIGH_VAR |
+| NVIDIA B300 SXM6 | torch.compile | same as above | **43.25 µs** | CLAIM_002 (single-pod provisional) |
+| NVIDIA B300 SXM6 | FlashInfer any | same | *deferred — no sm_103 kernels in FI 0.6.8* | H4 deferred |
+
+*Rubric v1.1 strict band; all passing configs have intra-pod rel_stdev ≤ 5%.*
+
+### Budget math for a conversational 911 agent
+
+At a conservative 40 tokens/sec speech cadence (natural ~150 wpm ≈ 37–45 tokens/sec for English), per-turn latency decomposition for a 25-token response:
+
+| Stage | Per-turn cost | Notes |
+|:---|---:|:---|
+| STT (ElevenLabs Flash) | ~75 ms | fixed per-utterance inference |
+| LLM inference (25 tokens × decode + prefill) | **0.56 ms** on H100 fa3 | 25 × 22.53 µs; prefill is separate |
+| LLM inference same on B300 torch.compile | **1.08 ms** | 25 × 43.25 µs |
+| TTS generation + player buffer | ~500 ms | ElevenLabs docs: 500 ms player-side buffer |
+| Network round-trip | 20–200 ms | ElevenLabs docs |
+| Dialogue manager / tool calls | 100–500 ms | application-dependent |
+| **Total end-to-end per turn** | **~700–1300 ms** | decode is <1% of total |
+
+### Implication for 911 UX optimization
+
+**Decode is not the bottleneck.** Even on torch-only B300 at 43 µs/token, a 25-token response takes 1.08 ms of decode — a rounding error versus the 700-1300 ms full-turn latency. Moving from H100 torch to H100 fa3 saves ~25 µs/token; from H100 fa3 to a hypothetical hand-written Triton that halves that saves another ~10 µs/token. Neither is perceptible to a caller.
+
+Concrete optimization priorities in 911-UX order:
+1. **STT latency** (Flash 75 ms is already aggressive; next-gen VAD-driven partial-transcript streaming could shave ~30 ms).
+2. **TTS first-byte-to-player** (~500 ms player buffer dominates; streaming playback reduces perceived latency more than any kernel work).
+3. **Dialogue-manager round-trip** (compressing OHCA classifier + CAD check + rubric pass into a single Managed-Agent session saves tool-call roundtrips).
+4. **LLM prefill** (not measured yet; for a voice agent the prefill of the dialogue context + retrieved OpenEM conditions likely dominates decode by 10–100×).
+5. **Decode throughput** — only moves the needle at high concurrency, not per-call UX.
+
+### When decode WOULD matter
+
+- **High-concurrency dispatch** (multiple simultaneous calls at a PSAP): decode cost scales linearly with concurrent streams. Blackwell's ~2× torch speedup over Hopper meaningfully increases a single GPU's stream count for co-located prism42 pods.
+- **Long-form responses** (5+ sentence explanations to bystander CPR coaching): 200 tokens × 43 µs = 8.6 ms, still small but not a rounding error versus a 200 ms partial-TTS window.
+- **Future sub-100-ms end-to-end target**: once STT + TTS + dialogue-manager drop below 100 ms each, decode becomes a meaningful fraction.
+
+### Cross-reference
+
+- Measured kernel source: `/Users/kiteboard/prism/mla/claims/CLAIM_001_flashinfer_fa3_ceiling_kv4096.md`, `.../CLAIM_002_b300_blackwell_ultra_torch_ceiling.md`.
+- Decode bench driver: `/Users/kiteboard/prism/mla/scripts/isolated_bench.py` + `_bench_worker.py`.
+- Hypothesis closures gating these numbers: H2.3.1 (cross-pod protocol), H5 (NVFP4 unreachable from torch.compile), H4 (FlashInfer cutlass deferred).
+- 911 console implementation: `/Users/kiteboard/goatnote-911/console.html` (6 subsystems; IRB-pilot ready).
+
+*Last measured 2026-04-23. Re-measure when FlashInfer ≥ 0.7 ships sm_103 kernels (adds the Blackwell FI column), or when ElevenLabs publishes a new Flash STT latency tier.*
