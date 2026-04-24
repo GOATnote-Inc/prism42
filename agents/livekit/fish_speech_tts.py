@@ -45,16 +45,14 @@ class FishSpeechOptions:
     # without a reference audio Fish's codebook sampler drifts between
     # calls, so the pre-roll and the orchestrator reply sound like two
     # different people (the caller reported hearing "male and female
-    # responses"). temperature=0 + top_p=1 locks the sampler → one voice
-    # for the entire session. Consistency > prosody variety for a
-    # dispatcher line.
-    temperature: float = 0.0
-    top_p: float = 1.0
+    # responses"). Lower temperature + top_p=0.7 narrows the voice
+    # space without crashing on Fish's schema (temperature=0 alone
+    # still produces varied voices; seed is not accepted by the
+    # upstream /v1/tts schema — returns 422).
+    temperature: float = 0.1
+    top_p: float = 0.7
     repetition_penalty: float = 1.1
     request_timeout_s: float = 30.0
-    # Fish Speech's fixed-seed deterministic mode. If the upstream
-    # api_server exposes it, we use it; if not, ignored by the server.
-    seed: int = 911
 
 
 class FishSpeechTTS(tts.TTS):
@@ -143,11 +141,7 @@ class _FishSpeechStream(tts.ChunkedStream):
             "top_p": self._opts.top_p,
             "repetition_penalty": self._opts.repetition_penalty,
             "temperature": self._opts.temperature,
-            # "on" reuses internal KV cache across calls — big TTFB win
-            # on warm path (previously "off" per earlier debugging that
-            # pre-dated the current fix; leaving enabled now).
-            "use_memory_cache": "on",
-            "seed": self._opts.seed,
+            "use_memory_cache": "off",
             "references": [],
         }
         if self._opts.reference_id:
