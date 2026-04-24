@@ -18,12 +18,14 @@
 
 import "@livekit/components-styles";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LiveCallRoom } from "@/components/LiveCallRoom";
+import { createPortal } from "react-dom";
+import { LiveCallRoom, type LatencyTelemetry } from "@/components/LiveCallRoom";
 import {
   DualSoundbar,
   Elapsed,
   LatencyMeter,
   Soundbar,
+  Sparkline,
 } from "@/components/b300/Primitives";
 import type {
   PsapAlert,
@@ -88,6 +90,8 @@ const PHASE_SEQUENCE: PsapPhase["name"][] = [
 
 // ─────────────────────────────────────────────────────────────────────────
 
+type ViewTab = "v1" | "v2" | "v3" | "v4";
+
 export default function LiveKitDispatcherPage() {
   // Live-wired session state (unchanged from previous page.tsx).
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -99,8 +103,28 @@ export default function LiveKitDispatcherPage() {
     "idle" | "starting" | "connected" | "no-transcript" | "degraded"
   >("idle");
   const [roomLive, setRoomLive] = useState(false);
+  // Live pipeline-latency telemetry (pushed by worker.py over the
+  // `b3-latency` LiveKit data channel; fed through LatencyTap in
+  // LiveCallRoom). Null until the first turn completes.
+  const [latency, setLatency] = useState<LatencyTelemetry | null>(null);
+  // Active tab within the console (V1 Command Center / V2 Soundbar-
+  // forward / V3 MCI / V4 Vision). Swapped client-side; LiveCallRoom
+  // is mounted once in V1 so the voice session survives tab switches.
+  const [view, setView] = useState<ViewTab>("v1");
   const abortRef = useRef<AbortController | null>(null);
   const sessionStartTs = useRef<number>(Date.now());
+  // Portal target for the LiveCallRoom — rendered ONCE at page scope
+  // then portaled into whichever tab slot is active. Keeps the WebRTC
+  // session alive across tab switches so latency telemetry keeps
+  // flowing into V2 even if the user started the call on V1.
+  const v1VoiceSlotRef = useRef<HTMLDivElement | null>(null);
+  const v2VoiceSlotRef = useRef<HTMLDivElement | null>(null);
+  const [voiceHost, setVoiceHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (view === "v1") setVoiceHost(v1VoiceSlotRef.current);
+    else if (view === "v2") setVoiceHost(v2VoiceSlotRef.current);
+    else setVoiceHost(null); // V3/V4: hide visually but component stays mounted
+  }, [view]);
 
   useEffect(() => {
     let cancelled = false;
@@ -231,6 +255,26 @@ export default function LiveKitDispatcherPage() {
           </span>
         </div>
         <div className="b3-topbar-right">
+          <div className="b3-tabs" role="tablist" aria-label="console view">
+            {(
+              [
+                ["v1", "cmd"],
+                ["v2", "pipe"],
+                ["v3", "mci"],
+                ["v4", "vis"],
+              ] as Array<[ViewTab, string]>
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={view === id}
+                className={`b3-tab ${view === id ? "b3-tab-active" : ""}`}
+                onClick={() => setView(id)}
+              >
+                {id.toUpperCase()} · {label}
+              </button>
+            ))}
+          </div>
           <span>
             p50 voice <span className="b3-green">187ms</span>
           </span>
@@ -238,22 +282,24 @@ export default function LiveKitDispatcherPage() {
             p99 voice <span className="b3-amber">412ms</span>
           </span>
           <span>
-            tool rtt <span className="b3-green">82ms</span>
+            stt <span className="b3-green">parakeet</span>
           </span>
           <span>
-            stt <span className="b3-green">deepgram</span>
+            tts <span className="b3-green">fish</span>
           </span>
           <span>
-            tts <span className="b3-green">cartesia</span>
-          </span>
-          <span>
-            llm <span className="b3-green">claude-opus-4.7</span>
+            llm <span className="b3-green">sonnet-4.6</span>
           </span>
         </div>
       </div>
 
-      {/* MAIN GRID */}
-      <div className="b3-main">
+      {/* MAIN GRID — V1 Command Center (always mounted; hidden when
+          another view is active to keep LiveCallRoom's portal target
+          alive and the data-channel tap ticking). */}
+      <div
+        className="b3-main"
+        style={{ display: view === "v1" ? "grid" : "none" }}
+      >
         {/* LEFT: 12-call grid (static mock) */}
         <div className="b3-col b3-col-left">
           <div className="b3-panel-hd b3-panel-hd-framed">
@@ -310,11 +356,14 @@ export default function LiveKitDispatcherPage() {
                 {roomLive ? "connected · rec" : "pre-connect · idle"}
               </span>
             </div>
-            <div className="b3-voice-body">
-              <LiveCallRoom
-                sessionId={sessionId}
-                onRoomLiveChange={setRoomLive}
-              />
+            <div className="b3-voice-body" ref={v1VoiceSlotRef}>
+              {view !== "v1" && (
+                <div className="b3-voice-detached">
+                  Voice hero is docked in V1. Return to CMD to interact;
+                  the session, latency telemetry, and SSE transcript keep
+                  running in the background.
+                </div>
+              )}
             </div>
           </div>
 
@@ -577,6 +626,38 @@ export default function LiveKitDispatcherPage() {
         </div>
       </div>
 
+      {/* V2 · pipeline-latency strip (live data-channel) */}
+      {view === "v2" && (
+        <V2Pipeline
+          v2VoiceSlotRef={v2VoiceSlotRef}
+          latency={latency}
+          roomLive={roomLive}
+          sessionId={sessionId}
+          phase={phase}
+          turns={turns}
+        />
+      )}
+
+      {/* V3 · MCI mode (static mock) */}
+      {view === "v3" && <V3MCI />}
+
+      {/* V4 · Vision link (static mock) */}
+      {view === "v4" && <V4Vision />}
+
+      {/* Persistent LiveCallRoom mount. Always lives at page scope so
+          the WebRTC session, onRoomLiveChange callbacks, and
+          data-channel tap survive tab switches. When a tab has a voice
+          slot (V1/V2) the portal moves the LIVE DOM into that slot;
+          otherwise it's rendered into this hidden host. createPortal
+          preserves the React instance across parent changes so LiveKit
+          does not tear down the room. */}
+      <VoiceHost
+        voiceHost={voiceHost}
+        sessionId={sessionId}
+        onRoomLiveChange={setRoomLive}
+        onLatency={setLatency}
+      />
+
       {/* FOOTER */}
       <div className="b3-footer">
         <div className="b3-footer-links">
@@ -704,6 +785,1047 @@ function MetricTile({
         {value}
       </div>
       <div className="b3-metric-sub">{sub}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// VOICE HOST — single stable mount of LiveCallRoom, portaled into the
+// active tab's voice slot. See comment above VoiceHost usage in the main
+// render for the rationale.
+// ─────────────────────────────────────────────────────────────────────────
+
+function VoiceHost({
+  voiceHost,
+  sessionId,
+  onRoomLiveChange,
+  onLatency,
+}: {
+  voiceHost: HTMLElement | null;
+  sessionId: string | null;
+  onRoomLiveChange: (live: boolean) => void;
+  onLatency: (l: LatencyTelemetry) => void;
+}) {
+  const fallbackRef = useRef<HTMLDivElement | null>(null);
+  const [fallbackEl, setFallbackEl] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setFallbackEl(fallbackRef.current);
+  }, []);
+  const target = voiceHost ?? fallbackEl;
+  return (
+    <>
+      <div
+        ref={fallbackRef}
+        style={{
+          position: "absolute",
+          width: 0,
+          height: 0,
+          overflow: "hidden",
+        }}
+      />
+      {target &&
+        createPortal(
+          <LiveCallRoom
+            sessionId={sessionId}
+            onRoomLiveChange={onRoomLiveChange}
+            onLatency={onLatency}
+          />,
+          target,
+        )}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// V2 · SOUNDBAR-FORWARD + LIVE PIPELINE LATENCY
+// Port of /tmp/b300_design/named/03-V2Soundbar.jsx, right-hand column.
+// The LatencyMeter rows now read from the `latency` prop — real values
+// pushed by worker.py over the `b3-latency` LiveKit data channel.
+// ─────────────────────────────────────────────────────────────────────────
+
+const V2_CALLS: Array<{
+  id: string;
+  kind: string;
+  loc: string;
+  priority: "P1" | "P2" | "P3" | "P4";
+  live: boolean;
+  phase: PsapPhase["name"];
+  turns: number;
+  elapsedS: number;
+  stress: number;
+  seed: number;
+  focus?: boolean;
+  speaking: "caller" | "ai" | "silent" | "ringing" | "auto";
+}> = [
+  { id: "05", kind: "MVC · multi-vehicle · injury", loc: "I-80 E · mp 14.2", priority: "P1", live: true, phase: "pdi", turns: 7, elapsedS: 134, stress: 0.82, seed: 5, focus: true, speaking: "caller" },
+  { id: "10", kind: "medical · chest pain", loc: "S. Virginia St", priority: "P2", live: true, phase: "dispatch", turns: 4, elapsedS: 78, stress: 0.55, seed: 10, speaking: "ai" },
+  { id: "04", kind: "welfare check · non-response", loc: "S. Wells Ave", priority: "P3", live: true, phase: "intake", turns: 2, elapsedS: 34, stress: 0.31, seed: 4, speaking: "ai" },
+  { id: "07", kind: "lang swap · ES -> EN", loc: "hold", priority: "P3", live: true, phase: "triage", turns: 1, elapsedS: 12, stress: 0.22, seed: 7, speaking: "silent" },
+  { id: "12", kind: "callback · prior incident", loc: "ring", priority: "P4", live: true, phase: "intake", turns: 0, elapsedS: 6, stress: 0.10, seed: 12, speaking: "ringing" },
+  { id: "03", kind: "parking · awaiting tow", loc: "4th & Sierra", priority: "P4", live: false, phase: "dispatch", turns: 8, elapsedS: 215, stress: 0.05, seed: 3, speaking: "auto" },
+];
+
+function V2Pipeline({
+  v2VoiceSlotRef,
+  latency,
+  roomLive,
+  sessionId,
+  phase,
+  turns,
+}: {
+  v2VoiceSlotRef: React.RefObject<HTMLDivElement | null>;
+  latency: LatencyTelemetry | null;
+  roomLive: boolean;
+  sessionId: string | null;
+  phase: PsapPhase;
+  turns: PsapTurn[];
+}) {
+  // Pipeline budget defaults (ms). Match V1 so the visual register matches.
+  const stt = latency?.stt_ms ?? 0;
+  const llm = latency?.llm_ms ?? 0;
+  const tts = latency?.tts_ms ?? 0;
+  const tool = latency?.tool_ms ?? 0;
+  const total = latency?.total_ms ?? 0;
+  const live = latency !== null && !latency.note;
+  return (
+    <div className="b3-v2-wrap">
+      <div className="b3-v2-main">
+        {/* LEFT: call rows */}
+        <div className="b3-v2-left">
+          <div className="b3-v2-colhead">
+            <span>call</span>
+            <span>kind · loc</span>
+            <span>audio · caller / ai</span>
+            <span>stress · turn</span>
+            <span style={{ textAlign: "right" }}>elapsed</span>
+            <span style={{ textAlign: "right" }}>act</span>
+          </div>
+          <div className="b3-v2-rows">
+            {V2_CALLS.map((c) => (
+              <V2CallRow key={c.id} c={c} focused={!!c.focus} />
+            ))}
+          </div>
+          <div className="b3-v2-footer">
+            <span>
+              <span className="b3-dot b3-dot-hot" /> live human
+            </span>
+            <span>
+              <span className="b3-legend-swatch b3-legend-hot" /> caller
+            </span>
+            <span>
+              <span className="b3-legend-swatch b3-legend-text" /> ai
+            </span>
+            <span style={{ marginLeft: "auto" }}>
+              {roomLive ? "connected · rec" : "pre-connect · idle"}
+            </span>
+          </div>
+        </div>
+
+        {/* RIGHT: focus panel with LIVE pipeline-latency strip */}
+        <div className="b3-v2-right">
+          <div className="b3-v2-focus-head">
+            <div className="b3-hd-t b3-dim">
+              focused · call #05 · session{" "}
+              {sessionId ? sessionId.slice(0, 8) : "…"}
+            </div>
+            <div className="b3-focus-title">MVC · multi-vehicle · injury</div>
+            <div className="b3-focus-sub">
+              I-80 E · mp 14.2 · 39.5296, -119.8138 · phase {phase.name}
+            </div>
+            <div className="b3-v2-chips">
+              <span className="b3-chip b3-chip-hot">P1 · MVC</span>
+              <span className="b3-chip b3-chip-amber">fuel smell</span>
+              <span className="b3-chip b3-chip-ghost">female · 34</span>
+              <span className="b3-chip b3-chip-ghost">
+                {turns.length} turns
+              </span>
+            </div>
+          </div>
+
+          {/* Portal slot for LiveCallRoom when view==v2. */}
+          <div className="b3-v2-voice">
+            <div className="b3-v2-voice-hd">
+              <span>live audio · caller channel</span>
+              <span className="b3-hot">{roomLive ? "● REC" : "○ idle"}</span>
+            </div>
+            <div className="b3-v2-voice-body" ref={v2VoiceSlotRef} />
+          </div>
+
+          {/* LIVE pipeline-latency strip — rows fed by worker.py over
+              the b3-latency LiveKit data channel. */}
+          <div className="b3-v2-latency">
+            <div className="b3-v2-voice-hd">
+              <span>pipeline latency · {live ? "live · b3-latency" : "awaiting first turn"}</span>
+              <span className="b3-dim">
+                {latency
+                  ? `turn ${latency.turn_id.slice(0, 6)} · ${new Date(latency.ts_ms).toLocaleTimeString()}`
+                  : "topic subscribed · no data"}
+              </span>
+            </div>
+            <div className="b3-latency-body">
+              <LatencyMeter ms={stt} budget={250} label="stt · parakeet" />
+              <LatencyMeter ms={llm} budget={500} label="llm · sonnet-4.6" />
+              <LatencyMeter ms={tts} budget={300} label="tts · fish speech" />
+              <LatencyMeter ms={tool} budget={150} label="tool · cad dispatch" />
+              <div className="b3-latency-total">
+                <span className="b3-text-3">TOTAL turn-to-response</span>
+                <span
+                  className={`b3-mono-num ${
+                    total === 0 ? "b3-dim" : total < 800 ? "b3-green" : "b3-amber"
+                  }`}
+                >
+                  {total === 0 ? "— awaiting —" : `${total}ms`}
+                </span>
+              </div>
+              {latency?.note && (
+                <div className="b3-v2-note">
+                  channel open · worker note: <code>{latency.note}</code>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* live transcript tail */}
+          <div className="b3-v2-tail">
+            <div className="b3-v2-voice-hd">
+              <span>live transcript</span>
+              <span className="b3-dim">
+                streaming · {turns.length} turns
+              </span>
+            </div>
+            <div className="b3-v2-tail-body">
+              {turns.length === 0 ? (
+                <div className="b3-transcript-empty">
+                  waiting for first caller utterance…
+                </div>
+              ) : (
+                turns.slice(-4).map((t, i) => (
+                  <div key={i} className="b3-v2-tail-row">
+                    <span className="b3-hot">
+                      t{turns.length - Math.min(4, turns.length) + i + 1} ·{" "}
+                      {t.agent}
+                    </span>
+                    <div>{t.content ?? "(no caller-facing content)"}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function V2CallRow({
+  c,
+  focused,
+}: {
+  c: (typeof V2_CALLS)[number];
+  focused: boolean;
+}) {
+  const callerActive = c.speaking === "caller";
+  const aiActive = c.speaking === "ai";
+  const segs = 12;
+  const fill = Math.round(c.stress * segs);
+  return (
+    <div
+      className="b3-v2-row"
+      style={{
+        background: focused ? "var(--b3-hot-bg)" : "transparent",
+        borderLeft: focused
+          ? "2px solid var(--b3-hot)"
+          : "2px solid transparent",
+      }}
+    >
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span
+          className={`b3-dot ${c.live ? "b3-dot-hot b3-dot-live" : "b3-dot-off"}`}
+        />
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 500,
+            color: focused ? "var(--b3-hot)" : "var(--b3-text)",
+          }}
+        >
+          #{c.id}
+        </span>
+      </div>
+      <div>
+        <div style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+          <span
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.05em",
+              color:
+                c.priority === "P1"
+                  ? "var(--b3-hot)"
+                  : c.priority === "P2"
+                    ? "var(--b3-amber)"
+                    : "var(--b3-text-3)",
+            }}
+          >
+            {c.priority}
+          </span>
+          <span style={{ fontSize: 11 }}>{c.kind}</span>
+        </div>
+        <div
+          style={{
+            fontSize: 10,
+            color: "var(--b3-text-3)",
+            marginTop: 1,
+          }}
+        >
+          {c.loc} · {c.phase}
+        </div>
+      </div>
+      <div style={{ display: "grid", gap: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span
+            style={{
+              fontSize: 8,
+              color: callerActive ? "var(--b3-hot)" : "var(--b3-text-4)",
+              width: 22,
+              letterSpacing: "0.05em",
+            }}
+          >
+            CLR
+          </span>
+          <div style={{ flex: 1 }}>
+            <Soundbar
+              bars={90}
+              height={14}
+              seed={c.seed}
+              active={callerActive}
+              idle={!c.live || c.speaking === "silent"}
+              color="#ff0096"
+            />
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span
+            style={{
+              fontSize: 8,
+              color: aiActive ? "var(--b3-text)" : "var(--b3-text-4)",
+              width: 22,
+              letterSpacing: "0.05em",
+            }}
+          >
+            AI
+          </span>
+          <div style={{ flex: 1 }}>
+            <Soundbar
+              bars={90}
+              height={14}
+              seed={c.seed + 50}
+              active={aiActive}
+              idle={!c.live || c.speaking === "silent"}
+              color="#e8e8ea"
+              speed={100}
+            />
+          </div>
+        </div>
+      </div>
+      <div style={{ display: "grid", gap: 4 }}>
+        <div style={{ display: "flex", gap: 2 }}>
+          {Array.from({ length: segs }).map((_, i) => (
+            <span
+              key={i}
+              style={{
+                width: 3,
+                height: 10,
+                background:
+                  i < fill
+                    ? c.stress > 0.75
+                      ? "var(--b3-hot)"
+                      : c.stress > 0.5
+                        ? "var(--b3-amber)"
+                        : "var(--b3-green)"
+                    : "var(--b3-border-2)",
+              }}
+            />
+          ))}
+        </div>
+        <div style={{ fontSize: 9, color: "var(--b3-text-3)" }}>
+          stress {(c.stress * 100).toFixed(0)}% · turn {c.turns}
+        </div>
+      </div>
+      <div
+        style={{
+          fontSize: 11,
+          color: "var(--b3-text-2)",
+          textAlign: "right",
+        }}
+      >
+        <Elapsed start={Date.now() - c.elapsedS * 1000} />
+      </div>
+      <div style={{ textAlign: "right" }}>
+        {focused ? (
+          <span
+            style={{
+              fontSize: 9,
+              color: "var(--b3-hot)",
+              letterSpacing: "0.08em",
+            }}
+          >
+            FOCUSED
+          </span>
+        ) : (
+          <span style={{ fontSize: 9, color: "var(--b3-text-3)" }}>
+            ⌥{c.id}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// V3 · MCI MODE (static mock — no live MCI detection in this MVP)
+// Port of /tmp/b300_design/named/04-V3MCI.jsx, trimmed for size.
+// ─────────────────────────────────────────────────────────────────────────
+
+const V3_INCOMING = [
+  { id: "17", time: "14:07:22", loc: "I-80 E · mp 14.1", kind: "MVC · injury", conf: 0.94, dist: "0.1mi", seed: 17 },
+  { id: "18", time: "14:07:48", loc: "I-80 E · mp 14.3", kind: "MVC · fire", conf: 0.97, dist: "0.2mi", seed: 18 },
+  { id: "19", time: "14:08:02", loc: "I-80 E · mp 13.9", kind: "MVC · smoke", conf: 0.89, dist: "0.3mi", seed: 19 },
+  { id: "20", time: "14:08:14", loc: "I-80 E · mp 14.2", kind: "pedestrian down", conf: 0.82, dist: "0.0mi", seed: 20 },
+  { id: "21", time: "14:08:31", loc: "I-80 E · mp 14.4", kind: "MVC · multi", conf: 0.91, dist: "0.4mi", seed: 21 },
+  { id: "22", time: "14:08:44", loc: "I-80 E · mp 14.2", kind: "injury · severe", conf: 0.95, dist: "0.1mi", seed: 22 },
+];
+
+const V3_SCAN_LOG = [
+  { ms: 12, op: "history.scan", args: "window=30m, radius=1mi, type=MVC", out: "14 calls matched" },
+  { ms: 8, op: "cluster.detect", args: "dbscan eps=0.4mi, min_pts=3", out: "1 cluster · 9 members" },
+  { ms: 22, op: "weather.fetch", args: "loc=mp14, time=now", out: "fog · vis 0.2mi · HAZMAT risk +" },
+  { ms: 18, op: "traffic.state", args: "loc=I-80 E, window=15m", out: "speed 22mph · drop from 68mph @ 14:06" },
+  { ms: 34, op: "cad.units", args: "radius=10mi, available=true", out: "7 EMS · 4 PD · 2 FIRE · 1 HAZMAT" },
+  { ms: 67, op: "vision.satellite", args: "loc=mp14, age<10m", out: "rendered · fog signature confirmed" },
+  { ms: 41, op: "social.scan", args: "geo=39.53,-119.81, r=1mi, t=15m", out: "12 posts mention pileup" },
+  { ms: 9, op: "mci.classify", args: "evidence_count=9", out: "MCI-L2 · confidence 0.87" },
+];
+
+function V3MCI() {
+  // Static mock — no live MCI detection. TODO: wire detector once
+  // clustering service lands (tracked in docs/clinical-roadmap.md H3).
+  return (
+    <div className="b3-v3-wrap">
+      {/* MCI DECLARATION STRIP */}
+      <div className="b3-v3-banner">
+        <div className="b3-v3-banner-left">
+          <span className="b3-dot b3-dot-hot b3-dot-live" style={{ width: 10, height: 10 }} />
+          <span className="b3-v3-title">MCI-L2 DECLARED</span>
+        </div>
+        <div className="b3-v3-banner-body">
+          <span className="b3-hot">9 correlated calls</span> in{" "}
+          <span className="b3-mono-num">2m 14s</span> within{" "}
+          <span className="b3-mono-num">0.5mi</span> of I-80 E mp 14.2 ·{" "}
+          pattern: MVC + fire + injury · weather: fog (vis 0.2mi) ·{" "}
+          <span className="b3-amber">multi-vehicle pileup suspected</span>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button className="b3-btn b3-btn-hot" disabled>
+            activate MCI protocol ⌥M
+          </button>
+          <button className="b3-btn b3-btn-ghost" disabled>
+            dismiss
+          </button>
+        </div>
+      </div>
+
+      {/* Main grid */}
+      <div className="b3-v3-main">
+        {/* LEFT: similar-activity scan + incoming + scan log */}
+        <div style={{ display: "grid", gap: 10, minHeight: 0 }}>
+          <div className="b3-panel" style={{ padding: "12px 14px" }}>
+            <div className="b3-hd-t b3-dim" style={{ marginBottom: 8 }}>
+              similar activity scan · last 30min
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto 1fr auto",
+                gap: 10,
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <span style={{ fontSize: 28, fontWeight: 600, color: "var(--b3-hot)", lineHeight: 1 }}>
+                9
+              </span>
+              <div>
+                <div style={{ fontSize: 11 }}>matching events</div>
+                <div style={{ fontSize: 9, color: "var(--b3-text-3)" }}>
+                  up from 0 at 14:05
+                </div>
+              </div>
+              <Sparkline data={[0, 0, 0, 1, 1, 3, 5, 7, 9]} width={80} height={28} color="#ff0096" />
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 8,
+                fontSize: 10,
+                paddingTop: 8,
+                borderTop: "1px dashed var(--b3-border)",
+              }}
+            >
+              <div>
+                <span className="b3-dim">radius</span>{" "}
+                <span className="b3-mono-num">0.5mi</span>
+              </div>
+              <div>
+                <span className="b3-dim">time span</span>{" "}
+                <span className="b3-mono-num">2m 14s</span>
+              </div>
+              <div>
+                <span className="b3-dim">baseline rate</span>{" "}
+                <span className="b3-mono-num">0.2/hr</span>
+              </div>
+              <div>
+                <span className="b3-dim">observed</span>{" "}
+                <span className="b3-mono-num b3-hot">241/hr</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="b3-panel" style={{ display: "grid", gridTemplateRows: "auto 1fr", minHeight: 0 }}>
+            <div className="b3-panel-hd">
+              <span className="b3-hd-t">INCOMING · AUTO-GROUPED</span>
+              <span className="b3-hd-s">6 ringing · 3 in progress</span>
+            </div>
+            <div style={{ overflowY: "auto" }}>
+              {V3_INCOMING.map((c) => (
+                <div
+                  key={c.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "40px 70px 1fr 48px",
+                    gap: 10,
+                    padding: "8px 14px",
+                    borderBottom: "1px solid var(--b3-border)",
+                    alignItems: "center",
+                    fontSize: 10,
+                  }}
+                >
+                  <div>
+                    <div style={{ color: "var(--b3-text)", fontSize: 12, fontWeight: 500 }}>
+                      #{c.id}
+                    </div>
+                    <div className="b3-mono-num" style={{ color: "var(--b3-text-3)", fontSize: 9 }}>
+                      {c.time.slice(3)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="b3-hot">{c.kind}</div>
+                    <div style={{ color: "var(--b3-text-3)", fontSize: 9 }}>
+                      {c.dist}
+                    </div>
+                  </div>
+                  <Soundbar bars={40} height={12} seed={c.seed} active color="#ff0096" />
+                  <span
+                    className="b3-mono-num"
+                    style={{ color: "var(--b3-text-2)", textAlign: "right" }}
+                  >
+                    {c.conf}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className="b3-panel"
+            style={{ display: "grid", gridTemplateRows: "auto 1fr", minHeight: 0, maxHeight: 220 }}
+          >
+            <div className="b3-panel-hd">
+              <span className="b3-hd-t">MCI DETECTION · TOOL TRACE</span>
+              <span className="b3-hd-s">8 calls · 211ms total</span>
+            </div>
+            <div style={{ overflowY: "auto", padding: "6px 14px", fontSize: 10 }}>
+              {V3_SCAN_LOG.map((l, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "40px 1fr",
+                    gap: 8,
+                    padding: "3px 0",
+                    borderBottom: "1px dashed var(--b3-border)",
+                  }}
+                >
+                  <span className="b3-mono-num" style={{ color: "var(--b3-text-3)" }}>
+                    {l.ms}ms
+                  </span>
+                  <div>
+                    <span className="b3-hot">{l.op}</span>
+                    <span style={{ color: "var(--b3-text-3)" }}> ({l.args})</span>
+                    <div style={{ color: "var(--b3-text-2)", paddingLeft: 10, fontSize: 10 }}>
+                      -&gt; {l.out}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* CENTER: spatial cluster map (SVG mock) */}
+        <div className="b3-panel" style={{ display: "grid", gridTemplateRows: "auto 1fr auto", minHeight: 0 }}>
+          <div className="b3-panel-hd">
+            <span className="b3-hd-t">CLUSTER · SPATIAL</span>
+            <span className="b3-hd-s">dbscan · 9 members · eps 0.4mi</span>
+          </div>
+          <div style={{ position: "relative", overflow: "hidden" }}>
+            <svg viewBox="0 0 460 460" style={{ width: "100%", height: "100%", display: "block" }}>
+              {[...Array(24)].map((_, i) => (
+                <line key={"v" + i} x1={i * 20} y1="0" x2={i * 20} y2="460" stroke="#1f1f22" strokeWidth="0.3" />
+              ))}
+              {[...Array(24)].map((_, i) => (
+                <line key={"h" + i} x1="0" y1={i * 20} x2="460" y2={i * 20} stroke="#1f1f22" strokeWidth="0.3" />
+              ))}
+              <path d="M 0 230 Q 200 220 460 240" stroke="#2a2a2e" strokeWidth="3" fill="none" />
+              <text x="10" y="222" fill="#55555a" fontSize="9" fontFamily="inherit">
+                I-80 E -&gt;
+              </text>
+              <text x="120" y="252" fill="#3a3a3e" fontSize="8">mp 13</text>
+              <text x="240" y="252" fill="#3a3a3e" fontSize="8">mp 14</text>
+              <text x="360" y="252" fill="#3a3a3e" fontSize="8">mp 15</text>
+              <rect x="180" y="140" width="180" height="180" fill="#ff0096" fillOpacity="0.04" />
+              <text x="270" y="155" fill="#8a8a90" fontSize="8" textAnchor="middle">
+                fog · vis 0.2mi
+              </text>
+              <circle
+                cx="260"
+                cy="230"
+                r="90"
+                fill="none"
+                stroke="#ff0096"
+                strokeWidth="0.5"
+                strokeDasharray="3,3"
+                opacity="0.6"
+              />
+              <text x="260" y="125" fill="#ff0096" fontSize="9" textAnchor="middle" letterSpacing="1">
+                CLUSTER · R 0.5mi
+              </text>
+              {[
+                { x: 248, y: 224 }, { x: 262, y: 232 }, { x: 238, y: 220 },
+                { x: 260, y: 228 }, { x: 278, y: 242 }, { x: 254, y: 226 },
+                { x: 250, y: 234 }, { x: 268, y: 222 }, { x: 272, y: 238 },
+              ].map((m, i) => (
+                <g key={i}>
+                  <circle cx={m.x} cy={m.y} r="4" fill="#ff0096" opacity="0.85" />
+                  <circle cx={m.x} cy={m.y} r="4" fill="none" stroke="#ff0096" strokeWidth="1" opacity="0.3">
+                    <animate attributeName="r" from="4" to="14" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" from="0.5" to="0" dur="2s" repeatCount="indefinite" />
+                  </circle>
+                </g>
+              ))}
+              <polygon points="60,190 70,196 60,202 62,196" fill="#4ade80" />
+              <text x="76" y="199" fill="#4ade80" fontSize="8">EMS-M12 · 2:10</text>
+              <polygon points="420,180 430,186 420,192 422,186" fill="#4ade80" />
+              <text x="368" y="176" fill="#4ade80" fontSize="8">EMS-M07 · 3:40</text>
+              <line x1="380" y1="430" x2="440" y2="430" stroke="#55555a" strokeWidth="1" />
+              <text x="410" y="442" fill="#55555a" fontSize="8" textAnchor="middle">
+                0.5 mi
+              </text>
+            </svg>
+          </div>
+          <div
+            style={{
+              padding: "10px 14px",
+              borderTop: "1px solid var(--b3-border)",
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 8,
+              fontSize: 10,
+            }}
+          >
+            <div>
+              <span className="b3-dim">members</span>{" "}
+              <span className="b3-mono-num b3-hot">9</span>
+            </div>
+            <div>
+              <span className="b3-dim">centroid</span>{" "}
+              <span className="b3-mono-num">mp 14.2</span>
+            </div>
+            <div>
+              <span className="b3-dim">density</span>{" "}
+              <span className="b3-mono-num">18.0/mi²</span>
+            </div>
+            <div>
+              <span className="b3-dim">eta first unit</span>{" "}
+              <span className="b3-mono-num b3-green">2:10</span>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: evidence chain */}
+        <div className="b3-panel" style={{ display: "grid", gridTemplateRows: "auto 1fr", minHeight: 0 }}>
+          <div className="b3-panel-hd">
+            <span className="b3-hd-t">EVIDENCE CHAIN</span>
+            <span className="b3-hd-s">why this is MCI</span>
+          </div>
+          <div
+            style={{
+              padding: "10px 14px",
+              display: "grid",
+              gap: 10,
+              fontSize: 10,
+              lineHeight: 1.5,
+              overflowY: "auto",
+            }}
+          >
+            {[
+              ["1 · temporal clustering", "9 calls in 2m 14s, baseline 0.007/s. probability of random occurrence < 0.001."],
+              ["2 · spatial clustering", "all within 0.5mi radius of I-80 mp 14.2. dbscan eps=0.4mi min_pts=3 -> 1 dense cluster."],
+              ["3 · semantic consistency", "8/9 classifications in {MVC, injury, fire, smoke}. intent coherence 0.87."],
+              ["4 · environmental co-factor", "fog advisory active · visibility 0.2mi · traffic speed drop 68->22mph at 14:06:30."],
+              ["5 · external corroboration", "12 geotagged social posts mention 'pileup' within 1mi / 15m window."],
+            ].map(([h, body]) => (
+              <div key={h}>
+                <div className="b3-hot" style={{ marginBottom: 2 }}>{h}</div>
+                <div style={{ color: "var(--b3-text-2)" }}>{body}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// V4 · VISION LINK (static mock — drone detection pane + tool trace +
+// grounded transcript. No real vision pipeline in this MVP.)
+// Port of /tmp/b300_design/named/05-V4Vision.jsx, trimmed for size.
+// ─────────────────────────────────────────────────────────────────────────
+
+const V4_DETECTIONS = [
+  { id: "d1", label: "person · supine", conf: 0.94, box: [120, 140, 90, 50], color: "#ff0096", state: "injured" },
+  { id: "d2", label: "person · standing", conf: 0.91, box: [280, 60, 40, 140], color: "#ffb84d", state: "caller" },
+  { id: "d3", label: "vehicle · sedan · overturned", conf: 0.97, box: [60, 40, 180, 120], color: "#ff0096", state: "hazard" },
+  { id: "d4", label: "vehicle · truck", conf: 0.88, box: [330, 120, 120, 80], color: "#8a8a90", state: "secondary" },
+  { id: "d5", label: "fluid pool · fuel", conf: 0.79, box: [200, 210, 80, 30], color: "#ff0096", state: "hazmat" },
+  { id: "d6", label: "smoke · light", conf: 0.68, box: [80, 20, 120, 40], color: "#ffb84d", state: "hazard" },
+] as const;
+
+const V4_TOOL_CALLS = [
+  { ms: 42, op: "vision.detect", args: "model=owl-v3, stream=drone-07", out: "6 objects · 4 of concern", ongoing: true },
+  { ms: 88, op: "vision.depth", args: "scene=frame_1247", out: "supine person 2.3m from vehicle" },
+  { ms: 31, op: "vision.classify", args: "fluid_pool, spectral", out: "gasoline · conf 0.79" },
+  { ms: 54, op: "robot.plan", args: "goal=extract_safe_zone", out: "3 waypoints · 11m path" },
+  { ms: 22, op: "hazmat.assess", args: "fuel + heat_signature", out: "risk=HIGH · evac 50ft" },
+  { ms: 19, op: "vision.track", args: "target=person_d1", out: "breathing detected 14/min" },
+];
+
+function V4Vision() {
+  // Static mock — no real vision model. TODO: wire `vision.detect`
+  // MCP server when the field-unit drone lands.
+  return (
+    <div className="b3-v4-wrap">
+      <div className="b3-v4-topbar">
+        <span className="b3-chip b3-chip-hot">
+          <span className="b3-dot b3-dot-hot b3-dot-live" /> call #05 · live
+        </span>
+        <span className="b3-chip b3-chip-ghost">
+          field unit · DRONE-07 · 94% battery
+        </span>
+        <span className="b3-chip b3-chip-amber">uplink 42ms · 4k30</span>
+        <span className="b3-dim" style={{ marginLeft: "auto" }}>
+          robot.autonomy <span className="b3-amber">L2 · supervised</span> ·
+          vision.model <span className="b3-green">owl-v3</span>
+        </span>
+      </div>
+
+      <div className="b3-v4-main">
+        {/* LEFT: vision feed (SVG mock) + audio + robot plan */}
+        <div style={{ display: "grid", gridTemplateRows: "1fr auto", minHeight: 0, borderRight: "1px solid var(--b3-border)" }}>
+          <div style={{ position: "relative", background: "#05050b", overflow: "hidden" }}>
+            <svg
+              viewBox="0 0 480 300"
+              preserveAspectRatio="xMidYMid meet"
+              style={{ width: "100%", height: "100%", display: "block" }}
+            >
+              <defs>
+                <pattern id="v4scan" width="4" height="4" patternUnits="userSpaceOnUse">
+                  <rect width="4" height="4" fill="#0a0a10" />
+                  <line x1="0" y1="0" x2="4" y2="0" stroke="#121218" strokeWidth="0.5" />
+                </pattern>
+                <linearGradient id="v4sky" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stopColor="#15151e" />
+                  <stop offset="1" stopColor="#0a0a10" />
+                </linearGradient>
+              </defs>
+              <rect width="480" height="300" fill="url(#v4sky)" />
+              <rect width="480" height="300" fill="url(#v4scan)" opacity="0.4" />
+              <path d="M 0 180 L 480 200" stroke="#2a2a35" strokeWidth="0.8" />
+              <path d="M 0 250 L 480 280" stroke="#2a2a35" strokeWidth="1.2" />
+              <g opacity="0.5">
+                <polygon points="60,160 240,140 220,180 80,200" fill="#2a2a35" />
+                <polygon points="330,200 450,190 440,240 340,230" fill="#2a2a35" />
+                <ellipse cx="165" cy="170" rx="45" ry="10" fill="#1f1f28" />
+                <ellipse cx="300" cy="130" rx="12" ry="35" fill="#1f1f28" />
+                <ellipse cx="240" cy="230" rx="40" ry="8" fill="#0f0f16" />
+                <ellipse cx="140" cy="45" rx="60" ry="20" fill="#1a1a22" opacity="0.6" />
+              </g>
+              {V4_DETECTIONS.map((d) => {
+                const [x, y, w, h] = d.box;
+                return (
+                  <g key={d.id}>
+                    <rect x={x} y={y} width={w} height={h} fill="none" stroke={d.color} strokeWidth="1.5" />
+                    <rect x={x} y={y - 12} width={d.label.length * 5.5 + 32} height="12" fill={d.color} opacity="0.9" />
+                    <text x={x + 4} y={y - 3} fill="#0a0a0b" fontSize="9" fontWeight="500">
+                      {d.label} · {d.conf.toFixed(2)}
+                    </text>
+                  </g>
+                );
+              })}
+              <g stroke="#ff0096" strokeWidth="0.5" fill="none" opacity="0.8">
+                <line x1="240" y1="10" x2="240" y2="30" />
+                <line x1="240" y1="270" x2="240" y2="290" />
+                <line x1="10" y1="150" x2="30" y2="150" />
+                <line x1="450" y1="150" x2="470" y2="150" />
+              </g>
+              <g fontSize="8" fill="#ff0096">
+                <text x="8" y="14">ALT 24.2m</text>
+                <text x="8" y="26">HDG 094°</text>
+                <text x="8" y="38">SPD 0.0 m/s</text>
+                <text x="425" y="14" textAnchor="end">FRM 001247</text>
+                <text x="8" y="294">[REC] · 00:47</text>
+              </g>
+            </svg>
+            <div
+              style={{
+                position: "absolute",
+                bottom: 10,
+                left: "50%",
+                transform: "translateX(-50%)",
+                background: "rgba(10,10,11,0.85)",
+                border: "1px solid var(--b3-hot-border)",
+                padding: "6px 12px",
+                fontSize: 10,
+              }}
+            >
+              <span className="b3-hot">VISION LINK ACTIVE</span>
+              <span className="b3-dim">
+                {" "}
+                · AI streaming scene to caller via voice{" "}
+              </span>
+            </div>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1.3fr 1fr",
+              borderTop: "1px solid var(--b3-border)",
+            }}
+          >
+            <div style={{ padding: "12px 16px", borderRight: "1px solid var(--b3-border)" }}>
+              <div className="b3-hd-t b3-dim" style={{ marginBottom: 8 }}>
+                call #05 · caller on line
+              </div>
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 9, color: "var(--b3-hot)", width: 50 }}>CALLER</span>
+                  <div style={{ flex: 1 }}>
+                    <Soundbar bars={90} height={18} seed={5} active color="#ff0096" />
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 9, color: "var(--b3-text-2)", width: 50 }}>AI</span>
+                  <div style={{ flex: 1 }}>
+                    <Soundbar bars={90} height={18} seed={55} active={false} idle color="#e8e8ea" />
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 9, color: "var(--b3-amber)", width: 50 }}>DRONE</span>
+                  <div style={{ flex: 1 }}>
+                    <Soundbar bars={90} height={18} seed={77} active color="#ffb84d" speed={120} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ padding: "12px 16px" }}>
+              <div className="b3-hd-t b3-dim" style={{ marginBottom: 8 }}>
+                robot plan · proposed
+              </div>
+              <div style={{ display: "grid", gap: 6, fontSize: 10 }}>
+                {[
+                  ["1", "approach person_d1 from north (upwind)", "4.2m"],
+                  ["2", "stream vitals · thermal overlay", "continuous"],
+                  ["3", "guide caller vocally to safe zone", "6.8m"],
+                ].map(([n, text, dist]) => (
+                  <div
+                    key={n}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "16px 1fr auto",
+                      gap: 8,
+                      alignItems: "baseline",
+                    }}
+                  >
+                    <span className="b3-hot">{n}</span>
+                    <span style={{ color: "var(--b3-text)" }}>{text}</span>
+                    <span className="b3-mono-num b3-dim">{dist}</span>
+                  </div>
+                ))}
+                <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                  <button className="b3-btn b3-btn-hot" disabled style={{ flex: 1, padding: 6 }}>
+                    execute ⌥↩
+                  </button>
+                  <button className="b3-btn b3-btn-ghost" disabled style={{ padding: "6px 10px" }}>
+                    hold
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: detections + tools + vision-grounded transcript */}
+        <div style={{ display: "grid", gridTemplateRows: "auto auto 1fr", minHeight: 0 }}>
+          <div style={{ borderBottom: "1px solid var(--b3-border)" }}>
+            <div className="b3-panel-hd">
+              <span className="b3-hd-t">VISION · DETECTIONS</span>
+              <span className="b3-hd-s">6 objects · 4 high priority</span>
+            </div>
+            <div style={{ maxHeight: 200, overflowY: "auto" }}>
+              {V4_DETECTIONS.map((d) => (
+                <div
+                  key={d.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "10px 1fr auto auto",
+                    gap: 10,
+                    padding: "6px 14px",
+                    borderBottom: "1px solid var(--b3-border)",
+                    alignItems: "center",
+                    fontSize: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 4,
+                      height: 14,
+                      background: d.color,
+                      display: "inline-block",
+                    }}
+                  />
+                  <div>
+                    <div style={{ color: "var(--b3-text)" }}>{d.label}</div>
+                    <div style={{ color: "var(--b3-text-3)", fontSize: 9 }}>{d.state}</div>
+                  </div>
+                  <span className="b3-mono-num" style={{ color: "var(--b3-text-2)" }}>
+                    {d.conf.toFixed(2)}
+                  </span>
+                  <button className="b3-btn b3-btn-ghost" disabled style={{ padding: "2px 6px", fontSize: 8 }}>
+                    track
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ borderBottom: "1px solid var(--b3-border)" }}>
+            <div className="b3-panel-hd">
+              <span className="b3-hd-t">TOOL TRACE · VISION + ROBOT</span>
+              <span className="b3-hd-s">268ms p99 · ongoing stream</span>
+            </div>
+            <div style={{ padding: "6px 14px", maxHeight: 220, overflowY: "auto", fontSize: 10 }}>
+              {V4_TOOL_CALLS.map((t, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "42px 1fr",
+                    gap: 8,
+                    padding: "3px 0",
+                    borderBottom: "1px dashed var(--b3-border)",
+                  }}
+                >
+                  <span
+                    className="b3-mono-num"
+                    style={{ color: t.ongoing ? "var(--b3-hot)" : "var(--b3-text-3)" }}
+                  >
+                    {t.ms}ms
+                    {t.ongoing ? "*" : ""}
+                  </span>
+                  <div>
+                    <span className="b3-hot">{t.op}</span>
+                    <span style={{ color: "var(--b3-text-3)" }}>({t.args})</span>
+                    <div style={{ color: "var(--b3-text-2)", paddingLeft: 10 }}>
+                      -&gt; {t.out}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateRows: "auto 1fr", minHeight: 0 }}>
+            <div className="b3-panel-hd">
+              <span className="b3-hd-t">TRANSCRIPT · VISION-GROUNDED</span>
+              <span className="b3-hd-s">ai uses scene context</span>
+            </div>
+            <div
+              style={{
+                padding: "12px 16px",
+                overflowY: "auto",
+                fontSize: 11,
+                display: "grid",
+                gap: 10,
+                lineHeight: 1.5,
+              }}
+            >
+              <div>
+                <span className="b3-hot" style={{ fontSize: 9, letterSpacing: "0.05em" }}>
+                  t8 · caller
+                </span>
+                <div style={{ color: "var(--b3-text)", marginTop: 2 }}>
+                  i don't know what to do, he's bleeding a lot
+                </div>
+              </div>
+              <div>
+                <span className="b3-dim" style={{ fontSize: 9, letterSpacing: "0.05em" }}>
+                  t8 · ai · 312ms · vision-grounded
+                </span>
+                <div style={{ color: "var(--b3-text-2)", marginTop: 2 }}>
+                  i can see <span className="b3-hot">the drone has arrived overhead</span>.
+                  he's lying about 8 feet from the car. walk toward him —{" "}
+                  <span className="b3-hot">
+                    stay on the grass, away from the fuel pool i see below the sedan
+                  </span>
+                  .
+                </div>
+                <div className="b3-green" style={{ fontSize: 9, marginTop: 3 }}>
+                  -&gt; 3 vision detections injected into context
+                </div>
+              </div>
+              <div>
+                <span className="b3-hot" style={{ fontSize: 9, letterSpacing: "0.05em" }}>
+                  t9 · caller
+                </span>
+                <div style={{ color: "var(--b3-text)", marginTop: 2 }}>
+                  ok i see him. should i turn him over?
+                </div>
+              </div>
+              <div>
+                <span className="b3-dim" style={{ fontSize: 9, letterSpacing: "0.05em" }}>
+                  t9 · ai · 288ms · vision-grounded
+                </span>
+                <div style={{ color: "var(--b3-text-2)", marginTop: 2 }}>
+                  <span className="b3-hot">i can see him breathing from here</span> —
+                  roughly 14 breaths a minute. don't turn him. kneel beside him and keep
+                  him still.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1016,4 +2138,157 @@ const B3_STYLES = `
 .b3-console *::-webkit-scrollbar-track { background: transparent; }
 .b3-console *::-webkit-scrollbar-thumb { background: var(--b3-border-2); border-radius: 3px; }
 .b3-console *::-webkit-scrollbar-thumb:hover { background: var(--b3-text-4); }
+
+/* Tabs (top bar) */
+.b3-tabs { display: flex; gap: 2px; border: 1px solid var(--b3-border-2); border-radius: var(--b3-r-sm); overflow: hidden; }
+.b3-tab {
+  background: transparent; color: var(--b3-text-2);
+  border: none; border-right: 1px solid var(--b3-border);
+  padding: 4px 8px; font: inherit; font-size: 10px;
+  letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+}
+.b3-tab:last-child { border-right: none; }
+.b3-tab:hover { color: var(--b3-text); }
+.b3-tab-active { background: var(--b3-hot-bg); color: var(--b3-hot); }
+.b3-chip-amber { background: rgba(255, 184, 77, 0.06); color: var(--b3-amber); border: 1px solid rgba(255, 184, 77, 0.3); }
+.b3-voice-detached {
+  padding: 16px; font-size: 11px; color: var(--b3-text-3);
+  line-height: 1.5;
+}
+
+/* V2 — Soundbar-forward + live pipeline latency */
+.b3-v2-wrap {
+  display: grid; grid-template-rows: 1fr;
+  min-height: 0; gap: 12px;
+}
+.b3-v2-main {
+  display: grid; grid-template-columns: 1fr 420px; gap: 12px;
+  min-height: 0;
+}
+.b3-v2-left {
+  display: grid; grid-template-rows: auto 1fr auto; min-height: 0;
+  border: 1px solid var(--b3-border); background: var(--b3-panel);
+  border-radius: var(--b3-r-md);
+}
+.b3-v2-colhead {
+  display: grid;
+  grid-template-columns: 54px 180px 1fr 130px 80px 60px;
+  gap: 14px; padding: 8px 14px;
+  border-bottom: 1px solid var(--b3-border);
+  font-size: 9px; color: var(--b3-text-3);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.b3-v2-rows { overflow-y: auto; }
+.b3-v2-row {
+  display: grid;
+  grid-template-columns: 54px 180px 1fr 130px 80px 60px;
+  gap: 14px; align-items: center; padding: 10px 14px;
+  border-bottom: 1px solid var(--b3-border);
+}
+.b3-v2-footer {
+  padding: 10px 14px; border-top: 1px solid var(--b3-border);
+  display: flex; gap: 24px; font-size: 10px; color: var(--b3-text-3);
+  align-items: center;
+}
+.b3-legend-swatch { display: inline-block; width: 12px; height: 2px; vertical-align: middle; margin-right: 4px; }
+.b3-legend-hot { background: var(--b3-hot); }
+.b3-legend-text { background: var(--b3-text); }
+.b3-v2-right {
+  display: grid; grid-template-rows: auto auto auto 1fr; min-height: 0;
+  background: var(--b3-panel); border: 1px solid var(--b3-border);
+  border-radius: var(--b3-r-md);
+}
+.b3-v2-focus-head {
+  padding: 14px 20px; border-bottom: 1px solid var(--b3-border);
+  display: grid; gap: 4px;
+}
+.b3-v2-chips { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.b3-v2-voice {
+  border-bottom: 1px solid var(--b3-border);
+}
+.b3-v2-voice-hd {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 10px 20px; font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--b3-text-3);
+}
+.b3-v2-voice-body { min-height: 140px; padding: 8px 20px; }
+.b3-v2-voice-body .caller-hero {
+  padding: 10px 0; min-height: 140px; gap: 10px;
+}
+.b3-v2-voice-body .caller-orb-frame { flex: 0 0 80px; }
+.b3-v2-voice-body .caller-cta h1 { font-size: 14px; margin: 0 0 4px; }
+.b3-v2-voice-body .caller-subtitle { font-size: 11px; margin: 0 0 8px; max-width: 320px; }
+.b3-v2-voice-body .caller-button {
+  font-family: var(--b3-mono); background: var(--b3-hot);
+  color: var(--b3-bg); border: none; padding: 8px 14px;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+  text-transform: uppercase; cursor: pointer;
+}
+.b3-v2-latency {
+  padding: 12px 20px; border-bottom: 1px solid var(--b3-border);
+}
+.b3-v2-note {
+  font-size: 9px; color: var(--b3-amber); margin-top: 8px;
+}
+.b3-v2-note code {
+  background: rgba(255, 184, 77, 0.08); padding: 1px 4px;
+  border-radius: 2px; color: var(--b3-amber);
+}
+.b3-v2-tail {
+  display: grid; grid-template-rows: auto 1fr; min-height: 0;
+}
+.b3-v2-tail-body {
+  padding: 10px 20px; overflow-y: auto; font-size: 11px;
+  display: grid; gap: 10px;
+}
+.b3-v2-tail-row { display: grid; gap: 2px; }
+
+/* V3 — MCI mode */
+.b3-v3-wrap {
+  display: grid; grid-template-rows: auto 1fr; gap: 12px;
+  min-height: 0;
+}
+.b3-v3-banner {
+  background: var(--b3-hot-bg);
+  border-top: 1px solid var(--b3-hot);
+  border-bottom: 1px solid var(--b3-hot);
+  padding: 14px 20px;
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 24px; align-items: center;
+}
+.b3-v3-banner-left { display: flex; gap: 10px; align-items: center; }
+.b3-v3-title {
+  font-size: 14px; font-weight: 600; color: var(--b3-hot);
+  letter-spacing: 0.12em;
+}
+.b3-v3-banner-body { font-size: 11px; color: var(--b3-text); line-height: 1.5; }
+.b3-v3-main {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px; min-height: 0;
+}
+@media (max-width: 1280px) {
+  .b3-v3-main { grid-template-columns: 1fr; }
+  .b3-v2-main { grid-template-columns: 1fr; }
+}
+
+/* V4 — Vision link */
+.b3-v4-wrap {
+  display: grid; grid-template-rows: auto 1fr; gap: 10px;
+  min-height: 0;
+}
+.b3-v4-topbar {
+  display: flex; gap: 12px; padding: 8px 12px; align-items: center;
+  border: 1px solid var(--b3-border); border-radius: var(--b3-r-md);
+  background: var(--b3-panel);
+  flex-wrap: wrap;
+}
+.b3-v4-main {
+  display: grid; grid-template-columns: 1.4fr 1fr;
+  min-height: 0; border: 1px solid var(--b3-border);
+  border-radius: var(--b3-r-md); background: var(--b3-panel);
+  overflow: hidden;
+}
+@media (max-width: 1280px) {
+  .b3-v4-main { grid-template-columns: 1fr; }
+}
 `;

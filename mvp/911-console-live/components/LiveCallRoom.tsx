@@ -20,6 +20,7 @@ import {
   LiveKitRoom,
   RoomAudioRenderer,
   useConnectionState,
+  useDataChannel,
   useLocalParticipant,
   useRoomContext,
   useTracks,
@@ -27,15 +28,33 @@ import {
 import { ConnectionState, RoomEvent, Track } from "livekit-client";
 import { Orb, type OrbAgentState } from "./Orb";
 
+// See agents/livekit/worker.py `_publish_latency` for the producer side.
+// Topic string MUST match the Python side exactly.
+export const B3_LATENCY_TOPIC = "b3-latency";
+
+export interface LatencyTelemetry {
+  session_id: string;
+  turn_id: string;
+  ts_ms: number;
+  stt_ms: number;
+  llm_ms: number;
+  tts_ms: number;
+  tool_ms: number;
+  total_ms: number;
+  note: string | null;
+}
+
 interface CallerProps {
   sessionId: string | null;
   /** Called with true whenever the LiveKit room reaches Connected,
    * false on disconnect / end. Lets the parent header show a truthful
    * status even when the SSE transcript plane is degraded. */
   onRoomLiveChange?: (live: boolean) => void;
+  /** Called once per message on the b3-latency LiveKit data channel. */
+  onLatency?: (lat: LatencyTelemetry) => void;
 }
 
-export function LiveCallRoom({ sessionId, onRoomLiveChange }: CallerProps) {
+export function LiveCallRoom({ sessionId, onRoomLiveChange, onLatency }: CallerProps) {
   const [token, setToken] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [phase, setPhase] = useState<
@@ -131,8 +150,24 @@ export function LiveCallRoom({ sessionId, onRoomLiveChange }: CallerProps) {
         sessionId={sessionId}
         onRoomLiveChange={onRoomLiveChange}
       />
+      {onLatency && <LatencyTap onLatency={onLatency} />}
     </LiveKitRoom>
   );
+}
+
+/** Subscribes to the `b3-latency` LiveKit data channel and forwards
+ * decoded JSON up to the page. MUST be rendered inside LiveKitRoom. */
+function LatencyTap({ onLatency }: { onLatency: (l: LatencyTelemetry) => void }) {
+  useDataChannel(B3_LATENCY_TOPIC, (msg) => {
+    try {
+      const text = new TextDecoder().decode(msg.payload);
+      const parsed = JSON.parse(text) as LatencyTelemetry;
+      onLatency(parsed);
+    } catch {
+      /* malformed payload — ignore; frontend stays on last-known values */
+    }
+  });
+  return null;
 }
 
 function PreConnectHero({

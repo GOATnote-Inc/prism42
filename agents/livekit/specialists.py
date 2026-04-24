@@ -11,14 +11,43 @@ Per docs/livekit-architecture.md §1 + the Anthropic agent-teams pattern:
   - Post-session specialists (auditor/qi-reviewer) run after session
     close — see auditor.py (Phase 3b deliverable).
 
-This file ships 5 of 14 in Phase 3a as the proof-of-pattern:
-  - run_safety_monitor   (Sonnet, parallel evaluator)
-  - run_ohca_detector    (Sonnet, parallel evaluator)
-  - run_intent_verifier  (Sonnet, parallel evaluator)
-  - specialist_intake    (Opus, voice-facing)
-  - specialist_triage    (Opus, voice-facing)
+This file ships 8 of 14 in Phase 3a as the proof-of-pattern:
+  - run_safety_monitor    (Sonnet, parallel evaluator)
+  - run_ohca_detector     (Sonnet, parallel evaluator)
+  - run_intent_verifier   (Sonnet, parallel evaluator)
+  - specialist_intake     (Sonnet, voice-facing)
+  - specialist_triage     (Sonnet, voice-facing)
+  - specialist_dispatch   (Sonnet, voice-facing)
+  - specialist_pdi        (Sonnet, voice-facing)
+  - specialist_handoff    (Sonnet, voice-facing)
 
-The remaining 9 follow the same shape and land in a follow-on PR.
+The remaining 6 follow the same shape and land in a follow-on PR.
+
+## Tool-input schema contract (2026-04-24)
+
+Every @function_tool below takes EXACTLY ONE parameter typed as a
+Pydantic BaseModel subclass with `ConfigDict(extra="forbid")`.
+
+Why: the Anthropic Messages API rejects tool input schemas whose
+`type:object` nodes have `additionalProperties != false`. Livekit's
+tool-context wrapper generates a Pydantic model from the function
+signature and runs it through `_strict.to_strict_json_schema`, but
+that strict pass only SETS `additionalProperties: false` when it is
+absent; it will not override an explicit `true`. Primitive `dict[str,
+Any]` hints produce `additionalProperties: true` from Pydantic, which
+the strict pass leaves in place, which Anthropic then 400s.
+
+Passing a single typed-model parameter means:
+  1. The wrapper model's one field is a $ref to our strict model.
+  2. Our model's `ConfigDict(extra="forbid")` emits
+     `additionalProperties: false` natively.
+  3. The strict pass fills in `additionalProperties: false` on the
+     wrapper's object root.
+  4. The previous monkey-patch (worker.py `_patch_anthropic_tool_schemas`)
+     becomes unnecessary and is removed.
+
+Return types stay `dict` — those are tool OUTPUTS, not inputs, and the
+API does not schema-validate them.
 """
 from __future__ import annotations
 
@@ -30,6 +59,7 @@ import structlog
 import yaml
 from anthropic import AsyncAnthropic
 from livekit.agents import function_tool
+from pydantic import BaseModel, ConfigDict
 
 from state import (  # noqa: E402  flat-module import
     Alert,
@@ -46,6 +76,49 @@ log = structlog.get_logger()
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENTS_YAML_DIR = REPO_ROOT / "agents"
+
+
+# ---------------------------------------------------------------------
+# Pydantic input models — one per tool. Every model MUST carry
+# ConfigDict(extra="forbid") so Pydantic emits additionalProperties:
+# false in the generated JSON schema. Never add dict[str, Any] fields
+# here; if you need key-value data, describe the keys as explicit
+# str fields or reference another BaseModel.
+# ---------------------------------------------------------------------
+
+
+class SafetyMonitorInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    session_id: str
+    caller_text: str
+
+
+class OhcaDetectorInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    session_id: str
+    transcript_so_far: str
+
+
+class IntentVerifierInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    session_id: str
+    caller_text: str
+    transcript_so_far: str
+
+
+class SpecialistInput(BaseModel):
+    """Shared shape for every voice-facing specialist.
+
+    Keeping one class (rather than one per specialist) is deliberate —
+    intake/triage/dispatch/pdi/handoff all take the same (session_id,
+    caller_text) pair, and deduplicating the schema avoids five
+    near-identical JSON trees in every tools payload we ship to the
+    Messages API.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    session_id: str
+    caller_text: str
 
 
 # ---------------------------------------------------------------------
@@ -137,10 +210,7 @@ def _sonnet_client() -> AsyncAnthropic:
 
 
 @function_tool
-async def run_safety_monitor(
-    session_id: str,
-    caller_text: str,
-) -> dict[str, Any]:
+async def run_safety_monitor(input: SafetyMonitorInput) -> dict:
     """Classify the current turn against 8 alert classes.
 
     Returns: {"alerts": [...]} per the schema. Recorded directly into
@@ -154,14 +224,14 @@ async def run_safety_monitor(
     docs/livekit-kb/05-debugging-playbook.md.
     """
     store = get_session_store()
-    state = store.get(session_id)
+    state = store.get(input.session_id)
     last_specialist_turn = (
         state.turns[-1].model_dump() if state and state.turns else None
     )
     sysprompt = _load_agent_system("psap-safety-monitor")
     user = json.dumps(
         {
-            "caller_text": caller_text,
+            "caller_text": input.caller_text,
             "last_specialist_turn": last_specialist_turn,
         }
     )
@@ -181,17 +251,14 @@ async def run_safety_monitor(
 
 
 @function_tool
-async def run_ohca_detector(
-    session_id: str,
-    transcript_so_far: str,
-) -> dict[str, Any]:
+async def run_ohca_detector(input: OhcaDetectorInput) -> dict:
     """Compute OHCA probability per GEDP §5.1.1 + AHA BLS 2025 signals.
 
     Returns: {"probability": float, "signals": [...], "alert_severity": str|None}.
     Updates SessionBrief.ohca_probability.
     """
     sysprompt = _load_agent_system("psap-ohca-detector")
-    user = json.dumps({"transcript_so_far": transcript_so_far})
+    user = json.dumps({"transcript_so_far": input.transcript_so_far})
     client = _sonnet_client()
     resp = await client.messages.create(
         model="claude-sonnet-4-6",
@@ -220,11 +287,7 @@ async def run_ohca_detector(
 
 
 @function_tool
-async def run_intent_verifier(
-    session_id: str,
-    caller_text: str,
-    transcript_so_far: str,
-) -> dict[str, Any]:
+async def run_intent_verifier(input: IntentVerifierInput) -> dict:
     """Classify caller intent — testing, real-emergency-claim, prank, in-character, etc.
 
     Returns: {"intent_class": str, "confidence": float, "cited_utterances": [str]}.
@@ -233,8 +296,8 @@ async def run_intent_verifier(
     sysprompt = _load_agent_system("psap-intent-verifier")
     user = json.dumps(
         {
-            "caller_text": caller_text,
-            "transcript_so_far": transcript_so_far,
+            "caller_text": input.caller_text,
+            "transcript_so_far": input.transcript_so_far,
         }
     )
     client = _sonnet_client()
@@ -479,61 +542,42 @@ def _safe_fallback(
 
 
 @function_tool
-async def specialist_intake(
-    session_id: str,
-    caller_text: str,
-) -> dict[str, Any]:
+async def specialist_intake(input: SpecialistInput) -> dict:
     """Drive the intake phase: greet, capture address, classify chief complaint, get callback."""
-    # Late-bind the SessionStore from the worker's context — avoids
-    # circular import + keeps function_tool signatures clean.
-    # get_session_store now comes from state.py (top-level import above)
-
     return await _emit_specialist_turn(
-        "psap-intake", get_session_store(), session_id, caller_text
+        "psap-intake", get_session_store(), input.session_id, input.caller_text
     )
 
 
 @function_tool
-async def specialist_triage(
-    session_id: str,
-    caller_text: str,
-) -> dict[str, Any]:
+async def specialist_triage(input: SpecialistInput) -> dict:
     """Run GEDP key-question flow for the chief complaint family; assign determinant."""
-    # get_session_store now comes from state.py (top-level import above)
-
     return await _emit_specialist_turn(
-        "psap-triage", get_session_store(), session_id, caller_text
-    )
-
-
-# Phase 3a-2 (next PR): specialist_dispatch, specialist_pdi, specialist_handoff
-# follow the same _emit_specialist_turn pattern. The orchestrator's tool
-# catalog declares these placeholders so its prompt can reference them
-# even before they're wired:
-@function_tool
-async def specialist_dispatch(session_id: str, caller_text: str) -> dict[str, Any]:
-    # get_session_store now comes from state.py (top-level import above)
-
-    return await _emit_specialist_turn(
-        "psap-dispatch", get_session_store(), session_id, caller_text
+        "psap-triage", get_session_store(), input.session_id, input.caller_text
     )
 
 
 @function_tool
-async def specialist_pdi(session_id: str, caller_text: str) -> dict[str, Any]:
-    # get_session_store now comes from state.py (top-level import above)
-
+async def specialist_dispatch(input: SpecialistInput) -> dict:
+    """Commit unit assignment, read back the determinant code, confirm resources enroute."""
     return await _emit_specialist_turn(
-        "psap-pdi", get_session_store(), session_id, caller_text
+        "psap-dispatch", get_session_store(), input.session_id, input.caller_text
     )
 
 
 @function_tool
-async def specialist_handoff(session_id: str, caller_text: str) -> dict[str, Any]:
-    # get_session_store now comes from state.py (top-level import above)
-
+async def specialist_pdi(input: SpecialistInput) -> dict:
+    """Deliver pre-arrival instructions matched to the determinant (CPR, bleeding control, airway)."""
     return await _emit_specialist_turn(
-        "psap-handoff", get_session_store(), session_id, caller_text
+        "psap-pdi", get_session_store(), input.session_id, input.caller_text
+    )
+
+
+@function_tool
+async def specialist_handoff(input: SpecialistInput) -> dict:
+    """Terminal-phase handoff: confirm units arrived or caller is with responders; close call."""
+    return await _emit_specialist_turn(
+        "psap-handoff", get_session_store(), input.session_id, input.caller_text
     )
 
 

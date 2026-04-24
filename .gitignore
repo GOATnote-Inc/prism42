@@ -81,3 +81,4 @@ third_party/*
 
 # Claude Code / Desktop per-project scratch (inline comments not supported by gitignore)
 .claude/
+.vercel

@@ -23,6 +23,7 @@ Environment (optional; defaults assume services run on this pod):
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import random
 import time
@@ -85,59 +86,32 @@ FILLERS: tuple[str, ...] = (
 FILLER_DELAY_S: float = 0.3
 
 
-def _force_additional_properties_false(node: Any) -> None:
-    """Anthropic API (2026+) rejects tool input schemas where any object
-    type has additionalProperties != false. dict[str, Any] hints in
-    @function_tool produce schemas that EXPLICITLY emit `true`, and for
-    Optional[dict] hints Pydantic emits `type: ["object", "null"]` (a
-    list) — both must match. Walk recursively and force the field to
-    false on every object-like node. Safe across {anyOf, oneOf, $defs,
-    properties, custom, tools, tuples, Optional}.
-
-    Guard fix (2026-04-24 per livekit-kb/05-debugging-playbook.md): the
-    previous guard `node.get("type") == "object"` missed nullable dicts
-    because Pydantic emits the type as a list there.
-    """
-    if isinstance(node, dict):
-        t = node.get("type")
-        is_object = t == "object" or (isinstance(t, list) and "object" in t)
-        if is_object and node.get("additionalProperties") is not False:
-            node["additionalProperties"] = False
-        for v in node.values():
-            _force_additional_properties_false(v)
-    elif isinstance(node, (list, tuple)):
-        for v in node:
-            _force_additional_properties_false(v)
-
-
-def _patch_anthropic_tool_schemas() -> None:
-    """Monkey-patch the AnthropicLLM serialization so every tool schema
-    we send has additionalProperties: false. Idempotent.
-
-    The livekit-plugins-anthropic plugin sends tools in the 2026+ wrapped
-    format `{"type":"custom","custom":{"name":..., "input_schema":{...}}}`.
-    Anthropic's API rejects any `type:object` schema whose
-    `additionalProperties` is true (or omitted). dict[str,Any] type hints
-    in @function_tool produce exactly that. We walk the ENTIRE call
-    kwargs recursively and force-false on every object node.
-    """
-    from anthropic.resources.messages import AsyncMessages  # noqa: PLC0415
-
-    if getattr(AsyncMessages, "_prism42_patched", False):
-        return
-    original_create = AsyncMessages.create
-
-    async def patched_create(self, *args, **kwargs):
-        _force_additional_properties_false(kwargs)
-        _force_additional_properties_false(list(args))
-        return await original_create(self, *args, **kwargs)
-
-    AsyncMessages.create = patched_create
-    AsyncMessages._prism42_patched = True
-    log.info("anthropic.tool_schema_patched")
-
-
-_patch_anthropic_tool_schemas()
+# ---------------------------------------------------------------------
+# Tool-schema compliance (Anthropic Messages API, 2026+)
+#
+# The Messages API rejects tool input_schema objects whose `type:object`
+# nodes emit `additionalProperties` as anything other than `false`.
+# Pydantic's default for generic containers like `dict[str, Any]` is
+# `additionalProperties: true`, and livekit-agents' strict-mode schema
+# pass (`_strict.to_strict_json_schema`) only fills in `false` when the
+# field is absent — it will NOT override an explicit `true`.
+#
+# Previous workaround (deleted 2026-04-24): a runtime monkey-patch on
+# `anthropic.resources.messages.AsyncMessages.create` that walked tool-
+# call kwargs and force-set `additionalProperties:false` on every
+# object-typed node. See git history + docs/livekit-kb/05-debugging-
+# playbook.md for the original symptom + diagnosis.
+#
+# Current fix: specialists.py types every @function_tool parameter as a
+# Pydantic BaseModel subclass with `ConfigDict(extra="forbid")`. That
+# emits `additionalProperties:false` natively on each object node so
+# the strict-mode pass only needs to fill in the outer wrapper. No
+# runtime mutation required.
+#
+# If a future tool reintroduces a `dict[str, Any]` (or any open-schema)
+# hint, the Messages API will 400 on the first call. The correct fix
+# is a typed BaseModel in specialists.py — NOT a new monkey-patch.
+# ---------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------
@@ -225,6 +199,8 @@ async def entrypoint(ctx: JobContext) -> None:
             # Fire-and-forget rubric grade for speak turns only.
             if latest.action == "speak" and latest.content:
                 asyncio.create_task(_grade_async(session_id, latest, item))
+            # Fire-and-forget latency telemetry → /prism42/livekit V2 strip.
+            asyncio.create_task(_publish_latency(ctx, session_id, latest))
         except Exception as e:  # noqa: BLE001
             log.warning("on_item.error", err=str(e)[:200])
 
@@ -387,6 +363,74 @@ async def entrypoint(ctx: JobContext) -> None:
             }
         )
     log.info("entrypoint.end", session_id=session_id)
+
+
+async def _publish_latency(ctx: JobContext, session_id: str, turn: Any) -> None:
+    """Publish per-turn pipeline latency over a LiveKit data channel.
+
+    Contract (topic="b3-latency", reliable=True, JSON):
+        {
+          "session_id": str,
+          "turn_id":    str,
+          "ts_ms":      int,    # ms since epoch of turn-complete
+          "stt_ms":     int,    # Parakeet partial → final finalize
+          "llm_ms":     int,    # first token → last token of Sonnet 4.6
+          "tts_ms":     int,    # TTS request → first audio frame (Fish)
+          "tool_ms":    int,    # sum of tool hops on this turn (e.g. CAD)
+          "total_ms":   int,    # caller end-of-speech → first TTS frame
+          "note":       str|None
+        }
+
+    Values come from `turn.debug` if the orchestrator populated them;
+    otherwise we emit zeros with a NOTE so the frontend can verify the
+    channel is wired before the orchestrator-side instrumentation lands.
+
+    Frontend subscribes via `useDataChannel("b3-latency")` in
+    mvp/911-console-live/components/b300/LatencyStrip.tsx.
+    """
+    try:
+        debug = getattr(turn, "debug", {}) or {}
+
+        def _int(field: str) -> int:
+            v = debug.get(field)
+            try:
+                return int(v) if v is not None else 0
+            except (TypeError, ValueError):
+                return 0
+
+        stt_ms = _int("stt_ms")
+        llm_ms = _int("llm_ms")
+        tts_ms = _int("tts_ms")
+        tool_ms = _int("tool_ms")
+        total_ms = _int("total_ms")
+        if total_ms == 0 and any((stt_ms, llm_ms, tts_ms, tool_ms)):
+            total_ms = stt_ms + llm_ms + tts_ms + tool_ms
+
+        note: str | None = None
+        if stt_ms == llm_ms == tts_ms == tool_ms == total_ms == 0:
+            note = "orchestrator_timing_not_populated"
+
+        payload = json.dumps(
+            {
+                "session_id": session_id,
+                "turn_id": getattr(turn, "turn_id", ""),
+                "ts_ms": int(time.time() * 1000),
+                "stt_ms": stt_ms,
+                "llm_ms": llm_ms,
+                "tts_ms": tts_ms,
+                "tool_ms": tool_ms,
+                "total_ms": total_ms,
+                "note": note,
+            }
+        ).encode("utf-8")
+
+        await ctx.room.local_participant.publish_data(
+            payload=payload,
+            reliable=True,
+            topic="b3-latency",
+        )
+    except Exception as e:  # noqa: BLE001
+        log.warning("latency_publish.failed", err=str(e)[:200])
 
 
 async def _grade_async(session_id: str, turn: Any, _item: Any) -> None:
