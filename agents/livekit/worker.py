@@ -150,16 +150,18 @@ async def entrypoint(ctx: JobContext) -> None:
     store.open(session_id)
 
     # AgentSession composition — STT + LLM + TTS + VAD + turn detection.
-    # The LLM is set per-Agent (orchestrator), so AgentSession's `llm`
-    # is the default fallback. We keep it Anthropic Opus 4.7 for any
-    # turn where the orchestrator decides to speak directly (rare —
-    # we want it always going through specialists).
+    #
+    # LLM = claude-sonnet-4-6 for the FAST single-LLM path (2026-04-24).
+    # The archived orchestrator_full.py used Opus 4.7 + 4 parallel tools +
+    # a STEP 2 Opus call → 14-20s reply latency, fatal for voice demo.
+    # Sonnet 4.6 streaming TTFT ~500ms puts first audio in the caller's
+    # ears in ~2-3s. See docs/livekit-kb/08-opus-47-refusal-patterns.md §7.
     from livekit.plugins.anthropic import LLM as AnthropicLLM  # noqa: PLC0415
 
     session = AgentSession(
         vad=silero.VAD.load(),
         stt=ParakeetSTT(ParakeetOptions()),
-        llm=AnthropicLLM(model="claude-opus-4-7"),
+        llm=AnthropicLLM(model="claude-sonnet-4-6"),
         tts=FishSpeechTTS(FishSpeechOptions()),
     )
 

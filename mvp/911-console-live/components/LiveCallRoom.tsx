@@ -29,9 +29,13 @@ import { Orb, type OrbAgentState } from "./Orb";
 
 interface CallerProps {
   sessionId: string | null;
+  /** Called with true whenever the LiveKit room reaches Connected,
+   * false on disconnect / end. Lets the parent header show a truthful
+   * status even when the SSE transcript plane is degraded. */
+  onRoomLiveChange?: (live: boolean) => void;
 }
 
-export function LiveCallRoom({ sessionId }: CallerProps) {
+export function LiveCallRoom({ sessionId, onRoomLiveChange }: CallerProps) {
   const [token, setToken] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [phase, setPhase] = useState<
@@ -88,7 +92,8 @@ export function LiveCallRoom({ sessionId }: CallerProps) {
     setPhase("ended");
     setToken(null);
     setServerUrl(null);
-  }, []);
+    onRoomLiveChange?.(false);
+  }, [onRoomLiveChange]);
 
   // Pre-connect state — show idle hero with the call button.
   if (phase === "idle" || phase === "minting" || phase === "ended" || phase === "error") {
@@ -121,7 +126,11 @@ export function LiveCallRoom({ sessionId }: CallerProps) {
       }}
     >
       <RoomAudioRenderer />
-      <ActiveCallHero onEnd={endCall} sessionId={sessionId} />
+      <ActiveCallHero
+        onEnd={endCall}
+        sessionId={sessionId}
+        onRoomLiveChange={onRoomLiveChange}
+      />
     </LiveKitRoom>
   );
 }
@@ -183,9 +192,11 @@ function PreConnectHero({
 function ActiveCallHero({
   onEnd,
   sessionId,
+  onRoomLiveChange,
 }: {
   onEnd: () => void;
   sessionId: string | null;
+  onRoomLiveChange?: (live: boolean) => void;
 }) {
   const room = useRoomContext();
   const connectionState = useConnectionState();
@@ -218,6 +229,12 @@ function ActiveCallHero({
   }, [room, localParticipant]);
 
   const live = connectionState === ConnectionState.Connected;
+
+  // Notify the page header whenever room liveness flips so the status
+  // line can reflect actual voice state instead of SSE state.
+  useEffect(() => {
+    onRoomLiveChange?.(live);
+  }, [live, onRoomLiveChange]);
 
   return (
     <div className="caller-hero">

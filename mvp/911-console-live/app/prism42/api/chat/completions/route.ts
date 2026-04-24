@@ -107,7 +107,11 @@ export async function POST(req: NextRequest) {
       const res = await coordinatorFallbackStream({
         systemPrompt: COORDINATOR_SYSTEM_PROMPT,
         messages: history,
-        maxTokens: 1500,
+        // 600 chosen 2026-04-24: typical coordinator turn JSON is 80-300
+        // tokens; 600 leaves headroom without letting Opus 4.7 ramble past
+        // the TTS streaming budget. Every 100 tokens ~= 100-200ms of TTS
+        // latency on ElevenLabs, so tighter cap → faster perceived reply.
+        maxTokens: 600,
       });
       fullText = res.fullText;
 

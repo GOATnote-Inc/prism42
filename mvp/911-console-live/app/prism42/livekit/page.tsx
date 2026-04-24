@@ -26,9 +26,15 @@ export default function LiveKitDispatcherPage() {
   const [turns, setTurns] = useState<PsapTurn[]>([]);
   const [grades, setGrades] = useState<RubricGrade[]>([]);
   const [alerts, setAlerts] = useState<PsapAlert[]>([]);
+  // sseState reflects ONLY the dispatcher SSE transcript stream. It is
+  // decoupled from voice — a 404 from /stream (serverless in-memory
+  // session store gap) is expected on Vercel and must not be surfaced
+  // as "error". When the LiveKit room is connected, the header shows
+  // roomLive instead.
   const [sseState, setSseState] = useState<
-    "idle" | "starting" | "connected" | "error"
+    "idle" | "starting" | "connected" | "no-transcript" | "degraded"
   >("idle");
+  const [roomLive, setRoomLive] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -44,7 +50,10 @@ export default function LiveKitDispatcherPage() {
         setPhase(body.phase);
         subscribe(body.session_id);
       } catch {
-        setSseState("error");
+        // session/start failure is still only a transcript-plane problem
+        // from the user's perspective — voice will mint its own token
+        // independently via /prism42/api/livekit-token.
+        setSseState("degraded");
       }
     })();
     return () => {
@@ -60,7 +69,12 @@ export default function LiveKitDispatcherPage() {
     (async () => {
       try {
         const r = await fetch(url, { signal: ac.signal });
-        if (!r.ok || !r.body) throw new Error(`stream ${r.status}`);
+        if (!r.ok || !r.body) {
+          // 404 on Vercel serverless = session-store didn't persist
+          // across instances. Expected; not an error.
+          setSseState(r.status === 404 ? "no-transcript" : "degraded");
+          return;
+        }
         setSseState("connected");
         const reader = r.body.getReader();
         const decoder = new TextDecoder();
@@ -77,7 +91,9 @@ export default function LiveKitDispatcherPage() {
           }
         }
       } catch (err) {
-        if ((err as { name?: string }).name !== "AbortError") setSseState("error");
+        if ((err as { name?: string }).name !== "AbortError") {
+          setSseState("degraded");
+        }
       }
     })();
   }
@@ -106,16 +122,21 @@ export default function LiveKitDispatcherPage() {
     }
   }
 
+  // When the LiveKit room is live, the header shows "connected · live
+  // voice" regardless of /stream state. Otherwise we surface the
+  // transcript-plane status directly.
+  const headerStatus = roomLive ? "connected · live voice" : sseState;
+
   return (
     <div className="console-shell">
       <header>
         <h1>Prism42 — Live 911 Dispatcher (LiveKit + B300)</h1>
         <div className="mono dim">
-          session · {sessionId ? sessionId.slice(0, 8) : "…"} · {sseState}
+          session · {sessionId ? sessionId.slice(0, 8) : "…"} · {headerStatus}
         </div>
       </header>
 
-      <LiveCallRoom sessionId={sessionId} />
+      <LiveCallRoom sessionId={sessionId} onRoomLiveChange={setRoomLive} />
 
       <div className="console-grid">
         <div>
