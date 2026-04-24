@@ -14,7 +14,13 @@
 set -euo pipefail
 
 PORT="${PRISM42_B300_RUBRIC_PORT:-8000}"
-MODEL="${PRISM42_B300_RUBRIC_MODEL:-meta-llama/Meta-Llama-3-70B-Instruct}"
+# Default to Qwen2.5-72B-Instruct — ungated on HF, no auth token needed,
+# fits on a single B300 in bf16 (~144 GB of 275 GB HBM3e). Quality is
+# competitive with Llama-3-70B for instruction-following / JSON-output
+# tasks (the rubric grader's specific ask). Override to
+# meta-llama/Meta-Llama-3-70B-Instruct with PRISM42_B300_RUBRIC_MODEL
+# if HF_TOKEN is available.
+MODEL="${PRISM42_B300_RUBRIC_MODEL:-Qwen/Qwen2.5-72B-Instruct}"
 SERVED_NAME="${PRISM42_B300_RUBRIC_SERVED_NAME:-local_llama70b_nvfp4}"
 
 # preflight
