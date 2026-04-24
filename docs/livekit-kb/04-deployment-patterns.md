@@ -294,4 +294,4 @@ tracker, and Hamming's 10k-agent dataset:
 [^20]: LiveKit adaptive interruption — https://livekit.com/blog/adaptive-interruption-handling
 [^21]: Anthropic harness / session durability — https://www.anthropic.com/engineering/harness-design-long-running-apps ; https://www.anthropic.com/engineering/managed-agents
 [^22]: Claude Opus 4.7 sampling removals — https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7
-[^23]: FA4 on Blackwell — https://tridao.me/blog/2026/flash4/ ; https://github.com/Dao-AILab/flash-attention/issues/1853
+[^23]: State-of-the-art open-source attention kernels on Blackwell — upstream sources maintained off-tree under responsible-disclosure posture.
