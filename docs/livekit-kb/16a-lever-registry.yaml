@@ -1,0 +1,188 @@
+# Machine-readable lever registry for the B300 voice stack.
+#
+# Source-of-truth for ralph_loop.sh's "next lever" suggestion. When a
+# lever lands + is measured, flip status: ready → shipping → landed and
+# fill in measured_ms_delta + commit_sha.
+#
+# Status lifecycle:
+#   ready     — unblocked, not yet applied on prod
+#   shipping  — code written + under test (may be in-flight)
+#   landed    — measured delta recorded, no further work
+#   blocked   — has an explicit blocker (record it in `blocker`)
+#
+# Keep rows narrow; prose + rationale stay in 16-optimization-roadmap.md.
+
+version: 1
+updated: 2026-04-24
+source_kb: docs/livekit-kb/16-optimization-roadmap.md
+
+levers:
+  - id: 1
+    title: TTS swap — Fish → Cartesia Sonic-3 via TTS_BACKEND
+    tier: 1
+    priority: 10
+    owner: team-W
+    status: ready
+    blocker: CARTESIA_API_KEY not provisioned in pod .env
+    expected_ms_delta: -7000  # Fish 9900ms TTFB → Cartesia ~90ms
+    measured_ms_delta: null
+    commit_sha: 1e51ca5       # env-flag + dispatch code landed
+    verify: TTS_BACKEND=cartesia worker restart + synthetic caller
+    refs: [kb15, kb09]
+
+  - id: 2
+    title: Parakeet streaming + interim transcripts
+    tier: 1
+    priority: 20
+    owner: team-S
+    status: shipping
+    blocker: prod swap pending — kill old batch server (pid 60210) then relaunch
+    expected_ms_delta: -400
+    measured_ms_delta: null
+    commit_sha: 2644b29
+    verify: PREFLIGHT_TRANSCRIPT events in worker.log + bench t_stt_ms drop
+    refs: [kb12, kb13]
+
+  - id: 3
+    title: Claude caching=ephemeral on AnthropicLLM
+    tier: 2
+    priority: 30
+    owner: team-W
+    status: landed
+    blocker: null
+    expected_ms_delta: -1500   # up to 85% TTFT reduction on cache hit
+    measured_ms_delta: -835    # observed LLM TTFT mean post-patch
+    commit_sha: 1e51ca5
+    verify: bench t_llm_ms mean + cache-hit counters
+    refs: [kb14]
+
+  - id: 4
+    title: Verify Sonnet-4.6 pin (not Opus-4.7) in prod worker.py
+    tier: 2
+    priority: 40
+    owner: team-W
+    status: landed
+    blocker: null
+    expected_ms_delta: -3000   # Opus 4.7 TTFT 10-14s → Sonnet 4.6 ~1s
+    measured_ms_delta: null    # observed via t_llm_ms, not isolated
+    commit_sha: 1e51ca5
+    verify: ssh pod grep claude- worker.py → sonnet-4-6
+    refs: [kb14]
+
+  - id: 5
+    title: TurnHandlingOptions dynamic endpointing + preemptive gen
+    tier: 2
+    priority: 50
+    owner: team-W
+    status: landed
+    blocker: null
+    expected_ms_delta: -800
+    measured_ms_delta: null
+    commit_sha: 1e51ca5
+    verify: worker.log "turn_handling mode=dynamic" on startup
+    refs: [kb13]
+
+  - id: 6
+    title: Worker _on_item role gate (skip non-assistant speak)
+    tier: 3
+    priority: 60
+    owner: team-W
+    status: landed
+    blocker: null
+    expected_ms_delta: -300    # removes wasted TTS cycles
+    measured_ms_delta: null
+    commit_sha: 1e51ca5
+    verify: log absent of "speak(role=user)"
+    refs: [kb13]
+
+  - id: 7
+    title: Fish PSAP reference voice (12.14s, voice lock)
+    tier: 3
+    priority: 70
+    owner: team-F
+    status: landed
+    blocker: null
+    expected_ms_delta: 0       # quality-only; no latency impact
+    measured_ms_delta: 0
+    commit_sha: 2387bbf
+    verify: synthetic caller audio matches PSAP dispatcher timbre
+    refs: [kb11]
+
+  - id: 8
+    title: Fish partial-DAC-decode (stream audio before full generation)
+    tier: 4
+    priority: 80
+    owner: team-F
+    status: blocked
+    blocker: CUDA nvrtc sm_103 incompatibility on partial-DAC path
+    expected_ms_delta: -2000
+    measured_ms_delta: null
+    commit_sha: null
+    verify: bench t_fish_ttfb_ms < 500ms
+    refs: [kb11]
+
+  - id: 9
+    title: Parakeet NeMo container bump 25.02 → 25.09
+    tier: 4
+    priority: 90
+    owner: team-K
+    status: landed
+    blocker: null
+    expected_ms_delta: 0       # durability-only; enables sm_103
+    measured_ms_delta: 0
+    commit_sha: 5a16c88
+    verify: nvidia-smi CUDA 12.9.1 in container + Parakeet v3 model load
+    refs: [kb12]
+
+  - id: 10
+    title: PipelineEOUMetrics + phantom metric removal
+    tier: 3
+    priority: 100
+    owner: team-W
+    status: landed
+    blocker: null
+    expected_ms_delta: 0
+    measured_ms_delta: 0
+    commit_sha: 1e51ca5
+    verify: metrics_collected events flow to logs
+    refs: [kb13]
+
+  # Overlap levers — perceptual SOTA (24h → SOTA push)
+  - id: 11
+    title: Filler utterance at 300-600ms after speech-end (dead-air killer)
+    tier: overlap
+    priority: 15
+    owner: team-A
+    status: shipping
+    blocker: awaits lever #2 prod swap (needs interim STT events)
+    expected_ms_delta: -1500   # perceptual; no real e2e change but feels SOTA
+    measured_ms_delta: null
+    commit_sha: null
+    verify: audio timeline shows filler at <700ms after endpointing
+    refs: [gpt-reframe]
+
+  - id: 12
+    title: LLM trigger on STT partial (not final)
+    tier: overlap
+    priority: 17
+    owner: team-A
+    status: shipping
+    blocker: requires PREFLIGHT_TRANSCRIPT emission from Parakeet stream
+    expected_ms_delta: -700
+    measured_ms_delta: null
+    commit_sha: null
+    verify: worker.log shows llm.request before stt.final
+    refs: [gpt-reframe]
+
+  - id: 13
+    title: LLM-token → TTS stream (true pipeline overlap)
+    tier: overlap
+    priority: 18
+    owner: team-A
+    status: ready
+    blocker: null
+    expected_ms_delta: -500
+    measured_ms_delta: null
+    commit_sha: null
+    verify: TTS first-audio ~= LLM first-token timestamp
+    refs: [gpt-reframe, kb13]
