@@ -236,11 +236,86 @@ async def entrypoint(ctx: JobContext) -> None:
     # ears in ~2-3s. See docs/livekit-kb/08-opus-47-refusal-patterns.md §7.
     from livekit.plugins.anthropic import LLM as AnthropicLLM  # noqa: PLC0415
 
+    # TTS backend selector — Lever 1 (KB 15).
+    # Default stays "fish" (self-hosted B300) for zero regression.
+    # Flip to "cartesia"/"deepgram_aura"/"elevenlabs" via env var once
+    # the corresponding API key is provisioned in the pod .env.
+    # Each import lives inside its branch so a missing plugin only
+    # breaks that backend, not Fish.
+    _tts_backend = os.environ.get("TTS_BACKEND", "fish").lower()
+    if _tts_backend == "cartesia":
+        from livekit.plugins import cartesia  # noqa: PLC0415
+        _tts: Any = cartesia.TTS(
+            model="sonic-3",
+            voice=os.environ.get(
+                "CARTESIA_VOICE_ID",
+                # Sonic-3 "Professional Woman" (most professional female voice
+                # in Cartesia's public roster as of 2026-04 per KB 15 snippet).
+                "f786b574-daa5-4673-aa0c-cbe3e8534c02",
+            ),
+        )
+        log.info("tts.backend", backend="cartesia", model="sonic-3")
+    elif _tts_backend == "deepgram_aura":
+        from livekit.agents import inference  # noqa: PLC0415
+        _tts = inference.TTS(
+            model="deepgram/aura-2",
+            voice=os.environ.get("DEEPGRAM_VOICE", "athena"),
+            language="en",
+        )
+        log.info("tts.backend", backend="deepgram_aura", model="aura-2")
+    elif _tts_backend == "elevenlabs":
+        from livekit.plugins import elevenlabs  # noqa: PLC0415
+        _tts = elevenlabs.TTS(
+            model="eleven_flash_v2_5",
+            voice_id=os.environ.get("ELEVEN_VOICE_ID", "ODq5zmih8GrVes37Dizd"),
+            streaming_latency=4,
+        )
+        log.info("tts.backend", backend="elevenlabs", model="eleven_flash_v2_5")
+    else:
+        _tts = FishSpeechTTS(FishSpeechOptions())
+        log.info("tts.backend", backend="fish", model="s2-pro")
+
+    # turn_handling — Lever 5 (KB 13 §9 911-dispatcher profile).
+    # `TurnHandlingOptions` is a TypedDict of nested dicts in
+    # livekit-agents 1.5.6 (voice/turn.py:145). Adaptive interruption
+    # mode only activates once streaming STT lands (KB 13 §3 gate list);
+    # until then the "adaptive" key is inert and falls back to VAD, so
+    # setting it here is safe.
+    #
+    # Rationale per KB 13 §9:
+    #   - endpointing.mode="dynamic": EMA-based pacing for hesitating
+    #     911 callers; min_delay=0.6 gives the caller a beat to resume,
+    #     max_delay=4.0 caps the wait before we assume turn-end.
+    #   - interruption: adaptive when available, min_duration=0.35 +
+    #     min_words=2 block cough-cancels, false_interruption_timeout
+    #     1.5s resumes after a burp/cough.
+    #   - preemptive_generation: preemptive_tts=True speculatively
+    #     warms Fish for a latency win; max_speech_duration=12 covers
+    #     longer 911 utterances.
     session = AgentSession(
         vad=silero.VAD.load(),
         stt=ParakeetSTT(ParakeetOptions()),
-        llm=AnthropicLLM(model="claude-sonnet-4-6"),
-        tts=FishSpeechTTS(FishSpeechOptions()),
+        llm=AnthropicLLM(model="claude-sonnet-4-6", caching="ephemeral"),
+        tts=_tts,
+        turn_handling={
+            "endpointing": {
+                "mode": "dynamic",
+                "min_delay": 0.6,
+                "max_delay": 4.0,
+            },
+            "interruption": {
+                "enabled": True,
+                "mode": "adaptive",
+                "min_duration": 0.35,
+                "min_words": 2,
+                "false_interruption_timeout": 1.5,
+            },
+            "preemptive_generation": {
+                "enabled": True,
+                "preemptive_tts": True,
+                "max_speech_duration": 12.0,
+            },
+        },
     )
 
     orchestrator = make_orchestrator(session_id)
@@ -254,9 +329,12 @@ async def entrypoint(ctx: JobContext) -> None:
     # ---- Pipeline-latency instrumentation (b3-latency channel) -----
     #
     # livekit-agents 1.5.6 emits a single `metrics_collected` event with
-    # a discriminated-union payload — one of STTMetrics, LLMMetrics,
-    # TTSMetrics, EOUMetrics, PipelineEOUMetrics — after each stage of
-    # the voice pipeline completes. Field names are the LiveKit public
+    # a discriminated-union payload — STTMetrics | LLMMetrics |
+    # TTSMetrics | VADMetrics | EOUMetrics | RealtimeModelMetrics |
+    # InterruptionMetrics — after each stage of the voice pipeline
+    # completes (metrics/base.py:184). There is NO PipelineEOUMetrics
+    # class in 1.5.6 — a phantom reference was removed per KB 13 §2.
+    # Field names are the LiveKit public
     # contract: `ttft` for LLM, `ttfb` for TTS, `duration` for STT/TTS,
     # `end_of_utterance_delay` for EOU. We normalize to ms ints.
     #
@@ -275,7 +353,7 @@ async def entrypoint(ctx: JobContext) -> None:
             cur["metrics_seen"].add(cls_name)
             # STT metrics — streaming_duration / duration reflects
             # partial→final finalize window.
-            if cls_name in ("STTMetrics", "EOUMetrics", "PipelineEOUMetrics"):
+            if cls_name in ("STTMetrics", "EOUMetrics"):
                 # EOU = end-of-utterance delay (VAD endpoint → turn-detector fire).
                 eou_delay = getattr(metrics, "end_of_utterance_delay", None)
                 duration = getattr(metrics, "duration", None)
@@ -312,6 +390,12 @@ async def entrypoint(ctx: JobContext) -> None:
     # the specialist tool; this is the observability sidecar.
     @session.on("conversation_item_added")  # type: ignore[arg-type]
     def _on_item(item: Any) -> None:
+        # Lever 6 (KB 13 §5): `conversation_item_added` fires for BOTH
+        # user and assistant items in 1.5.6. Finalizing timings on the
+        # user's chat-item submission pollutes the assistant-turn
+        # metrics. Gate on role.
+        if getattr(item, "role", None) != "assistant":
+            return
         try:
             # Mark end of turn and finalize timings BEFORE publishing.
             bucket = _timing_bucket(session_id)
