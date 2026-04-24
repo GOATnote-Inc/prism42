@@ -1,0 +1,28 @@
+phase: triage
+description: Run GEDP key-question flow for the chief complaint family; assign determinant.
+max_turns: 6
+hand_off_to: dispatch
+hand_off_artifact_keys:
+  - determinant
+  - response_level     # echo | delta | charlie | bravo | alpha | omega
+  - kq_responses
+  - red_flags
+
+success_criteria:
+  - id: kq_flow_complete
+    description: All required key questions for the chief-complaint family answered (1 question per turn rule from coordinator prompt).
+    must_hold: len(session.brief.kq_responses) >= GEDP_REQUIRED_KQS[family]
+  - id: determinant_computed
+    description: A GEDP determinant string is set (e.g., CARDARR-A-E, CHOKE-P-E, STROKE-A-D).
+    must_hold: session.brief.determinant matches r"[A-Z]+-[APIC]-[EDCBAO]"
+  - id: response_level_set
+    description: One of {echo, delta, charlie, bravo, alpha, omega}.
+    must_hold: session.brief.response_level in {"echo","delta","charlie","bravo","alpha","omega"}
+
+escalation_triggers:
+  - id: ohca_emerges
+    fires: ohca-detector probability rises to >= 0.85 mid-triage
+    action: jump to pdi for CPR pre-arrival; preserve kq state
+  - id: determinant_uncertain
+    fires: 3 consecutive turns without satisfying any criterion
+    action: defer to a senior dispatcher (handoff with reason="determinant-uncertain")

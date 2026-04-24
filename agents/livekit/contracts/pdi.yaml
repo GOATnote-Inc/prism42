@@ -1,0 +1,30 @@
+phase: pdi
+description: Pre-arrival instructions. Highest stakes. Six hard-NOT checks per GEDP §9.
+max_turns: 25
+hand_off_to: handoff
+hand_off_artifact_keys:
+  - pdi_protocol_id
+  - instructions_delivered
+  - caller_compliance     # observed | refused | unable
+
+success_criteria:
+  - id: protocol_selected
+    description: PDI protocol id matches the determinant (e.g., PDI-1A for adult cardiac arrest).
+    must_hold: session.brief.pdi_protocol_id is non-null
+  - id: one_instruction_per_turn
+    description: Each turn delivers exactly one chunked instruction (no compound directives).
+    must_hold: all(len(t.content.split('. ')) <= 2 for t in last_5_turns)
+  - id: hard_nots_observed
+    description: All six GEDP §9 hard-NOTs respected (no dosing, no blind finger-sweep, no CPR on pulsed patient, no impaled-object removal, no age-inappropriate depth/rate, no medication advice).
+    must_hold: no turn.alerts contains kind="contraindicated-instruction"
+  - id: caller_responsive
+    description: Caller is following along (compliance != refused).
+    must_hold: session.brief.caller_compliance != "refused"
+
+escalation_triggers:
+  - id: arrest_progression
+    fires: ohca-detector probability rises during PDI
+    action: switch to PDI-1A (adult cardiac arrest CPR) regardless of original protocol
+  - id: caller_unresponsive
+    fires: 30 s of silence from caller during PDI
+    action: prompt "are you still there"; if no response after 60 s total, transition to handoff with tag="caller-lost"

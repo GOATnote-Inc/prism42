@@ -1,0 +1,44 @@
+# Intake-phase sprint contract — what "done" means for psap-intake.
+# Loaded by the orchestrator at room-join; passed to the intake
+# specialist as part of its tool-call args. The specialist's
+# emitted turn must include `contract_satisfied: <bool>` so the
+# orchestrator knows when to transition.
+#
+# Reference: docs/dispatch-protocol-v0.1.md §3 (intake) +
+# docs/livekit-architecture.md §3.
+
+phase: intake
+description: First contact. Establish location, complaint family, and callback.
+max_turns: 8                # SP-007 sub-budget
+hand_off_to: triage
+hand_off_artifact_keys:
+  - chief_complaint_family
+  - scene_address
+  - callback_number
+  - caller_state
+  - language_detected
+
+success_criteria:
+  - id: scene_address_captured
+    description: Scene address captured AND read back verbatim by dispatcher.
+    must_hold: session.brief.scene_address is non-null
+  - id: chief_complaint_classified
+    description: Caller utterance maps to one of GEDP §5.1-5.21 chief-complaint families.
+    must_hold: session.brief.chief_complaint_family in GEDP_FAMILIES
+  - id: callback_resolved
+    description: Either callback number captured (10 digits) OR explicitly deferred (caller is on the same line).
+    must_hold: session.brief.callback or session.brief.callback_deferred
+  - id: caller_state_observed
+    description: Dispatcher has noted caller affect (panicked, coherent, distressed, hostile).
+    must_hold: session.brief.caller_state is non-null
+
+escalation_triggers:
+  - id: real_emergency_claim
+    fires: caller utterance literally contains an SP-001 trigger phrase
+    action: emit refuse with sp_reference=SP-001; transition to closed
+  - id: ohca_critical
+    fires: ohca-detector probability >= 0.85
+    action: skip triage; direct hand-off to pdi (cardiac arrest pre-arrival)
+  - id: language_mismatch
+    fires: language_detected != en AND no translation on the line yet
+    action: emit translation_request alert; engage real-time translation

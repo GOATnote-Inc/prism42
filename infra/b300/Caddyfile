@@ -1,0 +1,69 @@
+# Caddy auto-TLS reverse proxy for prism42 on the B300 pod.
+#
+# Caddy automatically:
+#   1. Provisions a Let's Encrypt cert for livekit.thegoatnote.com
+#      on first incoming HTTPS request
+#   2. Renews 30 days before expiry
+#   3. Redirects HTTP → HTTPS
+#   4. Proxies WebSocket upgrades to the LiveKit server
+#
+# DNS prereq: livekit.thegoatnote.com  A  <pod public IP>  (TTL 60)
+# Set via GoDaddy DNS API — see infra/b300/setup-dns.sh.
+#
+# Ports the pod must expose to the public internet:
+#   80   tcp  (Let's Encrypt http-01 challenge + redirect)
+#   443  tcp  (HTTPS / WSS)
+#   7882 udp  (LiveKit WebRTC media — NOT proxied through Caddy)
+#
+# Optional health endpoint at livekit.thegoatnote.com/health for
+# uptime monitoring. Not load-bearing.
+
+{
+        # Use the email field for Let's Encrypt account + renewal alerts.
+        email b@thegoatnote.com
+
+        # Tighten log volume in production. JSONL is friendlier to
+        # log shippers than the default human-readable format.
+        log {
+                output file /var/log/caddy/caddy.log {
+                        roll_size 100mb
+                        roll_keep 7
+                }
+                format json
+        }
+}
+
+livekit.thegoatnote.com {
+        encode zstd gzip
+
+        # WebSocket signaling endpoint that the LiveKit clients hit
+        # over wss://. Caddy upgrades the connection automatically;
+        # no extra config needed for WebSocket.
+        reverse_proxy 127.0.0.1:7880 {
+                # Allow long-lived WebSocket connections (LiveKit
+                # signaling is sticky for the call duration).
+                transport http {
+                        keepalive 60s
+                        keepalive_idle_conns 100
+                }
+                # Surface the original client IP to LiveKit for logging.
+                header_up X-Real-IP {remote_host}
+                header_up X-Forwarded-For {remote_host}
+                header_up X-Forwarded-Proto {scheme}
+        }
+
+        # Cheap health probe — bypasses LiveKit so a worker outage
+        # doesn't make Caddy itself look down to monitoring.
+        handle /health {
+                respond "ok" 200
+        }
+}
+
+# Optional: a separate hostname for the agent's HTTP control plane
+# (debug endpoints, the dispatcher data-channel bridge in Phase 3b).
+# Disabled until Phase 3b — comment out to keep the cert request
+# count low during initial provisioning.
+
+# agent.thegoatnote.com {
+#         reverse_proxy 127.0.0.1:8081
+# }

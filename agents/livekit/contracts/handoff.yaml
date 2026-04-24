@@ -1,0 +1,18 @@
+phase: handoff
+description: Close the call cleanly. Four close modes per psap-handoff.yaml.
+max_turns: 3
+hand_off_to: closed
+hand_off_artifact_keys:
+  - close_mode             # units-arrived | patient-recovered | supervisor-transfer | forced-termination
+  - post_action_guidance_id
+
+success_criteria:
+  - id: close_mode_set
+    description: One of the four close modes selected.
+    must_hold: session.brief.close_mode in {"units-arrived","patient-recovered","supervisor-transfer","forced-termination"}
+  - id: post_action_delivered
+    description: Appropriate post-action guidance per the close mode + PDI delivered.
+    must_hold: session.brief.post_action_guidance_id is non-null
+  - id: caller_acknowledged
+    description: Caller given a moment to ask questions before close (except in forced-termination).
+    must_hold: session.brief.close_mode == "forced-termination" or any turn.content contains "any questions"

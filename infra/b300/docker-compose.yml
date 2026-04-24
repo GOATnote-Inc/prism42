@@ -1,0 +1,57 @@
+# Docker compose for the LiveKit server + Redis + (later) vLLM on
+# the B300 pod. Caddy and the Python agent worker run on the host
+# (not in containers) so they can use systemd auto-restart cleanly.
+#
+# Bring up after setup.sh has installed Docker + the agent venv:
+#   cd /opt/prism42/infra/b300
+#   docker compose --env-file /opt/prism42/.env up -d
+
+services:
+
+  livekit:
+    image: livekit/livekit-server:v1.9.0
+    restart: unless-stopped
+    network_mode: host
+    # `network_mode: host` is REQUIRED for WebRTC on Linux pods —
+    # bridge networking mangles ICE candidates and breaks media flow.
+    # Trade-off: container ports are not isolated from the host; we
+    # rely on the pod's firewall (open: 7880 tcp, 7881 tcp, 7882 udp,
+    # 443 udp for TURN, 5349 tcp for TURN/TLS).
+    volumes:
+      - ./livekit.yaml:/livekit.yaml:ro
+    command: --config /livekit.yaml
+    environment:
+      - LIVEKIT_API_KEY
+      - LIVEKIT_API_SECRET
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    network_mode: host
+    # Redis is not exposed publicly — bind to 127.0.0.1 in
+    # redis.conf. Default config is fine for a single-pod demo.
+    command: redis-server --bind 127.0.0.1 --port 6379 --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  # vllm:
+  #   # Phase 3b — uncomment when ready to swap LLM to self-hosted Llama-3-70B.
+  #   image: vllm/vllm-openai:latest
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   ipc: host
+  #   ulimits:
+  #     memlock: -1
+  #     stack: 67108864
+  #   command:
+  #     - --model=meta-llama/Meta-Llama-3-70B-Instruct
+  #     - --port=8000
+  #     - --tensor-parallel-size=1
+  #     - --max-model-len=8192
+  #   environment:
+  #     - HUGGING_FACE_HUB_TOKEN
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]

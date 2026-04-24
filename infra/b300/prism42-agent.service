@@ -1,0 +1,56 @@
+# systemd unit for the prism42 LiveKit agent worker.
+#
+# Install:
+#   sudo cp infra/b300/prism42-agent.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now prism42-agent
+#
+# Logs:
+#   journalctl -u prism42-agent -f
+#
+# Restart on edit:
+#   sudo systemctl restart prism42-agent
+#
+# Auto-restart on crash; never gives up. Redis-backed session state
+# survives the restart.
+
+[Unit]
+Description=Prism42 LiveKit voice-agent worker
+Documentation=https://github.com/GOATnote-Inc/prism42/blob/main/docs/livekit-architecture.md
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+# Soft-depend on docker; if Docker fails the agent will fail too
+# but we don't block boot on it.
+
+[Service]
+Type=simple
+User=prism42
+Group=prism42
+WorkingDirectory=/opt/prism42/agents/livekit
+
+# Environment file written by setup.sh from .env (chmod 600, owned
+# by prism42:prism42). systemd never logs the file contents.
+EnvironmentFile=/opt/prism42/.env.agent
+
+# uv installs livekit-agents + plugins inside .venv at /opt/prism42/agents/livekit/.venv
+ExecStart=/usr/local/bin/uv run --frozen python worker.py start
+
+# Restart policy — never give up.
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=0
+
+# Security hardening (within reason for a GPU pod).
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/prism42/agents/livekit /var/log/prism42
+PrivateTmp=true
+
+# Resource caps. If the worker leaks memory we want to crash loop,
+# not OOM-kill the LiveKit server next door.
+MemoryMax=8G
+TasksMax=512
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,23 @@
+phase: dispatch
+description: CAD-ready confirmation; speak units-rolling; transition to PDI.
+max_turns: 2
+hand_off_to: pdi
+hand_off_artifact_keys:
+  - units_assigned
+  - eta_seconds
+
+success_criteria:
+  - id: units_locked
+    description: CAD has units assigned (synthetic in demo; M-07/E-12/C-41 style).
+    must_hold: len(session.brief.units_assigned) >= 1
+  - id: rolling_announced
+    description: Caller has been told units are rolling.
+    must_hold: any turn.content matches r"(units? are|help is) on the way|rolling|en route" in last 2 turns
+  - id: pdi_handoff_announced
+    description: Dispatcher has framed the next step ("I'm going to walk you through what to do").
+    must_hold: any turn.content contains "walk you through" or "I'm going to tell you what to do"
+
+escalation_triggers:
+  - id: caller_disconnect
+    fires: WebRTC room disconnect during dispatch
+    action: persist session state; auditor runs with tag="incomplete-call"

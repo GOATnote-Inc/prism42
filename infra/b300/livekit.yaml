@@ -1,0 +1,60 @@
+# LiveKit server config for the prism42 B300 pod.
+#
+# Single-port-ICE mode: all WebRTC media goes through one UDP port,
+# greatly simplifying NAT / firewall config vs the default 50000-60000
+# range. We pin port 7882/udp; pod must expose it to the public.
+#
+# Refs:
+# - https://docs.livekit.io/home/self-hosting/deployment/
+# - https://github.com/livekit/livekit/blob/main/config-sample.yaml
+
+port: 7880
+bind_addresses:
+  - "0.0.0.0"
+
+# WebSocket signaling — Caddy proxies to this on 127.0.0.1:7880.
+# The LiveKit cert / TLS handling is OFF here (Caddy does it).
+log_level: info
+
+rtc:
+  # Single-port mode keeps firewall config trivial.
+  udp_port: 7882
+  tcp_port: 7881
+  port_range_start: 0
+  port_range_end: 0
+  use_external_ip: true
+
+  # Caddy doesn't proxy UDP, so the LiveKit clients connect directly
+  # to the pod's public IP on UDP/7882. The B300 pod must allow inbound
+  # UDP/7882 in its firewall (Brev: cloud_init or via the dashboard).
+
+# Auth — API key + secret from .env. Multiple keys supported; we pin
+# one for the agent worker + one for the Vercel token-mint route. The
+# `livekit-server-sdk` mints short-lived JWTs from these.
+keys:
+  ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+
+# Redis — same instance as the agent's session store. Lets LiveKit
+# scale beyond a single node later without changing the runtime.
+redis:
+  address: 127.0.0.1:6379
+
+# Built-in TURN server — needed for callers behind strict NAT.
+turn:
+  enabled: true
+  domain: livekit.thegoatnote.com
+  tls_port: 5349
+  udp_port: 443     # share TURN/UDP with HTTPS port for max firewall punch
+  external_tls: true     # Caddy terminates TLS in front of TURN/TLS
+
+# Room defaults — short-lived, demo-friendly.
+room:
+  max_participants: 4   # caller + observers + room moderator (Phase 3b)
+  empty_timeout: 60     # auto-close idle rooms in 60 s
+  max_publishers: 2     # caller + agent
+
+# Webhook — fired on room close so the agent can run the auditor.
+webhook:
+  api_key: ${LIVEKIT_API_KEY}
+  urls:
+    - https://prism42-console.vercel.app/prism42/api/livekit-webhook
