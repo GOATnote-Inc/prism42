@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import random
 import time
 from typing import Any
 
@@ -56,6 +57,32 @@ from state import (
 )
 
 log = structlog.get_logger()
+
+
+# ---------------------------------------------------------------------
+# Bridge / filler utterances — played while the real LLM+TTS reply is
+# still synthesizing. Fish TTS has a ~5-7 s first-token latency; without
+# a filler the caller hears 7-9 s of dead air after finishing their
+# utterance, which feels "erratic" for a 911 call. Real dispatchers fill
+# that window with short acknowledgements ("Okay, stay with me.") while
+# they type into the CAD. The filler plays ~300 ms after the caller
+# stops speaking, is fully interruptible, and the real reply preempts
+# it the moment Fish returns the first audio frame.
+# ---------------------------------------------------------------------
+
+FILLERS: tuple[str, ...] = (
+    "Okay, stay with me.",
+    "Got it, one moment.",
+    "I hear you.",
+    "Alright, hold on.",
+    "Okay.",
+)
+
+# Delay before the filler fires — gives a beat of silence after the
+# caller finishes so we don't clip the tail of their utterance, and
+# lets very-fast replies (unlikely with Fish but possible) preempt
+# without ever speaking a filler.
+FILLER_DELAY_S: float = 0.3
 
 
 def _force_additional_properties_false(node: Any) -> None:
@@ -270,6 +297,75 @@ async def entrypoint(ctx: JobContext) -> None:
             log.info("preroll.spoken", session_id=session_id)
         except Exception as e:  # noqa: BLE001
             log.warning("preroll.failed", err=str(e)[:200])
+
+    # ---- Bridge / filler utterance ---------------------------------
+    # Fish TTS adds ~5-7s to first-audio latency. To avoid dead air
+    # after the caller finishes speaking, we play a short dispatcher
+    # acknowledgement the moment we detect end-of-speech. The real
+    # reply will interrupt it as soon as Fish returns audio.
+    #
+    # Event choice (verified against installed livekit-agents):
+    #   voice/agent_activity.py:1701-1704 `on_end_of_speech` calls
+    #   `self._session._update_user_state("listening", ...)`, which at
+    #   voice/agent_session.py:1557-1564 emits "user_state_changed"
+    #   with `old_state="speaking"` and `new_state="listening"`.
+    # This fires on VAD end-of-speech (~0 ms), BEFORE STT finalizes the
+    # transcript (~600 ms on Parakeet). `user_input_transcribed` is the
+    # fallback (voice/agent_session.py:1574-1579) if VAD is disabled
+    # but STT still streams — it fires on every transcript chunk, so
+    # we gate it to `is_final` to avoid firing on interims.
+    filler_state = {
+        "turns_seen": 0,       # skip first turn (pre-roll covers it)
+        "last_filler": None,   # avoid repeating the same line twice
+        "pending_task": None,  # cancellable delayed-say handle
+    }
+
+    async def _fire_filler() -> None:
+        """After a short pause, speak one filler. Fully interruptible —
+        the real reply preempts as soon as Fish streams audio."""
+        try:
+            await asyncio.sleep(FILLER_DELAY_S)
+            choices = [f for f in FILLERS if f != filler_state["last_filler"]]
+            text = random.choice(choices) if choices else FILLERS[0]
+            filler_state["last_filler"] = text
+            await session.say(text, allow_interruptions=True)
+            log.info("filler.spoken", session_id=session_id, text=text)
+        except asyncio.CancelledError:
+            # Reply arrived before our delay finished — the right thing.
+            raise
+        except Exception as e:  # noqa: BLE001
+            log.warning("filler.failed", err=str(e)[:200])
+
+    def _schedule_filler() -> None:
+        # Skip first turn: pre-roll already gave the caller audio.
+        filler_state["turns_seen"] += 1
+        if filler_state["turns_seen"] <= 1:
+            return
+        prev = filler_state["pending_task"]
+        if prev is not None and not prev.done():
+            prev.cancel()
+        filler_state["pending_task"] = asyncio.create_task(_fire_filler())
+
+    @session.on("user_state_changed")  # type: ignore[arg-type]
+    def _on_user_state_filler(ev: Any) -> None:
+        try:
+            if (
+                getattr(ev, "old_state", None) == "speaking"
+                and getattr(ev, "new_state", None) == "listening"
+            ):
+                _schedule_filler()
+        except Exception:  # noqa: BLE001
+            pass
+
+    # Fallback: if VAD is off / turn-detector fires without a clean
+    # speaking→listening transition, use the STT final transcript.
+    @session.on("user_input_transcribed")  # type: ignore[arg-type]
+    def _on_user_transcribed_filler(ev: Any) -> None:
+        try:
+            if getattr(ev, "is_final", False) and filler_state["pending_task"] is None:
+                _schedule_filler()
+        except Exception:  # noqa: BLE001
+            pass
 
     # When the room closes, fire the auditor + write the session
     # summary. Phase 3a writes the summary directly; the auditor
