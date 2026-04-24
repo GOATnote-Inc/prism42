@@ -14,6 +14,7 @@ dependencies = [
     "livekit-agents[anthropic,openai,silero,turn-detector]>=1.5.6,<2",
     "anthropic>=0.97.0",
     "openai>=1.50.0",
+    "aiohttp>=3.9.0",  # WebSocket client for Parakeet /ws streaming STT
     "httpx>=0.27.0",
     "numpy>=1.26.0",
     "redis>=5.0.0",

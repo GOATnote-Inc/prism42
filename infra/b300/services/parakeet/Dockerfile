@@ -1,7 +1,10 @@
 # Parakeet ASR service for prism42.
 #
 # Wraps NVIDIA NeMo's Parakeet model in a FastAPI server that exposes
-# POST /transcribe (WAV in → JSON out) at http://127.0.0.1:9100.
+# both POST /transcribe (WAV in → JSON out, batch) and a WebSocket at
+# WS /ws (bidirectional streaming) at http://127.0.0.1:9100. The /ws
+# endpoint requires `uvicorn[standard]` (pulls in `websockets` for
+# the WS protocol stack) — see install line below.
 #
 # Model: nvidia/parakeet-tdt-0.6b-v3 by default; override via the
 # MODEL env var. Weights auto-downloaded to /models on first boot.
