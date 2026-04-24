@@ -6,16 +6,18 @@ Run modes:
   uv run python worker.py console   # text-only smoke test
 
 Environment (required):
-  LIVEKIT_URL              wss://livekit.thegoatnote.com  (or LiveKit Cloud)
+  LIVEKIT_URL              wss://livekit.thegoatnote.com
   LIVEKIT_API_KEY
   LIVEKIT_API_SECRET
-  ANTHROPIC_API_KEY        for Opus 4.7 + Sonnet 4.6 specialists
-  OPENAI_API_KEY           for the GPT-5.5 / GPT-5.4 rubric grader
-  DEEPGRAM_API_KEY         for STT
-  CARTESIA_API_KEY         for TTS
+  ANTHROPIC_API_KEY        Opus 4.7 + Sonnet 4.6 specialists
+  OPENAI_API_KEY           GPT-5.5 / GPT-5.4 rubric grader
 
-Environment (optional):
-  REDIS_URL                redis://localhost:6379  (durable session state)
+Environment (optional; defaults assume services run on this pod):
+  PARAKEET_URL             default http://127.0.0.1:9100  (self-hosted STT)
+  PARAKEET_MODEL           default nvidia/parakeet-tdt-0.6b-v3
+  FISH_SPEECH_URL          default http://127.0.0.1:9200  (self-hosted TTS)
+  FISH_SPEECH_VOICE        default "default"
+  REDIS_URL                default redis://127.0.0.1:6379
   PRISM42_LOG_DIR          default /var/log/prism42
 """
 from __future__ import annotations
@@ -32,14 +34,12 @@ from livekit.agents import (
     WorkerOptions,
     cli,
 )
-from livekit.plugins import (
-    cartesia,
-    deepgram,
-    silero,
-)
+from livekit.plugins import silero
 
+from .fish_speech_tts import FishSpeechOptions, FishSpeechTTS
 from .grader import grade_turn_with_shim_fallback
 from .orchestrator import make_orchestrator
+from .parakeet_stt import ParakeetOptions, ParakeetSTT
 from .state import (
     SessionStore,
     write_session_summary,
@@ -94,9 +94,9 @@ async def entrypoint(ctx: JobContext) -> None:
 
     session = AgentSession(
         vad=silero.VAD.load(),
-        stt=deepgram.STT(model="nova-3", language="en"),
+        stt=ParakeetSTT(ParakeetOptions()),
         llm=AnthropicLLM(model="claude-opus-4-7"),
-        tts=cartesia.TTS(model="sonic-3", voice="79a125e8-cd45-4c13-8a67-188112f4dd22"),
+        tts=FishSpeechTTS(FishSpeechOptions()),
     )
 
     orchestrator = make_orchestrator(session_id)

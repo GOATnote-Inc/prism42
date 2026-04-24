@@ -32,8 +32,66 @@ services:
     # redis.conf. Default config is fine for a single-pod demo.
     command: redis-server --bind 127.0.0.1 --port 6379 --maxmemory 256mb --maxmemory-policy allkeys-lru
 
+  # ------------------------------------------------------------------
+  # Parakeet ASR service — NVIDIA's Parakeet via NeMo, wrapped in a
+  # FastAPI server. Exposes POST /transcribe on 127.0.0.1:9100.
+  # Dockerfile: infra/b300/services/parakeet/Dockerfile.
+  # Rationale: ~6× faster than accuracy-leader STTs; accuracy already
+  # above the practical ceiling for voice agents (user 2026-04-23).
+  # ------------------------------------------------------------------
+  parakeet:
+    build:
+      context: ./services/parakeet
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - MODEL=${PARAKEET_MODEL:-nvidia/parakeet-tdt-0.6b-v3}
+      - BIND=127.0.0.1
+      - PORT=9100
+      - HF_HOME=/models/hf
+    volumes:
+      - /opt/prism42/models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # ------------------------------------------------------------------
+  # Fish Speech S2 Pro TTS on SGLang. Exposes POST /tts on
+  # 127.0.0.1:9200 with PCM16 streaming chunks (24 kHz mono).
+  # Dockerfile: infra/b300/services/fish-speech/Dockerfile.
+  # Rationale: beats ElevenLabs on 2 of 3 major quality benchmarks,
+  # ~100 ms TTFA on H200, faster on B300 (user 2026-04-23).
+  # ------------------------------------------------------------------
+  fish-speech:
+    build:
+      context: ./services/fish-speech
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - MODEL=fishaudio/fish-speech-s2-pro
+      - BACKEND=sglang
+      - BIND=127.0.0.1
+      - PORT=9200
+      - HF_HOME=/models/hf
+    volumes:
+      - /opt/prism42/models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # ------------------------------------------------------------------
+  # Phase 3b — uncomment to add vLLM serving Llama-3-70B as the
+  # orchestrator/specialist LLM backend (swaps out Anthropic cloud).
+  # ------------------------------------------------------------------
   # vllm:
-  #   # Phase 3b — uncomment when ready to swap LLM to self-hosted Llama-3-70B.
   #   image: vllm/vllm-openai:latest
   #   restart: unless-stopped
   #   network_mode: host

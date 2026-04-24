@@ -71,8 +71,8 @@ arrest call) goes to zero.
 | LiveKit server | **Self-hosted on B300 pod** (Docker, port 7880 + 7882/UDP) | Co-located with the agent worker → no cloud hop. Caddy fronts the WSS; UDP direct |
 | TLS termination | **Caddy** (auto-TLS via Let's Encrypt) | One-line `livekit.thegoatnote.com { reverse_proxy 127.0.0.1:7880 }` config, auto-renewal, no NGINX cert management |
 | DNS | `livekit.thegoatnote.com` A record → B300 pod public IP | Set via GoDaddy API (`infra/b300/setup-dns.sh`); GoDaddy is the registrar + DNS authority for thegoatnote.com |
-| STT | **Deepgram Nova-3** streaming | ~200 ms first-partial; the LiveKit-recommended baseline |
-| TTS | **Cartesia Sonic-3** | ~100 ms TTFB; user explicitly chose this over ElevenLabs Flash |
+| STT | **NVIDIA Parakeet** (self-hosted on B300, NeMo) | ~6× faster than accuracy-leader STTs; accuracy already above the practical ceiling for voice agents. Co-located on the pod, zero cloud hop. User decision 2026-04-23. |
+| TTS | **Fish Speech S2 Pro** on SGLang (self-hosted on B300) | Beats ElevenLabs on 2 of 3 quality benchmarks; ~100 ms TTFA on H200, faster on B300. SGLang backend gives us kernel-co-design leverage. User decision 2026-04-23. |
 | VAD | **Silero** | LiveKit standard; runs locally |
 | Turn detection | **LiveKit semantic turn detector** | Transformer-based; reduces false interruptions vs raw VAD |
 | Orchestrator LLM | **Anthropic Opus 4.7** (cloud, Phase 3a) | Existing Managed Agents environment; no migration needed for 3a |
@@ -154,7 +154,7 @@ transitions; if not done after N turns, the orchestrator escalates
 | Anthropic API rate-limit | 429 response | Queue + backoff up to 2 s; if still failing, emit safe fallback "One moment please" + verify-failed alert |
 | LLM returns malformed JSON | Pydantic `model_validate` raises | Lenient parse: extract `content` string field if present (mirrors `tryParseTurn` from `lib/coordinator.ts` ac10442) |
 | LLM returns valid JSON but contract not satisfied | `contract_satisfied: false` in turn | Orchestrator stays in current phase; re-invokes specialist with feedback "criterion X still unmet" up to 3 turns; then escalates |
-| STT drops a word (low confidence partial) | Deepgram confidence < 0.6 | Specialist asks for repeat ("could you say that again, you broke up") |
+| STT drops a word (low confidence partial) | Parakeet confidence < 0.6 | Specialist asks for repeat ("could you say that again, you broke up") |
 | Caller goes silent ≥ 5 s | LiveKit semantic turn detector | Specialist prompts ("are you still there?") |
 | WebRTC disconnect mid-call | LiveKit room event | SessionState persisted; reconnect within 30 s resumes from same brief; longer triggers post-session auditor with "incomplete-call" tag |
 | Worker process restart | Systemd auto-restart | Redis-backed SessionState survives; in-flight turns are lost, current phase + brief are not |
@@ -245,9 +245,13 @@ The dispatcher UI gets the same data live via LiveKit data channels
                              │                                   │
                              │  AgentSession                     │
                              │  ├─ vad   = silero.VAD            │
-                             │  ├─ stt   = deepgram.STT (cloud)  │
+                             │  ├─ stt   = ParakeetSTT           │
+                             │  │         → http://127.0.0.1:9100│
                              │  ├─ llm   = anthropic.LLM(opus-4-7)│
-                             │  ├─ tts   = cartesia.TTS(sonic-3) │
+                             │  │         or vLLM Llama-3-70B    │
+                             │  │         (Phase 3b swap)        │
+                             │  ├─ tts   = FishSpeechTTS         │
+                             │  │         → http://127.0.0.1:9200│
                              │  └─ turn  = livekit.semantic-turn │
                              │                                   │
                              │  Agent (orchestrator):            │
@@ -277,15 +281,62 @@ The dispatcher UI gets the same data live via LiveKit data channels
                              └───────────────────────────────────┘
 
 Cloud services (no inbound):
-  - Anthropic API     (Opus 4.7 + Sonnet 4.6)
-  - OpenAI API        (GPT-5.5/5.4 rubric)
-  - Deepgram API      (Nova-3 STT)
-  - Cartesia API      (Sonic-3 TTS)
+  - Anthropic API     (Opus 4.7 + Sonnet 4.6 — Phase 3a)
+  - OpenAI API        (GPT-5.5/5.4 rubric grader)
+
+Everything else runs on the pod. STT (Parakeet) and TTS (Fish Speech
+S2 Pro) are self-hosted from day one — "commercial APIs still win on
+pure latency and ops maturity; we trade that for full control of the
+stack and the ability to co-design kernels end-to-end" (user
+decision 2026-04-23).
 ```
 
 ---
 
-## 7. DNS update plan (GoDaddy API)
+## 6.1 Brev firewall reality check (discovered 2026-04-23)
+
+Empirical test from the workstation to pod `31.22.104.100` (prism-mla-
+b300-h4h5):
+
+| Port | TCP | UDP |
+|---|---|---|
+| 22 (SSH) | OPEN | n/a |
+| 80 | closed/filtered | — |
+| 443 | closed/filtered | — |
+| 7880 | closed/filtered | — |
+| 7882 | closed/filtered | **OPEN** |
+
+Brev's outer firewall (unreachable via `ufw`) blocks inbound TCP on
+arbitrary ports. Their dashboard literally says "This cloud provider
+doesn't allow the modifications of ports." UDP/7882 is open — which
+is lucky, because that's where WebRTC media lives.
+
+**Implication for the TLS plan:** Caddy terminating TLS on
+`livekit.thegoatnote.com:443` on the pod itself DOESN'T work —
+:443 is blocked at the Brev edge. Three workable paths:
+
+1. **Phase 3a path (ship-ready today): Brev Shareable URL for WSS
+   signaling; direct UDP for media.** User shares port 7880 in the
+   Brev dashboard → gets a `https://livekit-bvtyxg31j.brevlab.com`
+   URL with a valid `*.brevlab.com` cert. Set
+   `NEXT_PUBLIC_LIVEKIT_URL=wss://livekit-bvtyxg31j.brevlab.com`.
+   WebRTC media uses UDP/7882 direct to the pod IP — that port we
+   verified reachable. Caddy is NOT deployed for Phase 3a.
+2. **Phase 3c path: Cloudflare in front of Brev.** `livekit.thegoatnote
+   .com` CNAME → Cloudflare → origin = `livekit-bvtyxg31j.brevlab.com`.
+   Cloudflare rewrites the Host header + serves a matching cert.
+   Gets us the branded domain back. Requires moving DNS for
+   `thegoatnote.com` (or at least the `livekit` subdomain) to
+   Cloudflare, which is a user decision.
+3. **Fallback: LiveKit Cloud.** Only outbound from the pod; no
+   firewall fight. User rejected this in the arch doc ("self-host
+   from day 1"); listed here for completeness in case Brev's
+   constraint sticks.
+
+Phase 3a ships option 1. The setup.sh + Caddyfile + GoDaddy DNS
+automation from §7 becomes Phase 3c work.
+
+## 7. DNS plan (deferred to Phase 3c)
 
 `thegoatnote.com` is registered with GoDaddy and uses GoDaddy DNS
 (corrected from earlier assumption of Vercel DNS — Vercel only hosts
@@ -374,10 +425,14 @@ These are committed; revisit only if a specific failure forces it:
 1. **LiveKit, not ElevenLabs** for the Phase 3a+ voice runtime.
 2. **Self-host LiveKit on the B300 pod** from day 1 (not LiveKit Cloud).
 3. **Caddy** for TLS termination (not NGINX, not Traefik).
-4. **Cartesia Sonic-3** for TTS (not ElevenLabs Flash for the live
-   path; ElevenLabs Flash remains the fallback row in the A/B
-   comparison).
-5. **Deepgram Nova-3** for STT.
+4. **Fish Speech S2 Pro on SGLang (self-hosted)** for TTS. NOT
+   Cartesia, NOT ElevenLabs Flash, NOT OpenAI TTS. The A/B
+   comparison table for the evidence wall keeps Cartesia and
+   ElevenLabs as cloud-latency benchmarks but the live path serves
+   from the pod.
+5. **NVIDIA Parakeet via NeMo (self-hosted)** for STT. NOT Deepgram,
+   NOT Whisper. Accuracy is above the practical ceiling for voice
+   agents; ~6× faster than the accuracy leaders.
 6. **Pattern A** (single orchestrator + 14 `@function_tool`
    specialists) for Phase 3a; Pattern B (multi-agent handoff via
    LiveKit `Agent` return) for Phase 3b once Pattern A's tool

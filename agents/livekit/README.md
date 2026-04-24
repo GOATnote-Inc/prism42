@@ -63,8 +63,8 @@ uv run python worker.py console       # console mode (text input)
 | Framework | livekit-agents 1.5.6 (Python) |
 | WebRTC | LiveKit (self-host, port 7880 + 7882/UDP) |
 | TLS | Caddy (auto-TLS via Let's Encrypt) |
-| STT | Deepgram Nova-3 |
-| TTS | Cartesia Sonic-3 |
+| STT | **NVIDIA Parakeet** via NeMo, self-hosted on B300 (POST /transcribe @ 127.0.0.1:9100) |
+| TTS | **Fish Speech S2 Pro** on SGLang, self-hosted on B300 (POST /tts @ 127.0.0.1:9200) |
 | VAD | Silero |
 | Turn detection | LiveKit semantic-turn (transformer) |
 | Orchestrator LLM | Anthropic Opus 4.7 |
