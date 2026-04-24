@@ -1,0 +1,20 @@
+[Unit]
+Description=Prism42 Starter LiveKit Worker (Deepgram+Cartesia+Anthropic)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=shadeform
+Group=shadeform
+WorkingDirectory=/opt/prism42/agents/livekit-starter
+EnvironmentFile=/opt/prism42/agents/livekit-starter/.env
+ExecStart=/opt/prism42/agents/livekit-starter/.venv/bin/python /opt/prism42/agents/livekit-starter/worker.py dev
+Restart=always
+RestartSec=2
+StandardOutput=append:/tmp/prism42-logs/worker-starter.log
+StandardError=append:/tmp/prism42-logs/worker-starter.log
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

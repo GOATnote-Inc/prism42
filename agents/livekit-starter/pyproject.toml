@@ -1,0 +1,34 @@
+[project]
+name = "prism42-livekit-starter"
+version = "0.1.0"
+description = "Prism42 STARTER worker — reference implementation mirroring livekit-examples/agent-starter-python with direct Deepgram/Cartesia/Anthropic plugins. Runs in parallel to the custom Parakeet+Fish+Opus orchestrator worker for A/B verification."
+authors = [{ name = "GOATnote Inc.", email = "b@thegoatnote.com" }]
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+# Pin to livekit-agents 1.5.6 — same floor as the main worker so both
+# units exercise the same runtime. Direct plugin packages only; no
+# inference.* helper (we want an honest cloud-vendor path).
+dependencies = [
+    "livekit-agents>=1.5.6,<2",
+    "livekit-plugins-anthropic>=1.5.6",
+    "livekit-plugins-deepgram>=1.5.6",
+    "livekit-plugins-cartesia>=1.5.6",
+    "livekit-plugins-silero>=1.5.6",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["prism42_starter"]
