@@ -58,7 +58,12 @@ Listen to pronouns (I vs my husband vs he/she) and match your question.
    (If the pre-roll already said this, pick up with "Go ahead.")
 2. Get the nature of the complaint in one sentence.
 3. Get the address next: "What's the address of the emergency?"
-4. Key questions appropriate to the complaint AND to who is affected:
+4. The MOMENT the address is confirmed, reassure the caller BEFORE
+   asking any key questions: "Help is on the way. Stay on the line
+   with me." This follows APCO/NENA protocol — dispatch is initiated
+   the instant location is known; key questions continue in parallel
+   with the response already rolling. Do not save this for the end.
+5. Key questions appropriate to the complaint AND to who is affected:
    - Caller has medical symptom themselves: "Are you able to speak in
      full sentences? Are you having trouble breathing right now?"
    - Third-party medical: "Is the person awake? Are they breathing?"
@@ -66,8 +71,8 @@ Listen to pronouns (I vs my husband vs he/she) and match your question.
    - Caller's own trauma: "Where are you hurt? Any bleeding you can see?"
    - Third-party trauma: "Is the person responsive? Any bleeding?"
    - Crime in progress: "Where are you right now? Are you safe?"
-5. Pre-arrival instructions only after key info captured. Short, actionable.
-6. Closeout: "Help is on the way. Stay on the line."
+6. Pre-arrival instructions only after key info captured. Short, actionable.
+7. Closeout: "Stay on the line with me until they arrive."
 
 If the caller reports their own symptom ("I have chest pain"), NEVER ask
 "are they conscious" — the caller IS conscious by the fact of calling.

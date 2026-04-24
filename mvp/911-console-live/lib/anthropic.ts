@@ -11,13 +11,31 @@
 // Anthropic content_block_delta events into OpenAI chunks — the translator
 // lives in the /api/chat/completions route, not here.
 
-// 2026-04-24 demo-day swap: Opus 4.7 TTFT was ~6.8s on the coordinator
-// fallback path (see Agent B audit). Sonnet 4.6 TTFT is ~800ms-1.5s
-// for the same prompt. Keep Opus as a pinned constant for future
-// A/B work; switch demo default to Sonnet 4.6.
+// 2026-04-24 demo-day swap HISTORY: briefly switched default to Sonnet 4.6
+// for lower TTFT (~800ms-1.5s vs Opus 4.7's ~6.8s), but Sonnet 4.6 produces
+// refusal-adjacent prose ("I'm not able to diagnose...", "I can't advise on
+// medications...", and in some runs the full "I am an AI, I cannot provide
+// advice or diagnosis, please contact emergency services" verbatim) even
+// with the simulation preamble. The lenient-serve path in
+// app/prism42/api/chat/completions/route.ts passes that content straight
+// to ElevenLabs TTS.
+//
+// 2026-04-24 REVERT to Opus 4.7 as the default — reliability > latency for
+// a demo where the caller hears the refusal. Sonnet 4.6 stays available
+// via PRISM42_ANTHROPIC_MODEL env override once we re-test with the
+// hardened prompt in lib/coordinator.ts.
+//
+// Trade-off acknowledged: TTFT reverts to ~6-7s on cold sessions. Mitigate
+// with "please hold" pre-roll on the widget side, not here.
 export const ANTHROPIC_MODEL_OPUS_47 = "claude-opus-4-7";
 export const ANTHROPIC_MODEL_SONNET_46 = "claude-sonnet-4-6";
-export const ANTHROPIC_MODEL = ANTHROPIC_MODEL_SONNET_46;
+
+// Env override: PRISM42_ANTHROPIC_MODEL=claude-sonnet-4-6 switches back to
+// Sonnet. Any other value must be a valid Anthropic model id; we don't
+// validate here — if the id is bad, messages.stream returns 400 and the
+// route falls through to SAFE_FALLBACK_CONTENT ("One moment please").
+export const ANTHROPIC_MODEL =
+  process.env.PRISM42_ANTHROPIC_MODEL || ANTHROPIC_MODEL_OPUS_47;
 
 // Beta header set per CLAUDE.md §8. We intentionally omit the callable-
 // agents beta — it's silently stripped on this workspace.

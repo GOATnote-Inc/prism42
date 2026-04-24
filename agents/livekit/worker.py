@@ -201,6 +201,45 @@ async def entrypoint(ctx: JobContext) -> None:
         except Exception as e:  # noqa: BLE001
             log.warning("on_item.error", err=str(e)[:200])
 
+    # Pre-roll gate: the caller may start talking BEFORE we get a chance
+    # to speak the "Nine one one. What's your emergency?" greeting (their
+    # phone rang, they heard the connect tone, they launched into the
+    # incident). If we play the greeting on top of that we talk over the
+    # caller — a real PSAP violation, and the exact bug reported:
+    #   "i started talking right away then was met with
+    #    911 whats your emergency"
+    #
+    # We subscribe to two AgentSession events before session.start() so
+    # handlers are in place as soon as the first audio frame arrives:
+    #
+    #   - "user_state_changed" → new_state == "speaking": fastest signal,
+    #     fires on raw VAD start-of-speech (see livekit/agents/voice/
+    #     agent_activity.py:1650-1654 → _session._update_user_state(
+    #     "speaking") → voice/agent_session.py:1557-1563 emits the event).
+    #
+    #   - "user_input_transcribed": backup signal, fires on every STT
+    #     chunk (interim + final) — see voice/agent_session.py:1574-1579
+    #     (`self.emit("user_input_transcribed", ev)`). Covers the rare
+    #     case where VAD is configured off but STT is still streaming.
+    #
+    # If either fires during the 500 ms grace window, we skip the preroll
+    # and let the caller drive the turn; the orchestrator will reply via
+    # its normal LLM path.
+    caller_spoke = asyncio.Event()
+
+    @session.on("user_state_changed")  # type: ignore[arg-type]
+    def _on_user_state(ev: Any) -> None:
+        # ev.new_state is one of: "speaking" | "listening" | "away".
+        try:
+            if getattr(ev, "new_state", None) == "speaking":
+                caller_spoke.set()
+        except Exception:  # noqa: BLE001
+            pass
+
+    @session.on("user_input_transcribed")  # type: ignore[arg-type]
+    def _on_user_transcribed(_ev: Any) -> None:
+        caller_spoke.set()
+
     await session.start(agent=orchestrator, room=ctx.room)
 
     # Pre-roll utterance: PSAP dispatchers answer first. Saying this BEFORE
@@ -208,18 +247,29 @@ async def entrypoint(ctx: JobContext) -> None:
     # immediate audible confirmation that the line is live, and buys ~5-10s
     # of pipeline time during which the (slower) orchestrator+specialist
     # hop can complete without the caller hanging up in silence.
+    #
+    # HOWEVER: if the caller has ALREADY started speaking by the time we
+    # get here, we MUST NOT play the greeting on top of their utterance.
+    # Give a 500 ms grace window — if they haven't spoken, we lead with
+    # the greeting; otherwise we stay silent and let the orchestrator
+    # respond to what they actually said.
     try:
         await ctx.wait_for_participant()
     except Exception as e:  # noqa: BLE001
         log.warning("wait_for_participant.failed", err=str(e)[:200])
+
     try:
-        await session.say(
-            "Nine one one. What's your emergency?",
-            allow_interruptions=True,
-        )
-        log.info("preroll.spoken", session_id=session_id)
-    except Exception as e:  # noqa: BLE001
-        log.warning("preroll.failed", err=str(e)[:200])
+        await asyncio.wait_for(caller_spoke.wait(), timeout=0.5)
+        log.info("preroll.skipped_caller_spoke_first", session_id=session_id)
+    except asyncio.TimeoutError:
+        try:
+            await session.say(
+                "Nine one one. What's your emergency?",
+                allow_interruptions=True,
+            )
+            log.info("preroll.spoken", session_id=session_id)
+        except Exception as e:  # noqa: BLE001
+            log.warning("preroll.failed", err=str(e)[:200])
 
     # When the room closes, fire the auditor + write the session
     # summary. Phase 3a writes the summary directly; the auditor

@@ -24,7 +24,9 @@
 import type { NextRequest } from "next/server";
 import {
   COORDINATOR_SYSTEM_PROMPT,
+  REFUSAL_RESCUE_CONTENT,
   SAFE_FALLBACK_CONTENT,
+  detectRefusalLeak,
   tryParseTurn,
 } from "@/lib/coordinator";
 import { coordinatorFallbackStream, getCoordinatorAgentId } from "@/lib/anthropic";
@@ -198,6 +200,27 @@ export async function POST(req: NextRequest) {
           ],
           debug: { raw_head: fullText.slice(0, 240), ts_ms: Date.now() },
         });
+      }
+
+      // Last-line-of-defense: if Claude leaked a refusal phrase through
+      // the simulation framing, swap for a neutral dispatcher opener
+      // before TTS. This catches Sonnet 4.6's occasional "I am an AI,
+      // I cannot provide..." leak even when JSON validation passes.
+      // Record an alert so the dispatcher UI surfaces the rescue.
+      if (detectRefusalLeak(spokenText)) {
+        const leaked = spokenText;
+        spokenText = REFUSAL_RESCUE_CONTENT;
+        try {
+          const { recordAlert } = await import("@/lib/session-store");
+          recordAlert(resolvedSessionId, {
+            kind: "verify-failed",
+            severity: "high",
+            detail: `refusal-leak rescued; coordinator emitted: ${leaked.slice(0, 160)}`,
+            source_agent: "psap-team-coordinator",
+          });
+        } catch {
+          /* session already reaped */
+        }
       }
 
       sse.writeJson(makeOpenAIChunk({ id: chunkId, model, content: spokenText }));

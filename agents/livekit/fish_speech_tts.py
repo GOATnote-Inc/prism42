@@ -35,24 +35,25 @@ CHANNELS = 1
 class FishSpeechOptions:
     url: str = DEFAULT_URL
     reference_id: str = DEFAULT_REFERENCE_ID
-    # chunk_length = semantic-token chunk size fed to the Fish inference
-    # loop. Smaller = shorter time to first audio byte at the cost of more
-    # HTTP chunks. 50 is the lowest stable value before Fish starts
-    # producing audible "chop" artifacts.
-    chunk_length: int = 50
+    # chunk_length = semantic-token chunk size. Fish's ServeTTSRequest
+    # Pydantic schema enforces 100 <= chunk_length <= 1000 — values below
+    # 100 (we previously tried 50) return 422. 200 is the schema default.
+    chunk_length: int = 200
     normalize: bool = True
     # DETERMINISTIC SAMPLING — 2026-04-24 fix for multi-voice symptom:
-    # without a reference audio Fish's codebook sampler drifts between
-    # calls, so the pre-roll and the orchestrator reply sound like two
-    # different people (the caller reported hearing "male and female
-    # responses"). Lower temperature + top_p=0.7 narrows the voice
-    # space without crashing on Fish's schema (temperature=0 alone
-    # still produces varied voices; seed is not accepted by the
-    # upstream /v1/tts schema — returns 422).
+    # Fish's text2semantic inference is torch.manual_seed-addressable via
+    # the top-level `seed` field on the TTS request. Research probe
+    # (agent a62ed52f) confirmed: two calls with seed=911 produce
+    # byte-identical output (sha256 match). temperature/top_p stay at
+    # schema floor for narrowest sampling within determinism.
     temperature: float = 0.1
     top_p: float = 0.7
     repetition_penalty: float = 1.1
     request_timeout_s: float = 30.0
+    # Fish text2semantic seed. Setting this makes voice identity
+    # reproducible call-to-call. Earlier 422 was from chunk_length=50,
+    # not from this field being unsupported.
+    seed: int = 911
 
 
 class FishSpeechTTS(tts.TTS):
@@ -141,7 +142,11 @@ class _FishSpeechStream(tts.ChunkedStream):
             "top_p": self._opts.top_p,
             "repetition_penalty": self._opts.repetition_penalty,
             "temperature": self._opts.temperature,
-            "use_memory_cache": "off",
+            # "on" reuses internal KV cache across calls, safe once seed
+            # locks voice (otherwise cache hits could leak previous
+            # voice samples into the current response).
+            "use_memory_cache": "on",
+            "seed": self._opts.seed,
             "references": [],
         }
         if self._opts.reference_id:
