@@ -31,12 +31,13 @@ import yaml
 from anthropic import AsyncAnthropic
 from livekit.agents import function_tool
 
-from .state import (
+from state import (  # noqa: E402  flat-module import
     Alert,
     SelfVerify,
     SelfVerifyCheck,
     SessionStore,
     TurnRecord,
+    get_session_store,
     load_contract,
 )
 
@@ -368,7 +369,7 @@ async def specialist_intake(
     """Drive the intake phase: greet, capture address, classify chief complaint, get callback."""
     # Late-bind the SessionStore from the worker's context — avoids
     # circular import + keeps function_tool signatures clean.
-    from .worker import get_session_store  # noqa: PLC0415
+    # get_session_store now comes from state.py (top-level import above)
 
     return await _emit_specialist_turn(
         "psap-intake", get_session_store(), session_id, caller_text
@@ -381,7 +382,7 @@ async def specialist_triage(
     caller_text: str,
 ) -> dict[str, Any]:
     """Run GEDP key-question flow for the chief complaint family; assign determinant."""
-    from .worker import get_session_store  # noqa: PLC0415
+    # get_session_store now comes from state.py (top-level import above)
 
     return await _emit_specialist_turn(
         "psap-triage", get_session_store(), session_id, caller_text
@@ -394,7 +395,7 @@ async def specialist_triage(
 # even before they're wired:
 @function_tool
 async def specialist_dispatch(session_id: str, caller_text: str) -> dict[str, Any]:
-    from .worker import get_session_store  # noqa: PLC0415
+    # get_session_store now comes from state.py (top-level import above)
 
     return await _emit_specialist_turn(
         "psap-dispatch", get_session_store(), session_id, caller_text
@@ -403,7 +404,7 @@ async def specialist_dispatch(session_id: str, caller_text: str) -> dict[str, An
 
 @function_tool
 async def specialist_pdi(session_id: str, caller_text: str) -> dict[str, Any]:
-    from .worker import get_session_store  # noqa: PLC0415
+    # get_session_store now comes from state.py (top-level import above)
 
     return await _emit_specialist_turn(
         "psap-pdi", get_session_store(), session_id, caller_text
@@ -412,7 +413,7 @@ async def specialist_pdi(session_id: str, caller_text: str) -> dict[str, Any]:
 
 @function_tool
 async def specialist_handoff(session_id: str, caller_text: str) -> dict[str, Any]:
-    from .worker import get_session_store  # noqa: PLC0415
+    # get_session_store now comes from state.py (top-level import above)
 
     return await _emit_specialist_turn(
         "psap-handoff", get_session_store(), session_id, caller_text

@@ -36,11 +36,11 @@ from livekit.agents import (
 )
 from livekit.plugins import silero
 
-from .fish_speech_tts import FishSpeechOptions, FishSpeechTTS
-from .grader import grade_turn_with_shim_fallback
-from .orchestrator import make_orchestrator
-from .parakeet_stt import ParakeetOptions, ParakeetSTT
-from .state import (
+from fish_speech_tts import FishSpeechOptions, FishSpeechTTS
+from grader import grade_turn_with_shim_fallback
+from orchestrator import make_orchestrator
+from parakeet_stt import ParakeetOptions, ParakeetSTT
+from state import (
     SessionStore,
     write_session_summary,
     write_turn_log,

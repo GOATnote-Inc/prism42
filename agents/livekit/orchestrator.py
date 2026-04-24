@@ -22,7 +22,7 @@ from __future__ import annotations
 import structlog
 from livekit.agents import Agent, ChatContext
 
-from .specialists import TOOL_CATALOG
+from specialists import TOOL_CATALOG  # noqa: E402  flat-module import
 
 log = structlog.get_logger()
 

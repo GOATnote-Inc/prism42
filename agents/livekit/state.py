@@ -376,3 +376,26 @@ def write_session_summary(line: dict[str, Any]) -> None:
             json.dump(line, f, indent=2)
     except OSError as e:
         log.warning("session_summary.write_failed", err=str(e))
+
+
+# ---------------------------------------------------------------------
+# Singleton SessionStore — used by worker.py + specialists.py.
+# Lifts into state.py so specialists.py doesn't need to import from
+# worker.py (avoids circular import).
+# ---------------------------------------------------------------------
+
+
+_SINGLETON: SessionStore | None = None
+
+
+def get_session_store() -> SessionStore:
+    """Lazy-init singleton. Called by worker entry + every specialist tool."""
+    global _SINGLETON
+    if _SINGLETON is None:
+        _SINGLETON = SessionStore()
+    return _SINGLETON
+
+
+def _reset_session_store_for_tests() -> None:
+    global _SINGLETON
+    _SINGLETON = None

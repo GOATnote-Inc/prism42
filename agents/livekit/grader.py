@@ -19,7 +19,7 @@ from typing import Any
 
 import structlog
 
-from .state import RubricGrade, TurnRecord
+from state import RubricGrade, TurnRecord  # noqa: E402  flat-module import
 
 log = structlog.get_logger()
 
