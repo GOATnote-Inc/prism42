@@ -35,7 +35,7 @@ const DEFAULT_LOG_PATH = resolve(APP_ROOT, "findings", "comparison.jsonl");
 const HOSTED_PRIMARY_MODEL = "gpt-5-5";
 const HOSTED_FALLBACK_MODEL = "gpt-5-4";
 const HOSTED_TIMEOUT_MS = 8000;
-const B300_TIMEOUT_MS = 1500;
+const B300_TIMEOUT_MS = 5000;  // bumped from 1500ms to cover cold-start + 200-token decode on 14B
 
 // ---- arg parsing --------------------------------------------------------
 
@@ -140,7 +140,7 @@ async function gradeB300(turn, scenario) {
       { role: "user", content: userMsg },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 600,
+    max_tokens: 400,  // full RUBRIC_SYSTEM_PROMPT produces up to ~1300-char JSON on verbose scenarios
     temperature: 0,
   };
   const controller = new AbortController();

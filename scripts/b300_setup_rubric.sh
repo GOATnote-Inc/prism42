@@ -58,8 +58,10 @@ export VLLM_USE_FLASHINFER_MOE_FP4=1
 # bin/ dir has already been swapped to the 12.9.86 pip binary
 # via scripts/b300_setup_rubric.sh earlier — but FlashInfer uses
 # /usr/local/cuda/bin/nvcc which remains 12.8, hence the env.)
-export TORCH_CUDA_ARCH_LIST="10.0a"
+export TORCH_CUDA_ARCH_LIST="10.0"
 export FLASHINFER_CUDA_ARCH_LIST="10.0"
+export TRITON_CODEGEN_ARCH=100
+export CUDA_HOME=/usr/local/cuda
 
 # HF auth if token provided
 if [[ -n "${HF_TOKEN:-}" ]]; then
@@ -84,7 +86,6 @@ nohup vllm serve "${MODEL}" \
   --tensor-parallel-size 1 \
   --max-model-len 8192 \
   --dtype bfloat16 \
-  --enforce-eager \
   > "${LOG}" 2>&1 &
 
 echo "[b300-rubric] vllm pid: $!"
