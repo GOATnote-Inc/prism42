@@ -83,7 +83,23 @@ FILLERS: tuple[str, ...] = (
 # caller finishes so we don't clip the tail of their utterance, and
 # lets very-fast replies (unlikely with Fish but possible) preempt
 # without ever speaking a filler.
-FILLER_DELAY_S: float = 0.3
+#
+# Tunable via PRISM42_FILLER_DELAY_S. Perceptual-SOTA target per Team A
+# overlap timing (2026-04-24): 300-500 ms from caller end-of-speech to
+# first filler audio. <300 ms risks clipping the tail; >700 ms feels
+# like dead air. Keep default at 0.3 to preserve baseline — the env
+# flag makes A/B sweeps single-dial.
+FILLER_DELAY_S: float = float(os.environ.get("PRISM42_FILLER_DELAY_S", "0.3"))
+
+# Length-gated early-LLM telemetry hook. livekit-agents 1.5.6 already
+# fires preemptive generation on PREFLIGHT_TRANSCRIPT events when the
+# STT plugin advertises streaming=True + interim_results=True (see
+# voice/audio_recognition.py:777-822). This env var is NOT a second
+# trigger — it's a log-assertion of what the livekit pipeline is
+# doing on OUR stream, so Team B's test suite can parse a single-line
+# numeric ms value back out. 0 disables the hook; default 12 chars
+# ≈ "I have chest pain" prefix from the canonical bench utterance.
+EARLY_LLM_CHARS: int = int(os.environ.get("PRISM42_EARLY_LLM_CHARS", "12"))
 
 
 # ---------------------------------------------------------------------
@@ -161,6 +177,11 @@ def _new_turn_timing() -> dict[str, Any]:
         "t_llm_first_token": None,   # monotonic, first assistant token
         "t_tts_first_byte": None,    # monotonic, first TTS audio frame out
         "t_turn_done": None,         # monotonic, conversation_item_added
+        # Overlap-timing instrumentation (Team A, 2026-04-24).
+        "t_first_filler_audio": None,   # monotonic, first filler TTS frame
+        "t_first_tts_audio": None,      # monotonic, first reply TTS frame
+        "preempt_gen_fired": False,     # livekit preemptive gen triggered
+        "early_llm_logged": False,      # dedup guard for the telemetry event
         "stt_ms": 0,
         "llm_ms": 0,
         "tts_ms": 0,
@@ -318,6 +339,20 @@ async def entrypoint(ctx: JobContext) -> None:
         },
     )
 
+    # One-shot assertion of the overlap-timing config for this session.
+    # Emitted before any session event so Team B's parser can tie a run
+    # window to the flags that produced it. Keep in sync with the env
+    # vars documented under FILLERS / EARLY_LLM_CHARS above.
+    log.info(
+        "overlap.config",
+        session_id=session_id,
+        filler_delay_s=FILLER_DELAY_S,
+        early_llm_chars=EARLY_LLM_CHARS,
+        preemptive_generation_enabled=True,
+        preemptive_tts_enabled=True,
+        tts_backend=_tts_backend,
+    )
+
     orchestrator = make_orchestrator(session_id)
 
     # ---- post-turn hook: rubric grade + observability writes -------
@@ -373,6 +408,21 @@ async def entrypoint(ctx: JobContext) -> None:
                 ttfb = getattr(metrics, "ttfb", None)
                 if ttfb is not None:
                     cur["tts_ms"] = max(0, int(float(ttfb) * 1000))
+                # Overlap assertion: first TTS audio frame wallclock delay
+                # since end-of-caller-speech. Fires once per turn (the first
+                # TTSMetrics after user_speech_end; filler or reply). Team B
+                # expects this parseable line under `overlap.*_ms`.
+                t_end = cur.get("t_user_speech_end")
+                now = time.monotonic()
+                if t_end is not None and cur.get("t_first_tts_audio") is None:
+                    cur["t_first_tts_audio"] = now
+                    dt_ms = int((now - t_end) * 1000)
+                    log.info(
+                        "overlap.tts_first_audio_after_speech_ms",
+                        session_id=session_id,
+                        ms=dt_ms,
+                        ttfb_ms=cur.get("tts_ms", 0),
+                    )
             log.debug(
                 "metrics.captured",
                 session_id=session_id,
@@ -460,6 +510,30 @@ async def entrypoint(ctx: JobContext) -> None:
             )
             if sid and cur.get("speech_id") is None:
                 cur["speech_id"] = sid
+
+            # Preemptive-gen detection + overlap.llm_first_token_after_speech
+            # assertion. If speech_created fires BEFORE t_stt_end is set, that
+            # means livekit started generation on a PREFLIGHT_TRANSCRIPT — i.e.
+            # the STT plugin's `preflight` frames successfully kicked
+            # `on_preemptive_generation()` in audio_recognition.py:777-822.
+            # Emitted as a single parseable line with a numeric delay so
+            # Team B's suite can assert ms ranges.
+            t_end = cur.get("t_user_speech_end")
+            if t_end is not None:
+                dt_ms = int((now - t_end) * 1000)
+                # Negative dt means speech_created fired BEFORE we even
+                # saw VAD end-of-speech — extreme preemptive win.
+                src = getattr(ev, "source", None) or getattr(ev, "kind", None)
+                is_preempt = cur.get("t_stt_end") is None
+                if is_preempt:
+                    cur["preempt_gen_fired"] = True
+                log.info(
+                    "overlap.llm_first_token_after_speech_ms",
+                    session_id=session_id,
+                    ms=dt_ms,
+                    preempt=is_preempt,
+                    source=str(src) if src else None,
+                )
         except Exception as e:  # noqa: BLE001
             log.warning("speech_created.error", err=str(e)[:200])
 
@@ -511,9 +585,38 @@ async def entrypoint(ctx: JobContext) -> None:
     def _on_user_transcribed(ev: Any) -> None:
         caller_spoke.set()
         try:
-            if getattr(ev, "is_final", False):
-                bucket = _timing_bucket(session_id)
-                cur = bucket["current"]
+            text = getattr(ev, "transcript", "") or ""
+            is_final = bool(getattr(ev, "is_final", False))
+            is_preflight = bool(
+                getattr(ev, "is_preflight", False)
+                or getattr(ev, "stable", False)
+            )
+            bucket = _timing_bucket(session_id)
+            cur = bucket["current"]
+
+            # Early-LLM telemetry hook. This does NOT trigger a second
+            # generation — livekit-agents 1.5.6 already fires preemptive
+            # gen on PREFLIGHT_TRANSCRIPT under the hood. We log a single
+            # assertion per turn so bench_b300.py + Team B's test suite
+            # can prove that early triggering is actually happening on
+            # THIS pod+stream (not merely promised by the plugin
+            # `capabilities.streaming=True` advertisement).
+            if (
+                EARLY_LLM_CHARS > 0
+                and not is_final
+                and len(text) >= EARLY_LLM_CHARS
+                and not cur.get("early_llm_logged", False)
+            ):
+                log.info(
+                    "overlap.early_llm_trigger",
+                    session_id=session_id,
+                    chars=len(text),
+                    is_preflight=is_preflight,
+                    text=text[:40],
+                )
+                cur["early_llm_logged"] = True
+
+            if is_final:
                 now = time.monotonic()
                 if cur.get("t_stt_end") is None:
                     cur["t_stt_end"] = now
@@ -595,6 +698,27 @@ async def entrypoint(ctx: JobContext) -> None:
             choices = [f for f in FILLERS if f != filler_state["last_filler"]]
             text = random.choice(choices) if choices else FILLERS[0]
             filler_state["last_filler"] = text
+            # t_filler_scheduled: right before session.say dispatches the
+            # filler text to TTS. This is our best proxy for "first filler
+            # audio" because session.say returns AFTER the whole utterance
+            # plays — too late for a meaningful ms delta. The actual first-
+            # audio-frame wallclock is captured by the TTSMetrics path
+            # (overlap.tts_first_audio_after_speech_ms) which covers the
+            # filler too.
+            bucket = _timing_bucket(session_id)
+            cur = bucket["current"]
+            t_end = cur.get("t_user_speech_end")
+            t0 = time.monotonic()
+            if cur.get("t_first_filler_audio") is None:
+                cur["t_first_filler_audio"] = t0
+            dt_ms = int((t0 - t_end) * 1000) if t_end is not None else -1
+            log.info(
+                "overlap.filler_after_speech_ms",
+                session_id=session_id,
+                ms=dt_ms,
+                filler_delay_s=FILLER_DELAY_S,
+                text=text,
+            )
             await session.say(text, allow_interruptions=True)
             log.info("filler.spoken", session_id=session_id, text=text)
         except asyncio.CancelledError:
