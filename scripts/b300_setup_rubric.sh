@@ -46,6 +46,15 @@ pip install --quiet "vllm==0.14.1" "torch>=2.6" "huggingface-hub>=0.26" "ninja"
 # blackwell FP4 MoE per vLLM GB300 DeepSeek blog reference
 export VLLM_USE_FLASHINFER_MOE_FP4=1
 
+# The system ptxas on the pod is CUDA 12.8 (nvcc --version confirms).
+# ptxas 12.8 rejects `--gpu-name=sm_103a` which is the default target
+# torch.compile / Triton picks on B300 (compute capability 10.3).
+# Workaround: force Triton to target sm_100a (which ptxas 12.8 accepts
+# AND which runs correctly on B300 per NVIDIA forward-compat guarantee).
+# Upgrading CUDA Toolkit to 12.9+ on the pod is the proper fix; this
+# env is the tactical bypass.
+export TORCH_CUDA_ARCH_LIST="10.0a"
+
 # HF auth if token provided
 if [[ -n "${HF_TOKEN:-}" ]]; then
   python3 -c "from huggingface_hub import login; login(token='${HF_TOKEN}')" || true
@@ -69,6 +78,7 @@ nohup vllm serve "${MODEL}" \
   --tensor-parallel-size 1 \
   --max-model-len 8192 \
   --dtype bfloat16 \
+  --enforce-eager \
   > "${LOG}" 2>&1 &
 
 echo "[b300-rubric] vllm pid: $!"
