@@ -133,6 +133,83 @@ def get_session_store() -> SessionStore:
 
 
 # ---------------------------------------------------------------------
+# Per-session pipeline timings for the b3-latency data channel.
+#
+# Keyed by session_id → {"current": <timing_dict>, "last": <timing_dict>}.
+# `current` accumulates as STT/LLM/TTS events land during an in-flight
+# turn; `last` holds the most-recently-completed turn for _publish_latency
+# to read when `conversation_item_added` fires.
+#
+# Every event-driven write goes through `_record_timing(session_id, key,
+# value)` which is monotonic (max-wins for cumulative counters, first-
+# write-wins for monotonic-start timestamps). This is intentionally
+# duplicated across the two readers (`metrics_collected` canonical path
+# and the manual `user_input_transcribed`/`speech_created` fallback path)
+# so whichever fires first populates the field.
+# ---------------------------------------------------------------------
+
+_SESSION_TIMINGS: dict[str, dict[str, Any]] = {}
+
+
+def _new_turn_timing() -> dict[str, Any]:
+    """Blank timing dict — all durations default 0, start timestamps None."""
+    return {
+        "turn_id": None,
+        "t_user_speech_end": None,   # monotonic, end of caller speech (VAD)
+        "t_stt_end": None,           # monotonic, STT final transcript ready
+        "t_llm_start": None,         # monotonic, LLM request initiated
+        "t_llm_first_token": None,   # monotonic, first assistant token
+        "t_tts_first_byte": None,    # monotonic, first TTS audio frame out
+        "t_turn_done": None,         # monotonic, conversation_item_added
+        "stt_ms": 0,
+        "llm_ms": 0,
+        "tts_ms": 0,
+        "tool_ms": 0,
+        "total_ms": 0,
+        "speech_id": None,
+        "metrics_seen": set(),       # track which metric types arrived
+    }
+
+
+def _timing_bucket(session_id: str) -> dict[str, Any]:
+    """Get (or create) the per-session timing bucket."""
+    b = _SESSION_TIMINGS.get(session_id)
+    if b is None:
+        b = {"current": _new_turn_timing(), "last": None}
+        _SESSION_TIMINGS[session_id] = b
+    return b
+
+
+def _finalize_current_turn(session_id: str) -> dict[str, Any] | None:
+    """Move the in-flight turn into `last` and start a fresh `current`.
+
+    Computes any missing durations from the timestamps we captured so the
+    frontend never sees a field at zero when we have the inputs for it.
+    """
+    b = _timing_bucket(session_id)
+    cur = b["current"]
+    # Derive durations from timestamps if not already populated by
+    # metrics_collected.
+    if cur.get("stt_ms", 0) == 0 and cur.get("t_user_speech_end") and cur.get("t_stt_end"):
+        cur["stt_ms"] = max(0, int((cur["t_stt_end"] - cur["t_user_speech_end"]) * 1000))
+    if cur.get("llm_ms", 0) == 0 and cur.get("t_llm_start") and cur.get("t_llm_first_token"):
+        cur["llm_ms"] = max(0, int((cur["t_llm_first_token"] - cur["t_llm_start"]) * 1000))
+    if cur.get("tts_ms", 0) == 0 and cur.get("t_llm_first_token") and cur.get("t_tts_first_byte"):
+        cur["tts_ms"] = max(0, int((cur["t_tts_first_byte"] - cur["t_llm_first_token"]) * 1000))
+    if cur.get("total_ms", 0) == 0 and cur.get("t_stt_end") and cur.get("t_turn_done"):
+        cur["total_ms"] = max(0, int((cur["t_turn_done"] - cur["t_stt_end"]) * 1000))
+    # If total is still 0 but the parts sum to something, use the sum.
+    if cur.get("total_ms", 0) == 0:
+        parts_sum = cur.get("stt_ms", 0) + cur.get("llm_ms", 0) + cur.get("tts_ms", 0) + cur.get("tool_ms", 0)
+        if parts_sum > 0:
+            cur["total_ms"] = parts_sum
+
+    b["last"] = cur
+    b["current"] = _new_turn_timing()
+    return b["last"]
+
+
+# ---------------------------------------------------------------------
 # Entry — runs once per LiveKit room (i.e. per call).
 # ---------------------------------------------------------------------
 
@@ -174,6 +251,61 @@ async def entrypoint(ctx: JobContext) -> None:
         # Hook for live UI bridge in a follow-on PR.
         pass
 
+    # ---- Pipeline-latency instrumentation (b3-latency channel) -----
+    #
+    # livekit-agents 1.5.6 emits a single `metrics_collected` event with
+    # a discriminated-union payload — one of STTMetrics, LLMMetrics,
+    # TTSMetrics, EOUMetrics, PipelineEOUMetrics — after each stage of
+    # the voice pipeline completes. Field names are the LiveKit public
+    # contract: `ttft` for LLM, `ttfb` for TTS, `duration` for STT/TTS,
+    # `end_of_utterance_delay` for EOU. We normalize to ms ints.
+    #
+    # We ALSO capture monotonic timestamps in `user_input_transcribed`
+    # / `speech_created` / `conversation_item_added` as a belt-and-
+    # braces fallback. Whichever path fires first wins; duplicates are
+    # harmless because `_finalize_current_turn` only re-derives a field
+    # when it is still 0.
+    @session.on("metrics_collected")  # type: ignore[arg-type]
+    def _on_metrics(ev: Any) -> None:
+        try:
+            metrics = getattr(ev, "metrics", ev)
+            bucket = _timing_bucket(session_id)
+            cur = bucket["current"]
+            cls_name = type(metrics).__name__
+            cur["metrics_seen"].add(cls_name)
+            # STT metrics — streaming_duration / duration reflects
+            # partial→final finalize window.
+            if cls_name in ("STTMetrics", "EOUMetrics", "PipelineEOUMetrics"):
+                # EOU = end-of-utterance delay (VAD endpoint → turn-detector fire).
+                eou_delay = getattr(metrics, "end_of_utterance_delay", None)
+                duration = getattr(metrics, "duration", None)
+                if duration is not None and cur.get("stt_ms", 0) == 0:
+                    cur["stt_ms"] = max(0, int(float(duration) * 1000))
+                if eou_delay is not None and cur.get("stt_ms", 0) == 0:
+                    cur["stt_ms"] = max(0, int(float(eou_delay) * 1000))
+            elif cls_name == "LLMMetrics":
+                ttft = getattr(metrics, "ttft", None)
+                duration = getattr(metrics, "duration", None)
+                if ttft is not None:
+                    # llm_ms = TTFT (first token latency, the user-facing metric)
+                    cur["llm_ms"] = max(0, int(float(ttft) * 1000))
+                elif duration is not None:
+                    cur["llm_ms"] = max(0, int(float(duration) * 1000))
+            elif cls_name == "TTSMetrics":
+                ttfb = getattr(metrics, "ttfb", None)
+                if ttfb is not None:
+                    cur["tts_ms"] = max(0, int(float(ttfb) * 1000))
+            log.debug(
+                "metrics.captured",
+                session_id=session_id,
+                metric_type=cls_name,
+                stt_ms=cur.get("stt_ms"),
+                llm_ms=cur.get("llm_ms"),
+                tts_ms=cur.get("tts_ms"),
+            )
+        except Exception as e:  # noqa: BLE001
+            log.warning("metrics.error", err=str(e)[:200])
+
     # When the LLM finishes a response (the orchestrator chose a
     # specialist, the specialist returned spoken_content, TTS spoke
     # it), record the turn-log line. The store is already updated by
@@ -181,10 +313,32 @@ async def entrypoint(ctx: JobContext) -> None:
     @session.on("conversation_item_added")  # type: ignore[arg-type]
     def _on_item(item: Any) -> None:
         try:
+            # Mark end of turn and finalize timings BEFORE publishing.
+            bucket = _timing_bucket(session_id)
+            bucket["current"]["t_turn_done"] = time.monotonic()
+            finalized = _finalize_current_turn(session_id)
+
             state = store.get(session_id)
             if not state or not state.turns:
+                # No specialist turn was recorded (single-LLM fast path) —
+                # still publish latency so the frontend gets live numbers.
+                if finalized:
+                    asyncio.create_task(
+                        _publish_latency_dict(ctx, session_id, finalized)
+                    )
                 return
             latest = state.turns[-1]
+            # Populate the TurnRecord.debug dict so the legacy
+            # _publish_latency path (which reads turn.debug) also works.
+            if finalized:
+                try:
+                    latest.debug.setdefault("stt_ms", finalized.get("stt_ms", 0))
+                    latest.debug.setdefault("llm_ms", finalized.get("llm_ms", 0))
+                    latest.debug.setdefault("tts_ms", finalized.get("tts_ms", 0))
+                    latest.debug.setdefault("tool_ms", finalized.get("tool_ms", 0))
+                    latest.debug.setdefault("total_ms", finalized.get("total_ms", 0))
+                except Exception:  # noqa: BLE001
+                    pass
             line = {
                 "ts_ms": int(time.time() * 1000),
                 "session_id": session_id,
@@ -203,6 +357,27 @@ async def entrypoint(ctx: JobContext) -> None:
             asyncio.create_task(_publish_latency(ctx, session_id, latest))
         except Exception as e:  # noqa: BLE001
             log.warning("on_item.error", err=str(e)[:200])
+
+    # First-token / first-audio timing fallbacks. `speech_created` fires
+    # when AgentSession starts synthesizing a reply (i.e. LLM has emitted
+    # enough for TTS to begin). We use it as the proxy for
+    # `t_llm_first_token` when the LLMMetrics path has not landed yet.
+    @session.on("speech_created")  # type: ignore[arg-type]
+    def _on_speech_created(ev: Any) -> None:
+        try:
+            bucket = _timing_bucket(session_id)
+            cur = bucket["current"]
+            now = time.monotonic()
+            if cur.get("t_llm_first_token") is None:
+                cur["t_llm_first_token"] = now
+            # Try to pull a stable speech_id for cross-event correlation.
+            sid = getattr(ev, "speech_id", None) or getattr(
+                getattr(ev, "speech_handle", None), "id", None
+            )
+            if sid and cur.get("speech_id") is None:
+                cur["speech_id"] = sid
+        except Exception as e:  # noqa: BLE001
+            log.warning("speech_created.error", err=str(e)[:200])
 
     # Pre-roll gate: the caller may start talking BEFORE we get a chance
     # to speak the "Nine one one. What's your emergency?" greeting (their
@@ -236,12 +411,44 @@ async def entrypoint(ctx: JobContext) -> None:
         try:
             if getattr(ev, "new_state", None) == "speaking":
                 caller_spoke.set()
+            # VAD-end-of-speech is the cleanest origin for total_ms.
+            if (
+                getattr(ev, "old_state", None) == "speaking"
+                and getattr(ev, "new_state", None) == "listening"
+            ):
+                bucket = _timing_bucket(session_id)
+                cur = bucket["current"]
+                if cur.get("t_user_speech_end") is None:
+                    cur["t_user_speech_end"] = time.monotonic()
         except Exception:  # noqa: BLE001
             pass
 
     @session.on("user_input_transcribed")  # type: ignore[arg-type]
-    def _on_user_transcribed(_ev: Any) -> None:
+    def _on_user_transcribed(ev: Any) -> None:
         caller_spoke.set()
+        try:
+            if getattr(ev, "is_final", False):
+                bucket = _timing_bucket(session_id)
+                cur = bucket["current"]
+                now = time.monotonic()
+                if cur.get("t_stt_end") is None:
+                    cur["t_stt_end"] = now
+                # LLM request kicks off as soon as the transcript is final.
+                if cur.get("t_llm_start") is None:
+                    cur["t_llm_start"] = now
+                # If we missed the VAD speaking→listening transition,
+                # approximate user_speech_end by subtracting transcript_delay.
+                if cur.get("t_user_speech_end") is None:
+                    delay = getattr(ev, "transcript_delay", None)
+                    if delay is not None:
+                        try:
+                            cur["t_user_speech_end"] = now - float(delay)
+                        except (TypeError, ValueError):
+                            cur["t_user_speech_end"] = now
+                    else:
+                        cur["t_user_speech_end"] = now
+        except Exception:  # noqa: BLE001
+            pass
 
     await session.start(agent=orchestrator, room=ctx.room)
 
@@ -381,28 +588,35 @@ async def _publish_latency(ctx: JobContext, session_id: str, turn: Any) -> None:
           "note":       str|None
         }
 
-    Values come from `turn.debug` if the orchestrator populated them;
-    otherwise we emit zeros with a NOTE so the frontend can verify the
-    channel is wired before the orchestrator-side instrumentation lands.
+    Reads timings from (priority order):
+      1. `_SESSION_TIMINGS[session_id]["last"]` populated by the
+         `metrics_collected` + `user_input_transcribed` +
+         `speech_created` + `conversation_item_added` event chain.
+      2. `turn.debug` as a legacy fallback for specialists that
+         explicitly write stt_ms/llm_ms/tts_ms.
 
     Frontend subscribes via `useDataChannel("b3-latency")` in
-    mvp/911-console-live/components/b300/LatencyStrip.tsx.
+    mvp/911-console-live/app/prism42/livekit/page.tsx — it treats
+    `note == null` as "live" and anything else as "awaiting first turn".
     """
     try:
         debug = getattr(turn, "debug", {}) or {}
+        bucket = _timing_bucket(session_id)
+        last = bucket.get("last") or {}
 
-        def _int(field: str) -> int:
-            v = debug.get(field)
+        def _pick(field: str) -> int:
+            # Prefer the event-driven timing dict; fall back to turn.debug.
+            v = last.get(field, 0) or debug.get(field, 0)
             try:
                 return int(v) if v is not None else 0
             except (TypeError, ValueError):
                 return 0
 
-        stt_ms = _int("stt_ms")
-        llm_ms = _int("llm_ms")
-        tts_ms = _int("tts_ms")
-        tool_ms = _int("tool_ms")
-        total_ms = _int("total_ms")
+        stt_ms = _pick("stt_ms")
+        llm_ms = _pick("llm_ms")
+        tts_ms = _pick("tts_ms")
+        tool_ms = _pick("tool_ms")
+        total_ms = _pick("total_ms")
         if total_ms == 0 and any((stt_ms, llm_ms, tts_ms, tool_ms)):
             total_ms = stt_ms + llm_ms + tts_ms + tool_ms
 
@@ -413,7 +627,7 @@ async def _publish_latency(ctx: JobContext, session_id: str, turn: Any) -> None:
         payload = json.dumps(
             {
                 "session_id": session_id,
-                "turn_id": getattr(turn, "turn_id", ""),
+                "turn_id": getattr(turn, "turn_id", "") or last.get("turn_id", ""),
                 "ts_ms": int(time.time() * 1000),
                 "stt_ms": stt_ms,
                 "llm_ms": llm_ms,
@@ -424,6 +638,16 @@ async def _publish_latency(ctx: JobContext, session_id: str, turn: Any) -> None:
             }
         ).encode("utf-8")
 
+        log.info(
+            "latency.publish",
+            session_id=session_id,
+            stt_ms=stt_ms,
+            llm_ms=llm_ms,
+            tts_ms=tts_ms,
+            tool_ms=tool_ms,
+            total_ms=total_ms,
+            note=note,
+        )
         await ctx.room.local_participant.publish_data(
             payload=payload,
             reliable=True,
@@ -431,6 +655,62 @@ async def _publish_latency(ctx: JobContext, session_id: str, turn: Any) -> None:
         )
     except Exception as e:  # noqa: BLE001
         log.warning("latency_publish.failed", err=str(e)[:200])
+
+
+async def _publish_latency_dict(
+    ctx: JobContext, session_id: str, timing: dict[str, Any]
+) -> None:
+    """Publish latency from a raw timing dict (no TurnRecord available).
+
+    Used on the single-LLM fast path where the orchestrator doesn't
+    produce a TurnRecord (no specialist tool call), so there is no
+    `turn.debug` to fall back on. Takes the finalized timing dict from
+    `_finalize_current_turn` and emits it verbatim.
+    """
+    try:
+        stt_ms = int(timing.get("stt_ms", 0) or 0)
+        llm_ms = int(timing.get("llm_ms", 0) or 0)
+        tts_ms = int(timing.get("tts_ms", 0) or 0)
+        tool_ms = int(timing.get("tool_ms", 0) or 0)
+        total_ms = int(timing.get("total_ms", 0) or 0)
+        if total_ms == 0 and any((stt_ms, llm_ms, tts_ms, tool_ms)):
+            total_ms = stt_ms + llm_ms + tts_ms + tool_ms
+
+        note: str | None = None
+        if stt_ms == llm_ms == tts_ms == tool_ms == total_ms == 0:
+            note = "orchestrator_timing_not_populated"
+
+        payload = json.dumps(
+            {
+                "session_id": session_id,
+                "turn_id": timing.get("turn_id", "") or "",
+                "ts_ms": int(time.time() * 1000),
+                "stt_ms": stt_ms,
+                "llm_ms": llm_ms,
+                "tts_ms": tts_ms,
+                "tool_ms": tool_ms,
+                "total_ms": total_ms,
+                "note": note,
+            }
+        ).encode("utf-8")
+
+        log.info(
+            "latency.publish",
+            session_id=session_id,
+            stt_ms=stt_ms,
+            llm_ms=llm_ms,
+            tts_ms=tts_ms,
+            tool_ms=tool_ms,
+            total_ms=total_ms,
+            note=note,
+        )
+        await ctx.room.local_participant.publish_data(
+            payload=payload,
+            reliable=True,
+            topic="b3-latency",
+        )
+    except Exception as e:  # noqa: BLE001
+        log.warning("latency_publish_dict.failed", err=str(e)[:200])
 
 
 async def _grade_async(session_id: str, turn: Any, _item: Any) -> None:
