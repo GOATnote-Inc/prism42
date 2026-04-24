@@ -1,0 +1,20 @@
+[Unit]
+Description=Prism42 LiveKit Agent Worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=shadeform
+Group=shadeform
+WorkingDirectory=/opt/prism42/agents/livekit
+EnvironmentFile=/opt/prism42/agents/livekit/.env
+ExecStart=/opt/prism42/agents/livekit/.venv/bin/python /opt/prism42/agents/livekit/worker.py dev
+Restart=always
+RestartSec=2
+StandardOutput=append:/tmp/prism42-logs/worker.log
+StandardError=append:/tmp/prism42-logs/worker.log
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

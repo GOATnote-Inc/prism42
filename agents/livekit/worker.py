@@ -36,6 +36,15 @@ from livekit.agents import (
 )
 from livekit.plugins import silero
 
+from livekit.agents.voice import speech_handle as _lk_speech_handle
+
+# Override the 5-second "speech not done in time after interruption" cancel
+# timer. Our orchestrator does Opus-4.7 → 4 parallel sonnet tools → Opus-4.7
+# STEP 2 — total ~7-12s for the first turn. The default 5s aborts the
+# response before TTS fires (the symptom the user observed: tools complete
+# in the log but Fish never receives a POST). 30s gives the full hop room.
+_lk_speech_handle.INTERRUPTION_TIMEOUT = 30.0
+
 from fish_speech_tts import FishSpeechOptions, FishSpeechTTS
 from grader import grade_turn_with_shim_fallback
 from orchestrator import make_orchestrator
@@ -47,6 +56,61 @@ from state import (
 )
 
 log = structlog.get_logger()
+
+
+def _force_additional_properties_false(node: Any) -> None:
+    """Anthropic API (2026+) rejects tool input schemas where any object
+    type has additionalProperties != false. dict[str, Any] hints in
+    @function_tool produce schemas that EXPLICITLY emit `true`, and for
+    Optional[dict] hints Pydantic emits `type: ["object", "null"]` (a
+    list) — both must match. Walk recursively and force the field to
+    false on every object-like node. Safe across {anyOf, oneOf, $defs,
+    properties, custom, tools, tuples, Optional}.
+
+    Guard fix (2026-04-24 per livekit-kb/05-debugging-playbook.md): the
+    previous guard `node.get("type") == "object"` missed nullable dicts
+    because Pydantic emits the type as a list there.
+    """
+    if isinstance(node, dict):
+        t = node.get("type")
+        is_object = t == "object" or (isinstance(t, list) and "object" in t)
+        if is_object and node.get("additionalProperties") is not False:
+            node["additionalProperties"] = False
+        for v in node.values():
+            _force_additional_properties_false(v)
+    elif isinstance(node, (list, tuple)):
+        for v in node:
+            _force_additional_properties_false(v)
+
+
+def _patch_anthropic_tool_schemas() -> None:
+    """Monkey-patch the AnthropicLLM serialization so every tool schema
+    we send has additionalProperties: false. Idempotent.
+
+    The livekit-plugins-anthropic plugin sends tools in the 2026+ wrapped
+    format `{"type":"custom","custom":{"name":..., "input_schema":{...}}}`.
+    Anthropic's API rejects any `type:object` schema whose
+    `additionalProperties` is true (or omitted). dict[str,Any] type hints
+    in @function_tool produce exactly that. We walk the ENTIRE call
+    kwargs recursively and force-false on every object node.
+    """
+    from anthropic.resources.messages import AsyncMessages  # noqa: PLC0415
+
+    if getattr(AsyncMessages, "_prism42_patched", False):
+        return
+    original_create = AsyncMessages.create
+
+    async def patched_create(self, *args, **kwargs):
+        _force_additional_properties_false(kwargs)
+        _force_additional_properties_false(list(args))
+        return await original_create(self, *args, **kwargs)
+
+    AsyncMessages.create = patched_create
+    AsyncMessages._prism42_patched = True
+    log.info("anthropic.tool_schema_patched")
+
+
+_patch_anthropic_tool_schemas()
 
 
 # ---------------------------------------------------------------------
@@ -136,6 +200,24 @@ async def entrypoint(ctx: JobContext) -> None:
             log.warning("on_item.error", err=str(e)[:200])
 
     await session.start(agent=orchestrator, room=ctx.room)
+
+    # Pre-roll utterance: PSAP dispatchers answer first. Saying this BEFORE
+    # waiting on the orchestrator's first LLM round-trip gives the caller
+    # immediate audible confirmation that the line is live, and buys ~5-10s
+    # of pipeline time during which the (slower) orchestrator+specialist
+    # hop can complete without the caller hanging up in silence.
+    try:
+        await ctx.wait_for_participant()
+    except Exception as e:  # noqa: BLE001
+        log.warning("wait_for_participant.failed", err=str(e)[:200])
+    try:
+        await session.say(
+            "Nine one one. What's your emergency?",
+            allow_interruptions=True,
+        )
+        log.info("preroll.spoken", session_id=session_id)
+    except Exception as e:  # noqa: BLE001
+        log.warning("preroll.failed", err=str(e)[:200])
 
     # When the room closes, fire the auditor + write the session
     # summary. Phase 3a writes the summary directly; the auditor

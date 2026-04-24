@@ -1,0 +1,197 @@
+# Proposed fixes — NOT APPLIED.
+#
+# Two independent strategies below. Pick ONE and apply the matching hunks:
+#   Strategy B (preferred): drop `last_specialist_turn` from the @function_tool
+#     signature; read the last turn from SessionStore inside the body.
+#   Strategy A (alternative): replace `dict[str, Any] | None` with a narrow
+#     Pydantic model.
+#
+# After either strategy, the `_patch_anthropic_tool_schemas` monkey-patch in
+# worker.py can be deleted (Strategy C, optional).
+
+# =====================================================================
+# Strategy B — remove `last_specialist_turn` param, read from SessionStore
+# =====================================================================
+
+--- a/agents/livekit/specialists.py
++++ b/agents/livekit/specialists.py
+@@ -91,19 +91,25 @@ def _sonnet_client() -> AsyncAnthropic:
+
+
+ @function_tool
+ async def run_safety_monitor(
+     session_id: str,
+     caller_text: str,
+-    last_specialist_turn: dict[str, Any] | None = None,
+ ) -> dict[str, Any]:
+     """Classify the current turn against 8 alert classes.
+
+     Returns: {"alerts": [...]} per the schema. Recorded directly into
+     SessionState.alerts; never spoken.
++
++    The previous specialist turn is read from the SessionStore so the
++    @function_tool signature stays Anthropic-schema-compatible (no
++    dict[str, Any] params). SessionStore is the source of truth for
++    turn history anyway — passing it through the tool call was
++    redundant.
+     """
++    store = get_session_store()
++    state = store.get(session_id)
++    last_specialist_turn = (
++        state.turns[-1].model_dump() if state and state.turns else None
++    )
+     sysprompt = _load_agent_system("psap-safety-monitor")
+     user = json.dumps(
+         {
+             "caller_text": caller_text,
+             "last_specialist_turn": last_specialist_turn,
+         }
+
+--- a/agents/livekit/orchestrator.py
++++ b/agents/livekit/orchestrator.py
+@@ -93,7 +93,7 @@ Your tool catalog
+ arguments:
+
+   Parallel evaluators (call all three on every turn):
+-    - run_safety_monitor(session_id, caller_text, last_specialist_turn)
++    - run_safety_monitor(session_id, caller_text)
+     - run_ohca_detector(session_id, transcript_so_far)
+     - run_intent_verifier(session_id, caller_text, transcript_so_far)
+
+
+
+# =====================================================================
+# Strategy A — replace dict[str, Any] with a narrow Pydantic model
+# (alternative to Strategy B; do not apply both)
+# =====================================================================
+
+--- a/agents/livekit/state.py
++++ b/agents/livekit/state.py
+@@ -85,6 +85,17 @@ class TurnRecord(BaseModel):
+     debug: dict[str, Any] = Field(default_factory=dict)
+
+
++class LastSpecialistTurnRef(BaseModel):
++    """Compact reference to the previous voice-facing specialist turn.
++    Narrow by design — the safety monitor only needs the fields that
++    drive re-classification, not the full TurnRecord. Exists so the
++    run_safety_monitor @function_tool signature can be typed without
++    falling back to dict[str, Any] (which produces an Anthropic-
++    incompatible JSON schema).
++    """
++    agent: str
++    turn_id: str
++    action: Literal["speak", "defer", "refuse", "escalate", "handoff", "end"]
++    content: str | None = None
++
++
+ class RubricGrade(BaseModel):
+     turn_id: str
+     weighted_score: float = Field(ge=0.0, le=1.0)
+
+--- a/agents/livekit/specialists.py
++++ b/agents/livekit/specialists.py
+@@ -34,6 +34,7 @@ log = structlog.get_logger()
+ from state import (  # noqa: E402  flat-module import
+     Alert,
++    LastSpecialistTurnRef,
+     SelfVerify,
+     SelfVerifyCheck,
+     SessionStore,
+@@ -94,12 +95,15 @@ def _sonnet_client() -> AsyncAnthropic:
+ @function_tool
+ async def run_safety_monitor(
+     session_id: str,
+     caller_text: str,
+-    last_specialist_turn: dict[str, Any] | None = None,
++    last_specialist_turn: LastSpecialistTurnRef | None = None,
+ ) -> dict[str, Any]:
+     """Classify the current turn against 8 alert classes.
+
+     Returns: {"alerts": [...]} per the schema. Recorded directly into
+     SessionState.alerts; never spoken.
++
++    last_specialist_turn is a narrow ref — the orchestrator populates
++    the 4 named fields from state.turns[-1].
+     """
+     sysprompt = _load_agent_system("psap-safety-monitor")
+     user = json.dumps(
+         {
+             "caller_text": caller_text,
+-            "last_specialist_turn": last_specialist_turn,
++            "last_specialist_turn": (
++                last_specialist_turn.model_dump()
++                if last_specialist_turn
++                else None
++            ),
+         }
+     )
+
+# (orchestrator.py needs no change under Strategy A — the argument
+# name is preserved; only the shape the model fills in changes.)
+
+
+# =====================================================================
+# Strategy C — optional cleanup once Strategy A or B is applied:
+# retire the runtime monkey-patch. Leave for a follow-up PR so the
+# schema-fix and the patch-removal are separately revert-able.
+# =====================================================================
+
+--- a/agents/livekit/worker.py
++++ b/agents/livekit/worker.py
+@@ -49,63 +49,6 @@ from state import (
+ log = structlog.get_logger()
+
+
+-def _force_additional_properties_false(node: Any) -> None:
+-    """Anthropic API (2026+) rejects tool input schemas where any object
+-    type has additionalProperties != false. dict[str, Any] type hints in
+-    @function_tool produce schemas that omit the field (== true). Walk
+-    recursively and force the field to false on every object node. Safe
+-    across {anyOf, oneOf, $defs, properties, custom, tools, tuples}.
+-    """
+-    if isinstance(node, dict):
+-        if node.get("type") == "object":
+-            ap = node.get("additionalProperties")
+-            if ap is True or ap is None:
+-                node["additionalProperties"] = False
+-        for v in node.values():
+-            _force_additional_properties_false(v)
+-    elif isinstance(node, (list, tuple)):
+-        for v in node:
+-            _force_additional_properties_false(v)
+-
+-
+-def _patch_anthropic_tool_schemas() -> None:
+-    """Monkey-patch the AnthropicLLM serialization so every tool schema
+-    we send has additionalProperties: false. Idempotent.
+-
+-    The livekit-plugins-anthropic plugin sends tools in the 2026+ wrapped
+-    format `{"type":"custom","custom":{"name":..., "input_schema":{...}}}`.
+-    Anthropic's API rejects any `type:object` schema whose
+-    `additionalProperties` is true (or omitted). dict[str,Any] type hints
+-    in @function_tool produce exactly that. We walk the ENTIRE call
+-    kwargs recursively and force-false on every object node.
+-    """
+-    from anthropic.resources.messages import AsyncMessages  # noqa: PLC0415
+-
+-    if getattr(AsyncMessages, "_prism42_patched", False):
+-        return
+-    original_create = AsyncMessages.create
+-
+-    async def patched_create(self, *args, **kwargs):
+-        _force_additional_properties_false(kwargs)
+-        _force_additional_properties_false(list(args))
+-        return await original_create(self, *args, **kwargs)
+-
+-    AsyncMessages.create = patched_create
+-    AsyncMessages._prism42_patched = True
+-    log.info("anthropic.tool_schema_patched")
+-
+-
+-_patch_anthropic_tool_schemas()
+-
+-
+ # ---------------------------------------------------------------------
+ # Singletons. The session store is shared across all rooms this worker
+ # handles; Anthropic/OpenAI clients are created on-demand inside the

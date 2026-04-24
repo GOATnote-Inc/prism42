@@ -1,22 +1,15 @@
-"""Custom LiveKit TTS plugin for Fish Speech S2 Pro on SGLang.
+"""Custom LiveKit TTS plugin for Fish Speech S2 Pro.
 
-Replaces livekit-plugins-cartesia. Fish Speech S2 Pro runs on the
-B300 pod at http://127.0.0.1:9200 with SGLang as the inference
-backend (see infra/b300/services/fish-speech/). Co-located; zero
-cloud hop.
+Talks to the upstream `tools/api_server.py` from fishaudio/fish-speech
+running locally on the B300 pod. Wire format is ormsgpack (the upstream
+server's native body codec); endpoint is POST /v1/tts.
 
-Rationale — user 2026-04-23:
-  "Fish Speech S2 Pro for TTS — currently beats ElevenLabs on two of
-   three major quality benchmarks, runs on SGLang, ~100ms TTFA on
-   H200 and faster on B300."
+S2-Pro DAC decoder outputs PCM at 44.1 kHz mono; LiveKit's mixer handles
+resampling to the WebRTC negotiated rate.
 
-Contract with the Fish Speech service:
-  POST /tts
-    { "text": "...", "voice_id": "default", "format": "pcm16",
-      "sample_rate": 24000, "stream": true }
-    → chunked response of raw PCM16 frames; each chunk is ~120 ms
-      of audio suitable for direct injection into LiveKit's audio
-      pipeline with no further resampling.
+Implements the livekit-agents 1.5.x ChunkedStream + AudioEmitter API:
+- synthesize() returns a ChunkedStream subclass
+- ChunkedStream._run(output_emitter) pushes raw PCM bytes to the emitter
 """
 from __future__ import annotations
 
@@ -25,43 +18,41 @@ from dataclasses import dataclass
 
 import httpx
 import numpy as np
+import ormsgpack
 import structlog
-from livekit import rtc
-from livekit.agents import tts, utils
+from livekit.agents import APIConnectOptions, tts, utils
 
 log = structlog.get_logger()
 
 DEFAULT_URL = os.environ.get("FISH_SPEECH_URL", "http://127.0.0.1:9200")
-DEFAULT_VOICE = os.environ.get("FISH_SPEECH_VOICE", "default")
-SAMPLE_RATE = 24_000
+DEFAULT_REFERENCE_ID = os.environ.get("FISH_SPEECH_REFERENCE_ID", "")
+SAMPLE_RATE = 44_100
 CHANNELS = 1
 
 
 @dataclass
 class FishSpeechOptions:
     url: str = DEFAULT_URL
-    voice_id: str = DEFAULT_VOICE
-    # S2 Pro's "speed" knob; 1.0 is the stock cadence tuned for
-    # English. Dispatcher UX wants crisp, fast delivery; keep 1.0
-    # unless we see latency budget pressure.
-    speed: float = 1.0
-    # SGLang streaming chunk size. 120 ms @ 24 kHz = 2880 samples.
-    chunk_samples: int = 2880
+    reference_id: str = DEFAULT_REFERENCE_ID
+    chunk_length: int = 200
+    normalize: bool = True
+    temperature: float = 0.8
+    top_p: float = 0.8
+    repetition_penalty: float = 1.1
     request_timeout_s: float = 30.0
 
 
 class FishSpeechTTS(tts.TTS):
-    """LiveKit TTS adapter for Fish Speech S2 Pro on B300.
-
-    LiveKit's `TTS` base class handles text normalization + the
-    synth-buffer dance. We only need to implement `synthesize()`
-    as a generator of audio frames (`rtc.AudioFrame`).
-    """
-
     def __init__(self, opts: FishSpeechOptions | None = None) -> None:
         self._opts = opts or FishSpeechOptions()
+        # streaming=False: we implement chunked-stream synthesize() only,
+        # not the framework's stream() method. livekit-agents will route
+        # to synthesize() for full-utterance synthesis. Per
+        # docs/livekit-kb/05-debugging-playbook.md (2026-04-24): claiming
+        # streaming=True without implementing stream() raises
+        # NotImplementedError mid-call and the agent emits no audio.
         super().__init__(
-            capabilities=tts.TTSCapabilities(streaming=True),
+            capabilities=tts.TTSCapabilities(streaming=False),
             sample_rate=SAMPLE_RATE,
             num_channels=CHANNELS,
         )
@@ -71,23 +62,21 @@ class FishSpeechTTS(tts.TTS):
         self,
         text: str,
         *,
-        conn_options: object | None = None,
+        conn_options: APIConnectOptions,
     ) -> tts.ChunkedStream:
-        del conn_options
-        return _FishSpeechStream(tts=self, text=text, opts=self._opts, client=self._client)
+        return _FishSpeechStream(
+            tts=self,
+            text=text,
+            opts=self._opts,
+            client=self._client,
+            conn_options=conn_options,
+        )
 
     async def aclose(self) -> None:
         await self._client.aclose()
 
 
 class _FishSpeechStream(tts.ChunkedStream):
-    """Streams PCM16 chunks from the Fish Speech service to LiveKit.
-
-    Each yielded frame is a 120 ms PCM16 block that LiveKit sends
-    straight to the caller's audio track — no resampling, no codec
-    conversion.
-    """
-
     def __init__(
         self,
         *,
@@ -95,67 +84,70 @@ class _FishSpeechStream(tts.ChunkedStream):
         text: str,
         opts: FishSpeechOptions,
         client: httpx.AsyncClient,
+        conn_options: APIConnectOptions,
     ) -> None:
-        super().__init__(tts=tts, input_text=text)
+        super().__init__(tts=tts, input_text=text, conn_options=conn_options)
         self._text = text
         self._opts = opts
         self._client = client
 
-    async def _run(self) -> None:
+    async def _run(self, output_emitter: tts.AudioEmitter) -> None:
+        output_emitter.initialize(
+            request_id=utils.shortuuid(),
+            sample_rate=SAMPLE_RATE,
+            num_channels=CHANNELS,
+            mime_type="audio/pcm",
+            stream=False,
+        )
+        body = {
+            "text": self._text,
+            # Fish Speech upstream rejects "pcm" with 500 "Unknown format"; only
+            # accepts "wav" or "mp3" at /v1/tts. Under streaming=True the WAV
+            # branch returns RAW 16-bit PCM samples at SAMPLE_RATE/CHANNELS
+            # without a RIFF header — verified 2026-04-24 against
+            # fish-speech api_server.py upstream behavior.
+            "format": "wav",
+            "chunk_length": self._opts.chunk_length,
+            "normalize": self._opts.normalize,
+            "streaming": True,
+            "max_new_tokens": 1024,
+            "top_p": self._opts.top_p,
+            "repetition_penalty": self._opts.repetition_penalty,
+            "temperature": self._opts.temperature,
+            "use_memory_cache": "off",
+            "references": [],
+        }
+        if self._opts.reference_id:
+            body["reference_id"] = self._opts.reference_id
+
         try:
             async with self._client.stream(
                 "POST",
-                f"{self._opts.url}/tts",
-                json={
-                    "text": self._text,
-                    "voice_id": self._opts.voice_id,
-                    "speed": self._opts.speed,
-                    "format": "pcm16",
-                    "sample_rate": SAMPLE_RATE,
-                    "stream": True,
-                    "chunk_samples": self._opts.chunk_samples,
-                },
+                f"{self._opts.url}/v1/tts",
+                content=ormsgpack.packb(body),
+                headers={"Content-Type": "application/msgpack"},
             ) as resp:
                 resp.raise_for_status()
-                # SGLang streams raw PCM16 bytes; each chunk is already
-                # sized to chunk_samples × 2 bytes.
+                buf = bytearray()
                 async for chunk in resp.aiter_bytes():
                     if not chunk:
                         continue
-                    # Guard against odd-sized chunks from the wire.
-                    if len(chunk) % 2 != 0:
-                        chunk = chunk[:-1]
-                    samples = np.frombuffer(chunk, dtype=np.int16)
-                    if samples.size == 0:
-                        continue
-                    frame = rtc.AudioFrame(
-                        data=samples.tobytes(),
-                        sample_rate=SAMPLE_RATE,
-                        num_channels=CHANNELS,
-                        samples_per_channel=samples.size // CHANNELS,
-                    )
-                    self._event_ch.send_nowait(
-                        tts.SynthesizedAudio(
-                            request_id=utils.shortuuid(),
-                            frame=frame,
-                        )
-                    )
+                    buf.extend(chunk)
+                    # AudioEmitter expects whole 16-bit samples; trim odd byte.
+                    if len(buf) % 2 == 1:
+                        odd = bytes(buf[-1:])
+                        del buf[-1:]
+                    else:
+                        odd = b""
+                    if buf:
+                        output_emitter.push(bytes(buf))
+                    buf.clear()
+                    buf.extend(odd)
+            output_emitter.flush()
         except httpx.HTTPError as e:
             log.warning("fishspeech.transport_error", err=str(e)[:200])
-            # Emit one silent frame so LiveKit doesn't hang on the
-            # missing-audio edge — caller hears nothing for this
-            # turn. Orchestrator's safe-fallback path will replay
-            # "one moment please" on the NEXT turn if this was a
-            # speak action that dropped.
-            silent = np.zeros(self._opts.chunk_samples, dtype=np.int16)
-            self._event_ch.send_nowait(
-                tts.SynthesizedAudio(
-                    request_id=utils.shortuuid(),
-                    frame=rtc.AudioFrame(
-                        data=silent.tobytes(),
-                        sample_rate=SAMPLE_RATE,
-                        num_channels=CHANNELS,
-                        samples_per_channel=silent.size,
-                    ),
-                )
-            )
+            # Push 100ms of silence so the agent doesn't deadlock waiting
+            # for any audio at all.
+            silent = np.zeros(SAMPLE_RATE // 10, dtype=np.int16)
+            output_emitter.push(silent.tobytes())
+            output_emitter.flush()
