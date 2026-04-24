@@ -11,7 +11,13 @@
 // Anthropic content_block_delta events into OpenAI chunks — the translator
 // lives in the /api/chat/completions route, not here.
 
-export const ANTHROPIC_MODEL = "claude-opus-4-7";
+// 2026-04-24 demo-day swap: Opus 4.7 TTFT was ~6.8s on the coordinator
+// fallback path (see Agent B audit). Sonnet 4.6 TTFT is ~800ms-1.5s
+// for the same prompt. Keep Opus as a pinned constant for future
+// A/B work; switch demo default to Sonnet 4.6.
+export const ANTHROPIC_MODEL_OPUS_47 = "claude-opus-4-7";
+export const ANTHROPIC_MODEL_SONNET_46 = "claude-sonnet-4-6";
+export const ANTHROPIC_MODEL = ANTHROPIC_MODEL_SONNET_46;
 
 // Beta header set per CLAUDE.md §8. We intentionally omit the callable-
 // agents beta — it's silently stripped on this workspace.
