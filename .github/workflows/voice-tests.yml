@@ -1,0 +1,59 @@
+name: voice regression tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_integration:
+        description: "Run integration tests (needs pod SSH key)"
+        required: false
+        default: "false"
+
+jobs:
+  unit:
+    name: unit (parser sanity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pyyaml
+      - name: run unit tests
+        run: pytest tests/voice -v -m "not integration"
+
+  integration:
+    name: integration (pod SSH + bench)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.run_integration == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pyyaml
+      - name: configure SSH to pod
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.BREV_PEM }}" > ~/.ssh/brev.pem
+          chmod 600 ~/.ssh/brev.pem
+          cat > ~/.ssh/config <<EOF
+          Host prism-mla-b300-h4h5
+            HostName ${{ secrets.POD_HOSTNAME }}
+            User shadeform
+            IdentityFile ~/.ssh/brev.pem
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+      - name: run integration tests
+        run: pytest tests/voice -v -m integration --tb=short
+        timeout-minutes: 10

@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+markers = [
+    "integration: requires live B300 pod via SSH (brev.pem + network)",
+]
+testpaths = ["tests"]

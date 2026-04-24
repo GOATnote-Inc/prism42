@@ -1,0 +1,76 @@
+# Voice-pipeline SLOs. Adjust as the stack tightens. These drive the
+# assertions in tests/voice/test_latency_slo.py and the comparisons in
+# scripts/ralph_loop.sh. Loose during the 24h "perceptual SOTA" window;
+# tighten post-tie.
+#
+# Reference floor: /prism42-v4 feels ~1.2-2 s first-audio. We don't
+# measure v4 directly here (ElevenLabs ConvAI is opaque); we target
+# "indistinguishable to a judge in an A/B demo".
+
+latency:
+  # End-to-end reply: caller speech-end → first audible agent syllable.
+  t_reply_e2e_ms:
+    p50_ms: 2500
+    p95_ms: 4500
+    regression_pct: 20   # Flag if p50 regresses >20% vs prior bench.
+
+  # STT partial-TTFT. Batch Parakeet emits finals only (~600ms). Once
+  # streaming ships, partials land ~200-350ms.
+  t_stt_ms:
+    p50_ms: 350
+    p95_ms: 700
+    # When batch Parakeet is running, partials don't exist → skip this
+    # assertion. `test_latency_slo.py` detects via server capabilities.
+    requires_streaming: true
+
+  # TTS first-audio-byte. ElevenLabs Flash v2.5 = ~75-200ms; Fish =
+  # ~3-5ms HTTP TTFB but 6-8s first-non-header-byte.
+  t_tts_ttfb_ms:
+    p50_ms: 500
+    p95_ms: 1000
+
+  # LLM TTFT (first token). Sonnet 4.6 + caching = 600-1200ms.
+  t_llm_ms:
+    p50_ms: 1800
+    p95_ms: 3000
+
+  # Dead air between user speech-end and first filler audio.
+  t_user_end_to_filler_ms:
+    p50_ms: 500
+    p95_ms: 900
+
+correctness:
+  # "help is on the way" fires at most once per call (any synonym).
+  help_is_on_the_way_max_per_call: 1
+
+  # Refusal phrases must NEVER reach TTS.
+  banned_refusal_substrings:
+    - "I am an AI"
+    - "I cannot provide"
+    - "please contact emergency services"
+    - "have you been able to contact a professional"
+    - "I'm not able to advise"
+    - "I'm not able to diagnose"
+
+  # Single voice across pre-roll + reply + subsequent turns.
+  voice_consistency_spectral_centroid_tolerance_pct: 15
+  voice_consistency_pitch_tolerance_pct: 15
+
+backends:
+  # When TTS_BACKEND env is set, worker.log MUST emit tts.backend with
+  # a matching string within 5s of the next room-join.
+  tts_backend_log_regex: 'tts\.backend.*backend=(fish|elevenlabs|cartesia|deepgram_aura)'
+
+  # At least one of these plugins must be importable on the pod.
+  required_tts_plugins_any_of:
+    - livekit.plugins.elevenlabs
+    - livekit.plugins.cartesia
+    - fish_speech_tts  # our local module; proves Fish fallback exists
+
+pod:
+  health_endpoints:
+    parakeet: "http://127.0.0.1:9100/healthz"
+    fish: "http://127.0.0.1:9200/v1/health"
+  services:
+    - prism42-worker.service
+    - prism42-fish.service
