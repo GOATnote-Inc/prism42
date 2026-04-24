@@ -26,7 +26,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-MODEL_NAME = os.environ.get("MODEL", "fishaudio/fish-speech-s2-pro")
+MODEL_NAME = os.environ.get("MODEL", "fishaudio/s2-pro")
 BACKEND = os.environ.get("BACKEND", "sglang")
 BIND = os.environ.get("BIND", "127.0.0.1")
 PORT = int(os.environ.get("PORT", "9200"))

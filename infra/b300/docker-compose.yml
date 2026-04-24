@@ -72,7 +72,7 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - MODEL=fishaudio/fish-speech-s2-pro
+      - MODEL=fishaudio/s2-pro
       - BACKEND=sglang
       - BIND=127.0.0.1
       - PORT=9200
