@@ -49,11 +49,17 @@ export VLLM_USE_FLASHINFER_MOE_FP4=1
 # The system ptxas on the pod is CUDA 12.8 (nvcc --version confirms).
 # ptxas 12.8 rejects `--gpu-name=sm_103a` which is the default target
 # torch.compile / Triton picks on B300 (compute capability 10.3).
-# Workaround: force Triton to target sm_100a (which ptxas 12.8 accepts
-# AND which runs correctly on B300 per NVIDIA forward-compat guarantee).
-# Upgrading CUDA Toolkit to 12.9+ on the pod is the proper fix; this
-# env is the tactical bypass.
+# Two bypasses:
+#   TORCH_CUDA_ARCH_LIST=10.0a — forces PyTorch/Triton to target sm_100a
+#   FLASHINFER_CUDA_ARCH_LIST=10.0 — forces FlashInfer's own JIT to
+#     target compute_100a,sm_100a for its ninja-driven CUDA builds
+# Both are required: they're separate compile toolchains.
+# (Proper fix = upgrade nvcc to 12.9; tactical: ptxas in Triton's
+# bin/ dir has already been swapped to the 12.9.86 pip binary
+# via scripts/b300_setup_rubric.sh earlier — but FlashInfer uses
+# /usr/local/cuda/bin/nvcc which remains 12.8, hence the env.)
 export TORCH_CUDA_ARCH_LIST="10.0a"
+export FLASHINFER_CUDA_ARCH_LIST="10.0"
 
 # HF auth if token provided
 if [[ -n "${HF_TOKEN:-}" ]]; then
