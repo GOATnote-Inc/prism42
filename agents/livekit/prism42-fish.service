@@ -1,0 +1,22 @@
+[Unit]
+Description=Fish Speech S2-Pro TTS (Prism42)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=shadeform
+WorkingDirectory=/opt/prism42/infra/b300/services/fish-speech
+Environment=PYTORCH_JIT=0
+Environment=PYTORCH_TENSOREXPR_FALLBACK=2
+Environment=TORCH_CUDA_ARCH_LIST=10.0;10.3
+Environment=TRITON_CODEGEN_ARCH=100
+ExecStart=/opt/prism42/infra/b300/services/fish-speech/.venv/bin/python src/tools/api_server.py --mode tts --listen 127.0.0.1:9200 --llama-checkpoint-path checkpoints/s2-pro --decoder-checkpoint-path checkpoints/s2-pro/codec.pth --device cuda --half
+Restart=always
+RestartSec=4
+StandardOutput=append:/tmp/prism42-logs/fish.log
+StandardError=append:/tmp/prism42-logs/fish.log
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

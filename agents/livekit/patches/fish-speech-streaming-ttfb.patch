@@ -1,0 +1,124 @@
+Patches applied to Fish Speech S2-Pro at /opt/prism42/infra/b300/services/fish-speech/
+-----------------------------------------------------------------------------
+
+Goal: drop `/v1/tts` HTTP TTFB (curl time_starttransfer, also first WAV-header
+byte-over-the-wire) on a streaming request. Originally measured at ~9.86 s
+(WAV header arrived only after full semantic generation).
+
+Result after patch: WAV-header-over-the-wire TTFB ~0.003 s (3,000x faster).
+Total audio-byte arrival is still bottlenecked by the engine's monolithic
+generate_long pass — see post-mortem. But any downstream client that opens
+an audio stream (LiveKit, ffmpeg -re, aplay -f wav) can now see the WAV
+header + content-type immediately and set up its playback buffer.
+
+PATCH A — src/tools/server/api_utils.py
+---------------------------------------
+--- a/src/tools/server/api_utils.py
++++ b/src/tools/server/api_utils.py
+@@ -1,3 +1,5 @@
++import asyncio
++import threading
+ from argparse import ArgumentParser
+ from http import HTTPStatus
+ from typing import Annotated, Any
+@@ -70,10 +72,36 @@
+
+
+ async def inference_async(req: ServeTTSRequest, engine: TTSInferenceEngine):
+-    for chunk in inference(req, engine):
+-        print("Got chunk")
+-        if isinstance(chunk, bytes):
+-            yield chunk
++    """Bridge the sync inference generator to async so ASGI can flush each chunk
++    (especially the WAV header) the instant it is produced, rather than blocking
++    the event loop while LLAMA generates the entire utterance."""
++    loop = asyncio.get_running_loop()
++    q: asyncio.Queue = asyncio.Queue(maxsize=64)
++    _SENTINEL = object()
++
++    def _producer():
++        try:
++            for chunk in inference(req, engine):
++                if isinstance(chunk, bytes):
++                    # Thread-safe put into the asyncio queue.
++                    asyncio.run_coroutine_threadsafe(q.put(chunk), loop).result()
++        except BaseException as e:
++            asyncio.run_coroutine_threadsafe(q.put(e), loop).result()
++        finally:
++            asyncio.run_coroutine_threadsafe(q.put(_SENTINEL), loop).result()
++
++    t = threading.Thread(target=_producer, daemon=True, name="fish-tts-producer")
++    t.start()
++
++    while True:
++        item = await q.get()
++        if item is _SENTINEL:
++            break
++        if isinstance(item, BaseException):
++            raise item
++        yield item
++        # Yield control so ASGI can actually flush the bytes to the socket now.
++        await asyncio.sleep(0)
+
+
+ async def buffer_to_async_generator(buffer):
+
+Why: the old code was `for chunk in inference(...)` (sync) *inside* an `async
+def`. The sync loop blocks the event loop for the full duration of LLAMA
+generation, so even the WAV header sitting in the generator can't reach the
+socket until generate() returns. The new version pushes the sync generator
+into a worker thread and bridges via asyncio.Queue, with an `asyncio.sleep(0)`
+after each yield so uvicorn gets a cooperative point to write to the socket.
+
+PATCH B — src/tools/server/inference.py
+---------------------------------------
+--- a/src/tools/server/inference.py
++++ b/src/tools/server/inference.py
+@@ -19,7 +19,15 @@
+         match result.code:
+             case "header":
+                 if isinstance(result.audio, tuple):
+-                    yield result.audio[1]
++                    hdr = result.audio[1]
++                    # Convert numpy ndarray (dtype |S44) or similar into plain bytes
++                    # so the ASGI streaming layer flushes it to the socket immediately.
++                    if isinstance(hdr, bytes):
++                        yield hdr
++                    elif hasattr(hdr, "tobytes"):
++                        yield hdr.tobytes()
++                    else:
++                        yield bytes(hdr)
+
+             case "error":
+                 raise HTTPException(
+@@ -34,8 +42,9 @@
+
+             case "final":
+                 count += 1
+-                if isinstance(result.audio, tuple):
+-                    yield result.audio[1]
++                # Streaming already emitted all segments; the "final" tuple is the
++                # concatenated numpy float32 array (non-streaming path). Converting
++                # it to int16 bytes here would double-emit audio, so skip.
+                 return None  # Stop the generator
+
+     if count == 0:
+
+Why:
+- The "header" case wrapped the 44-byte WAV header in `np.array(bytes_obj)`,
+  producing a 0-d ndarray of dtype `|S44`. The downstream async bridge filtered
+  with `isinstance(chunk, bytes)`, which silently discards ndarrays. Net effect:
+  the WAV header was never sent, so a browser / ffmpeg client only saw audio
+  once the first segment emission drove the actual bytes out. `hdr.tobytes()`
+  fixes that by unwrapping to a real `bytes` object.
+- The "final" case yielded the *whole* concatenated float32 numpy buffer as raw
+  bytes, which is nonsense for a 16-bit-PCM WAV stream (4x sized and wrong
+  dtype). In streaming mode all segments were already emitted, so "final" is
+  redundant. In non-streaming mode views.py only pulls the first yield via
+  next(), so the final case was never reached there. Either way: dropping it
+  removes a trailing-garbage chunk without changing correct behavior.
+
+BACKUPS ON POD
+--------------
+  /opt/prism42/infra/b300/services/fish-speech/src/tools/server/api_utils.py.bak.20260424T203437Z
+  /opt/prism42/infra/b300/services/fish-speech/src/tools/server/inference.py.bak.20260424T204117Z
