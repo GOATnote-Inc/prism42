@@ -1,6 +1,9 @@
 :root {
-  --bg: #0b0d10;
-  --panel: #13171c;
+  --bg: #05070b;
+  --bg-gradient-a: #0a1020;
+  --bg-gradient-b: #0f1a2e;
+  --bg-gradient-c: #1a0f1e;
+  --panel: #0f141c;
   --panel-edge: #1e242b;
   --text: #e7ecf2;
   --text-dim: #9aa4b0;
@@ -21,13 +24,64 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
   font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
 }
+
+body {
+  /* Live dynamic background — three slowly-shifting radial gradients
+     plus a deep base. Subtle (<2% opacity change) so it feels alive
+     without being distracting during a call. Respects reduced-motion. */
+  background:
+    radial-gradient(
+      1200px 600px at 15% -10%,
+      rgba(95, 183, 255, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      1000px 800px at 85% 110%,
+      rgba(255, 95, 109, 0.10),
+      transparent 55%
+    ),
+    radial-gradient(
+      900px 500px at 50% 50%,
+      rgba(255, 184, 107, 0.05),
+      transparent 60%
+    ),
+    linear-gradient(180deg, var(--bg-gradient-a) 0%, var(--bg) 100%);
+  background-attachment: fixed;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(95, 183, 255, 0.08), transparent 40%),
+    radial-gradient(circle at 70% 70%, rgba(255, 95, 109, 0.08), transparent 40%);
+  filter: blur(60px);
+  animation: bg-drift 42s ease-in-out infinite alternate;
+}
+
+@keyframes bg-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-3%, 2%) scale(1.04); }
+  100% { transform: translate(2%, -3%) scale(0.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+}
+
+/* All children need explicit z-index above the ::before backdrop. */
+body > * { position: relative; z-index: 1; }
 
 a {
   color: var(--accent);
@@ -56,27 +110,282 @@ a:hover {
   max-width: 1440px;
   margin: 0 auto;
   padding: 24px;
-  display: grid;
-  grid-template-columns: 320px 1fr 320px;
-  grid-template-rows: auto 1fr auto;
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   min-height: calc(100vh - 40px);
 }
 
-.console-shell header {
-  grid-column: 1 / -1;
+.console-shell > header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--panel-edge);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding-bottom: 12px;
 }
 
-.console-shell header h1 {
+.console-shell > header h1 {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
   letter-spacing: -0.01em;
+}
+
+.console-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .console-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============ caller hero ============ */
+
+.caller-hero {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 40px;
+  align-items: center;
+  padding: 48px 32px;
+  border-radius: 18px;
+  background:
+    radial-gradient(
+      800px 400px at 20% 30%,
+      rgba(95, 183, 255, 0.08),
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(15, 20, 28, 0.85) 0%,
+      rgba(10, 14, 22, 0.95) 100%
+    );
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 20px 60px -20px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+}
+
+@media (max-width: 768px) {
+  .caller-hero {
+    grid-template-columns: 1fr;
+    padding: 32px 20px;
+    text-align: center;
+    justify-items: center;
+  }
+}
+
+.caller-orb-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+}
+
+.caller-cta h1 {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 12px 0;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #ffffff 0%, #c0d0e0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.caller-subtitle {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin: 0 0 24px 0;
+  max-width: 58ch;
+}
+
+.caller-subtitle strong {
+  color: var(--irb);
+  font-weight: 500;
+}
+
+.caller-button {
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  padding: 14px 28px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, #5fb7ff 0%, #3d88cc 100%);
+  color: #05070b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow:
+    0 8px 24px -4px rgba(95, 183, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.caller-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 32px -4px rgba(95, 183, 255, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.caller-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.caller-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.caller-button.live {
+  background: linear-gradient(135deg, #ff5f6d 0%, #c74551 100%);
+  box-shadow:
+    0 8px 24px -4px rgba(255, 95, 109, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+.caller-button.live:hover:not(:disabled) {
+  box-shadow:
+    0 12px 32px -4px rgba(255, 95, 109, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 8px 24px -4px rgba(255, 95, 109, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 0 0 rgba(255, 95, 109, 0.6); }
+  50%       { box-shadow: 0 8px 24px -4px rgba(255, 95, 109, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 0 12px rgba(255, 95, 109, 0); }
+}
+
+.caller-hint {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  min-height: 1.5em;
+}
+
+/* ============ orb ============ */
+
+.orb {
+  position: relative;
+  width: var(--orb-size, 280px);
+  height: var(--orb-size, 280px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(var(--orb-volume-scale, 1));
+  transition: transform 80ms ease-out;
+}
+
+.orb-core,
+.orb-halo,
+.orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.orb-core {
+  background: conic-gradient(
+    from 0deg,
+    var(--orb-color-a, #5fb7ff),
+    var(--orb-color-b, #ff5f6d),
+    var(--orb-color-a, #5fb7ff)
+  );
+  filter: blur(24px);
+  opacity: 0.75;
+  animation: orb-spin 14s linear infinite;
+}
+
+.orb-halo {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0) 55%
+  );
+  mix-blend-mode: screen;
+  opacity: 0.55;
+  animation: orb-breathe 5s ease-in-out infinite;
+}
+
+.orb-ring {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 0 80px rgba(255, 255, 255, 0.05),
+    0 0 60px rgba(95, 183, 255, 0.15);
+}
+
+@keyframes orb-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.45; }
+  50%      { transform: scale(1.02); opacity: 0.65; }
+}
+
+/* State modifiers */
+.orb-listening .orb-core {
+  animation-duration: 9s;
+  opacity: 0.9;
+  filter: blur(20px) saturate(1.3);
+}
+
+.orb-listening .orb-ring {
+  box-shadow:
+    inset 0 0 100px rgba(95, 183, 255, 0.2),
+    0 0 100px rgba(95, 183, 255, 0.4);
+  animation: orb-ring-listen 3s ease-in-out infinite;
+}
+
+@keyframes orb-ring-listen {
+  0%, 100% { box-shadow: inset 0 0 100px rgba(95, 183, 255, 0.2), 0 0 100px rgba(95, 183, 255, 0.4); }
+  50%      { box-shadow: inset 0 0 100px rgba(95, 183, 255, 0.3), 0 0 140px rgba(95, 183, 255, 0.6); }
+}
+
+.orb-talking .orb-core {
+  animation-duration: 5s;
+  opacity: 1;
+  filter: blur(16px) saturate(1.5);
+}
+
+.orb-talking .orb-ring {
+  box-shadow:
+    inset 0 0 100px rgba(255, 95, 109, 0.25),
+    0 0 120px rgba(255, 95, 109, 0.5);
+  animation: orb-ring-talk 1.4s ease-in-out infinite;
+}
+
+@keyframes orb-ring-talk {
+  0%, 100% { box-shadow: inset 0 0 100px rgba(255, 95, 109, 0.25), 0 0 120px rgba(255, 95, 109, 0.5); }
+  50%      { box-shadow: inset 0 0 100px rgba(255, 95, 109, 0.4), 0 0 180px rgba(255, 95, 109, 0.75); }
+}
+
+.orb-thinking .orb-core {
+  animation-duration: 7s;
+  opacity: 0.8;
+  filter: blur(22px) saturate(1.1);
+}
+
+.orb-idle .orb-core {
+  animation-duration: 22s;
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-core,
+  .orb-halo,
+  .orb-ring {
+    animation: none !important;
+  }
 }
 
 .panel {

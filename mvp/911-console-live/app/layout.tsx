@@ -24,9 +24,8 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <div className="simulation-banner" role="note">
-          <strong>SYNTHETIC-FIXTURE DEMONSTRATION</strong> — this is not
-          a real emergency line. For a real emergency, hang up and dial
-          911 on a working phone.
+          <strong>Simulation</strong> — synthetic demo, not a real
+          emergency line. For a real emergency, hang up and dial 911.
         </div>
         {children}
       </body>

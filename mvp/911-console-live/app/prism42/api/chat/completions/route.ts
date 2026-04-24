@@ -111,21 +111,66 @@ export async function POST(req: NextRequest) {
       });
       fullText = res.fullText;
 
-      const turn = tryParseTurn(fullText);
-      const spokenText = decideSpokenContent(turn, callerText);
-      if (turn) {
+      const parse = tryParseTurn(fullText);
+      let spokenText: string;
+      if (parse.turn) {
+        // Full Zod success — use the validated turn.
         const annotated: PsapTurn = {
-          ...turn,
-          debug: { ...(turn.debug ?? {}), ts_ms: Date.now(), session_id: resolvedSessionId },
+          ...parse.turn,
+          debug: {
+            ...(parse.turn.debug ?? {}),
+            ts_ms: Date.now(),
+            session_id: resolvedSessionId,
+          },
         };
         recordTurn(resolvedSessionId, annotated);
-        // Fire async rubric grade — do NOT await. The grader runs on
-        // a different vendor (GPT-5.5) for cross-grader independence;
-        // its latency must never block the ElevenLabs response stream.
         fireAsyncRubricGrade(resolvedSessionId, annotated, callerText);
+        spokenText = decideSpokenContent(parse.turn, callerText);
+      } else if (parse.lenient_content && parse.raw_ok) {
+        // JSON parsed but Zod rejected — lenient serve. The caller
+        // hears the model's content; the dispatcher UI sees a
+        // verify-failed alert so the validation miss is surfaced but
+        // not fatal. Production voice latency > schema strictness.
+        spokenText = parse.lenient_content;
+        recordTurn(resolvedSessionId, {
+          agent: "psap-team-coordinator",
+          turn_id: `t-${resolvedSessionId.slice(0, 6)}-${session.turns.length}`,
+          action: "speak",
+          content: parse.lenient_content,
+          rationale:
+            "Lenient serve — coordinator JSON parsed but failed Zod schema. " +
+            "Caller heard the content field; full turn failed strict validation.",
+          cites: ["sp:SP-006"],
+          confidence: 0.5,
+          confidence_basis: "uncertain",
+          self_verify: {
+            checks: [
+              { name: "json-parseable", passed: true },
+              {
+                name: "zod-schema-valid",
+                passed: false,
+                note: parse.zod_error ?? "unknown",
+              },
+            ],
+            all_passed: false,
+          },
+          alerts: [
+            {
+              kind: "verify-failed",
+              severity: "medium",
+              detail: `lenient-served: ${parse.zod_error ?? "zod rejected"}`,
+              source_agent: "psap-team-coordinator",
+            },
+          ],
+          debug: {
+            ts_ms: Date.now(),
+            raw_head: fullText.slice(0, 240),
+            zod_error: parse.zod_error,
+          },
+        });
       } else {
-        // Malformed JSON — record a synthetic defer turn so the UI
-        // shows what happened. Don't block the caller.
+        // Malformed JSON — safe fallback, no content to serve.
+        spokenText = SAFE_FALLBACK_CONTENT;
         recordTurn(resolvedSessionId, {
           agent: "psap-team-coordinator",
           turn_id: `t-${resolvedSessionId.slice(0, 6)}-${session.turns.length}`,
@@ -143,17 +188,14 @@ export async function POST(req: NextRequest) {
             {
               kind: "verify-failed",
               severity: "medium",
-              detail: "coordinator JSON failed schema parse",
+              detail: "coordinator JSON failed to parse",
               source_agent: "psap-team-coordinator",
             },
           ],
-          debug: { raw_head: fullText.slice(0, 200), ts_ms: Date.now() },
+          debug: { raw_head: fullText.slice(0, 240), ts_ms: Date.now() },
         });
       }
 
-      // Stream the spoken text as a single chunk. Phase 2b: chunk by
-      // word to smooth TTS pacing + insert the buffer-word "... "
-      // if coordinator latency exceeds 400 ms between words.
       sse.writeJson(makeOpenAIChunk({ id: chunkId, model, content: spokenText }));
       sse.writeJson(
         makeOpenAIChunk({ id: chunkId, model, finishReason: "stop" }),

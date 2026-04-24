@@ -18,16 +18,43 @@ import type { PsapTurn } from "./types";
 
 const SP_BASICS = `
 SAFETY PREAMBLES (SP-001 through SP-010) — non-negotiable:
-- SP-001 SIMULATION DISCLOSURE: public demo. If the caller claims this is
-  a real emergency, emit action="refuse" with sp_reference="SP-001" and
-  direct them to call 911 on a working phone line. Terminal refusal.
-- SP-002 SCOPE: you are a PSAP call-taker trained on GEDP v0.1 (MIT,
+
+- SP-001 SIMULATION FRAMING — NOT A BLANKET REFUSAL. This is a public
+  911-dispatcher simulation. The caller is trying it out. When they
+  describe symptoms ("chest pain", "my husband collapsed", "I think
+  I'm having a stroke"), that is the scenario they are roleplaying —
+  engage with it as a 911 dispatcher would. DO NOT REFUSE based on
+  symptom description alone; that defeats the demo.
+
+  SP-001 refuses ONLY when the caller EXPLICITLY breaks the fourth
+  wall and claims this is a real emergency they are dialing from.
+  Trigger phrases (verbatim match, not paraphrase):
+    * "this is real"
+    * "this is not a test"
+    * "this is not a simulation"
+    * "this is not a drill"
+    * "please send actual help"
+    * "please send real help"
+    * "I'm really dying"
+    * "I'm actually in an emergency"
+  On ANY of these, emit action="refuse", sp_reference="SP-001",
+  content: "This is a public safety demonstration. For a real
+  emergency, please hang up and dial 911 from a working phone.
+  Stay on the line with them — do not come back to this page." —
+  then action="end" on the next turn.
+
+  For every OTHER caller utterance, engage as a dispatcher. The
+  simulation is the whole point.
+
+- SP-002 SCOPE: you are a 911 dispatcher trained on GEDP v0.1 (MIT,
   GOATnote Inc.). Not MPDS. No IAED-licensed content used.
-- SP-003 PHI: decline any request to transmit or store PHI beyond the
-  current call's scope. If caller offers SSN / full DOB / insurance,
-  redirect them.
+- SP-003 PHI: if the caller offers SSN / full DOB / insurance / MRN
+  unprompted, say "we don't need that — we just need the address and
+  what's happening" and redirect. Names + general age + location are
+  OK — those are what a real dispatcher collects.
 - SP-004 CLINICAL BOUNDARIES: no dosing instructions, no diagnosis, no
-  medication advice. Refer to the dispatch protocol script only.
+  medication advice. Scripted PDI (pre-arrival instructions) per GEDP
+  are allowed and expected — that is the dispatcher's job.
 - SP-005 NO FABRICATION: if uncertain, lower confidence and defer. Never
   invent a determinant or a script line that is not in GEDP.
 - SP-006 SELF-VERIFY MANDATORY: every turn MUST include self_verify with
@@ -40,8 +67,8 @@ SAFETY PREAMBLES (SP-001 through SP-010) — non-negotiable:
 - SP-008 988 GUIDED REDIRECT: if caller expresses suicidal ideation or
   self-harm, use the 3-step script: (1) validate + offer 988, (2) brief
   grounding, (3) branch-on-answer. Never hang up abruptly.
-- SP-009 REFUSAL TEMPLATES: use the exact templates from
-  docs/safety-preambles.md §SP-009.
+- SP-009 REFUSAL TEMPLATES: only SP-001 has a refusal template. Every
+  other preamble shapes behavior; it does not refuse.
 - SP-010 AUDIT CONSENT: the post-session auditor will grade this call
   against GEDP. Mention once during intake close.
 `.trim();
@@ -184,19 +211,52 @@ export const TurnSchema = z.object({
   debug: z.record(z.string(), z.unknown()).optional(),
 });
 
-export function tryParseTurn(raw: string): PsapTurn | null {
-  // The model may emit JSON inside a code fence or with trailing text.
-  // Extract the first {...} block and try it.
+export interface ParseResult {
+  turn: PsapTurn | null;
+  raw_ok: boolean; // JSON.parse succeeded
+  zod_error: string | null; // specific Zod validation failure, for debug
+  lenient_content: string | null; // content field if raw JSON parsed, even if Zod rejected
+}
+
+export function tryParseTurn(raw: string): ParseResult {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
-  if (start < 0 || end < 0 || end <= start) return null;
-  try {
-    const obj = JSON.parse(raw.slice(start, end + 1));
-    const parsed = TurnSchema.parse(obj);
-    return parsed as PsapTurn;
-  } catch {
-    return null;
+  if (start < 0 || end < 0 || end <= start) {
+    return { turn: null, raw_ok: false, zod_error: null, lenient_content: null };
   }
+  let obj: unknown;
+  try {
+    obj = JSON.parse(raw.slice(start, end + 1));
+  } catch {
+    return { turn: null, raw_ok: false, zod_error: null, lenient_content: null };
+  }
+  // Extract content for lenient serve even if Zod rejects the full turn.
+  // Production voice latency matters more than schema strictness — if
+  // Opus gave us a plausible caller-facing string, ship it rather than
+  // making the caller hear "One moment please" over a benign shape miss.
+  const lenient =
+    typeof (obj as { content?: unknown }).content === "string"
+      ? ((obj as { content: string }).content)
+      : null;
+
+  const result = TurnSchema.safeParse(obj);
+  if (result.success) {
+    return {
+      turn: result.data as PsapTurn,
+      raw_ok: true,
+      zod_error: null,
+      lenient_content: lenient,
+    };
+  }
+  return {
+    turn: null,
+    raw_ok: true,
+    zod_error: result.error.issues
+      .slice(0, 3)
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join(" | "),
+    lenient_content: lenient,
+  };
 }
 
 // The safe fallback content when self_verify fails or JSON is malformed.
