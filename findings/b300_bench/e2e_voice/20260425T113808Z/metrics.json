@@ -1,0 +1,80 @@
+{
+  "test_window_utc_iso": "2026-04-25T11:40:00Z..2026-04-25T11:50:00Z",
+  "n_turns": 10,
+  "n_sessions_in_log": 12,
+  "metric_definitions": {
+    "stt_ms": "STT processing latency (Parakeet final partial -> word-final). Source: STTMetrics in worker.log.",
+    "llm_first_token_ms": "From end-of-speech to LLM first token. Source: overlap.llm_first_token_after_speech_ms source=generate_reply.",
+    "llm_total_ms": "Full LLM completion duration. Source: LLMMetrics in worker.log.",
+    "tts_first_audio_after_speech_ms": "From end-of-speech (caller) to first agent audio bytes. Source: overlap.tts_first_audio_after_speech_ms.",
+    "tts_ttfb_ms": "TTS time-to-first-byte (Fish Speech latency only). Source: overlap.tts_first_audio_after_speech_ms ttfb_ms.",
+    "publish_end_to_first_returned_audio_ms": "HEADLINE \u2014 From caller publish_end to first detected speech amplitude on agent track. Source: synthetic_caller_full.py reply_latency_after_pubend.",
+    "reply_chunk_count": "Number of TTS chunks for the REPLY (excludes pre-roll). Source: 2nd fishspeech.done in session.",
+    "reply_max_chunk_gap_ms": "Largest inter-chunk gap during REPLY. Source: 2nd fishspeech.done."
+  },
+  "per_leg_p50_p95_max": {
+    "stt_ms": {
+      "count": 10,
+      "p50": 31,
+      "p95": 56,
+      "max": 56,
+      "min": 28
+    },
+    "llm_first_token_ms": {
+      "count": 10,
+      "p50": 133,
+      "p95": 2246,
+      "max": 2246,
+      "min": 7
+    },
+    "llm_total_ms": {
+      "count": 10,
+      "p50": 797,
+      "p95": 803,
+      "max": 803,
+      "min": 793
+    },
+    "tts_first_audio_after_speech_ms": {
+      "count": 7,
+      "p50": 3461,
+      "p95": 4744,
+      "max": 4744,
+      "min": 2163
+    },
+    "tts_ttfb_ms": {
+      "count": 7,
+      "p50": 1488,
+      "p95": 2627,
+      "max": 2627,
+      "min": 1134
+    },
+    "publish_end_to_first_returned_audio_ms": {
+      "count": 10,
+      "p50": 3000,
+      "p95": 4510,
+      "max": 4510,
+      "min": 500
+    },
+    "reply_chunk_count": {
+      "count": 7,
+      "p50": 2,
+      "p95": 3,
+      "max": 3,
+      "min": 2
+    },
+    "reply_max_chunk_gap_ms": {
+      "count": 7,
+      "p50": 1484,
+      "p95": 2623,
+      "max": 2623,
+      "min": 1131
+    }
+  },
+  "counts": {
+    "harness_exit_0_count": 0,
+    "harness_exit_4_count": 10,
+    "preroll_seen_in_log_count": 10,
+    "all_sessions_used_vllm": true,
+    "all_sessions_model_correct": true
+  }
+}

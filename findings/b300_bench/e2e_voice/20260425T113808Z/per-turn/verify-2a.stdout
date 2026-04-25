@@ -1,0 +1,41 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Nvidia Encoder is supported.
+Nvidia Decoder is supported.
+=== STAGE A: generate caller audio for 'My toddler swallowed a battery.' ===
+[gen] synthesizing caller audio: 'My toddler swallowed a battery.'
+[gen] got 188,460 bytes (2.14s of audio at 44100Hz)
+[gen] resampled to 48000Hz, duration 2.14s
+
+=== STAGE B: mint session + token via https://prism42-console.vercel.app ===
+[mint] session_id=44d64857-36cc-659b-5bbb-bdb00a769e43 url=wss://ai-therapy-v3svfd9o.livekit.cloud
+
+=== STAGE C: connect + listen ===
+[stage C] connected @ +0.64s
+[evt] participant_connected: identity='agent-AJ_EMSiExyQL8BV'
+[stage C] AGENT JOINED @ +1.69s (agent-AJ_EMSiExyQL8BV)
+[evt] track_subscribed kind=1 from=agent-AJ_EMSiExyQL8BV
+[stage C] AUDIO TRACK SUBSCRIBED @ +2.05s
+
+=== STAGE D: wait for pre-roll (4s) ===
+[stage D] pre-roll audio: 0 non-silent frames, peak 2
+
+=== STAGE E: publish caller audio (2.1s) ===
+[stage E] track published @ +6.08s
+[stage E] publish ended @ +8.36s
+
+=== STAGE F: wait up to 25s for agent reply ===
+[stage F] AGENT REPLY DETECTED @ +8.86s (0.50s after caller end), peak 21606
+[stage F] listening 5s more to confirm sustained speech ...
+[evt] disconnected reason=1
+
+======================================================================
+RESULT
+======================================================================
+agent_joined          : YES
+audio_track_subscribed: YES
+preroll_speech_frames : 0 (peak 2)
+reply_speech_amp_max  : 21606
+reply_latency_after_pubend: +0.50s
+total_speech_frames   : 200
+global_peak_amplitude : 26558
+VERDICT: pre-roll never spoke (TTS broken)
