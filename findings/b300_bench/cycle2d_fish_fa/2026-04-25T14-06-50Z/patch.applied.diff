@@ -1,0 +1,92 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+diff --git a/fish_speech/models/text2semantic/inference.py b/fish_speech/models/text2semantic/inference.py
+index 59653d5..4fcb275 100644
+--- a/fish_speech/models/text2semantic/inference.py
++++ b/fish_speech/models/text2semantic/inference.py
+@@ -207,19 +207,21 @@ def decode_n_tokens(
+     im_end_id = model.tokenizer.get_token_id(IM_END_TOKEN)
+ 
+     for i in tqdm(range(num_new_tokens)):
+-        with sdpa_kernel(SDPBackend.MATH):
+-            next_token = decode_one_token(
+-                model=model,
+-                x=cur_token,
+-                input_pos=input_pos,
+-                previous_tokens=previous_tokens,
+-                temperature=temperature,
+-                top_p=top_p,
+-                top_k=top_k,
+-                semantic_logit_bias=semantic_logit_bias,
+-                audio_masks=audio_masks,
+-                audio_parts=audio_parts,
+-            ).clone()
++        # Cycle-2d: removed sdpa_kernel(SDPBackend.MATH) wrapper. The slow
++        # AR layers now use SDPBackend.FLASH_ATTENTION via mask=None +
++        # KV-cache slicing inside Attention.forward (see llama.py).
++        next_token = decode_one_token(
++            model=model,
++            x=cur_token,
++            input_pos=input_pos,
++            previous_tokens=previous_tokens,
++            temperature=temperature,
++            top_p=top_p,
++            top_k=top_k,
++            semantic_logit_bias=semantic_logit_bias,
++            audio_masks=audio_masks,
++            audio_parts=audio_parts,
++        ).clone()
+ 
+         input_pos += 1
+         cur_token = next_token.view(1, model.config.num_codebooks + 1, -1)
+diff --git a/fish_speech/models/text2semantic/llama.py b/fish_speech/models/text2semantic/llama.py
+index c96aa46..44afa8f 100644
+--- a/fish_speech/models/text2semantic/llama.py
++++ b/fish_speech/models/text2semantic/llama.py
+@@ -438,7 +438,19 @@ class BaseTransformer(nn.Module):
+         else:
+             max_seq_len = self.max_seq_len
+ 
+-        mask = self.causal_mask[None, None, input_pos, :max_seq_len]  # (B, N, Q, K)
++        # Cycle-2d: when this is a single-token AR decode step (Q=1), pass
++        # mask=None so Attention.forward can take the SDPBackend.FLASH_ATTENTION
++        # path. Each layer slices its KV cache to the actual fill length so
++        # a query of length 1 attends to all valid keys without a dense
++        # (Q,K) bool mask. During prefill (Q > 1) keep the dense mask
++        # because PyTorch SDPA's is_causal=True uses upper-left alignment
++        # for non-square attention, which would corrupt prefill semantics.
++        is_decode_step = input_pos.numel() == 1
++        mask = (
++            None
++            if is_decode_step
++            else self.causal_mask[None, None, input_pos, :max_seq_len]
++        )  # (B, N, Q, K) for prefill, None for decode
+         freqs_cis = self.freqs_cis[input_pos]
+ 
+         for layer in self.layers:
+@@ -910,6 +922,15 @@ class Attention(nn.Module):
+         if self.kv_cache is not None:
+             k, v = self.kv_cache.update(input_pos, k, v)
+ 
++        # Cycle-2d: when caller signals decode (mask=None), slice cached K/V
++        # to the actual fill length so a query of length 1 attends only to
++        # valid cache slots. This is the change that makes the no-mask
++        # FLASH_ATTENTION branch produce correct results during AR decode.
++        if mask is None and input_pos is not None and input_pos.numel() == 1:
++            valid_len = int(input_pos[-1].item()) + 1
++            k = k[:, :, :valid_len, :]
++            v = v[:, :, :valid_len, :]
++
+         k = k.repeat_interleave(self.n_head // self.n_local_heads, dim=1)
+         v = v.repeat_interleave(self.n_head // self.n_local_heads, dim=1)
+ 
+@@ -921,8 +942,8 @@ class Attention(nn.Module):
+                         k,
+                         v,
+                         dropout_p=self.dropout if self.training else 0.0,
+-                        is_causal=True,
+-                        # No third party attn_mask here to use flash_attention
++                        is_causal=False,
++                        # Q=1 sees only sliced (filled) K — fully causal by construction.
+                     )
+             else:
+                 y = F.scaled_dot_product_attention(
