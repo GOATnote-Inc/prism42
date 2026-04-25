@@ -56,14 +56,24 @@ _log() { printf '[ralph %s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 
 _run_bench() {
   _log "bench iter=$1/$ITER  n=$BENCH_N  sleep=${BENCH_SLEEP}s  pod=$POD"
+  local stdout="$LOG_DIR/bench_stdout.$$.txt"
   ssh -o ConnectTimeout=10 "$POD" \
     "cd $BENCH_DIR && .venv/bin/python bench_b300.py --n $BENCH_N --sleep-s $BENCH_SLEEP" \
-    2>&1 | tail -25
+    >"$stdout" 2>&1
+  local rc=$?
+  tail -25 "$stdout"
 
+  # Prefer the [bench] wrote PATH line printed by bench_b300; fall back
+  # to listing the b300_bench output dir on the pod.
   local remote
-  remote=$(ssh "$POD" "ls -t $BENCH_DIR/bench-*.json 2>/dev/null | head -1")
+  remote=$(grep -oE '\[bench\] wrote \S+\.json' "$stdout" | tail -1 | awk '{print $3}')
   if [[ -z "$remote" ]]; then
-    _log "FATAL: no bench-*.json on pod — bench failed silently"
+    remote=$(ssh "$POD" "ls -t $BENCH_DIR/findings/b300_bench/*.json 2>/dev/null | head -1")
+  fi
+  rm -f "$stdout"
+
+  if [[ -z "$remote" ]]; then
+    _log "FATAL: bench produced no JSON summary (rc=$rc)"
     return 1
   fi
   scp -q "$POD:$remote" "$LATEST"
