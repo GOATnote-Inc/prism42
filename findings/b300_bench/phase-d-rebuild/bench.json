@@ -1,0 +1,68 @@
+{
+  "phase": "D-rebuild",
+  "timestamp": "2026-04-25T10:53:00Z",
+  "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4",
+  "served_model_name": "nemotron-nano",
+  "vllm_version": "0.20.1.dev0+g101584af0.d20260425",
+  "bench_config": {
+    "warmup_samples": 5,
+    "measured_samples": 20,
+    "max_tokens": 150,
+    "stream": true,
+    "ttft_definition": "time POST sent to first SSE token received (content or reasoning)",
+    "total_definition": "time POST sent to [DONE] chunk received"
+  },
+  "aggregates": {
+    "ttft_ms": {
+      "p50": 41.7,
+      "p95": 44.1,
+      "max": 44.1
+    },
+    "total_ms": {
+      "p50": 479.4,
+      "p95": 483.3,
+      "max": 483.3
+    },
+    "tps": {
+      "p50": 311.5,
+      "note": "rough estimate from word-split token count; actual throughput likely higher"
+    },
+    "jit_penalty_ms": 3.4,
+    "n_valid": 20,
+    "n_errors": 0
+  },
+  "gates": {
+    "gate_1_attention_backend": "PASS - OPTIMAL (FLASHINFER + FLASHINFER_CUTLASS MoE)",
+    "gate_2_ttft_p95_lt_200ms": "PASS - 44.1ms",
+    "gate_3_tps_p50_gte_30": "PASS - 311.5",
+    "gate_4_log_clean": "PASS - 0 errors",
+    "gate_5_coresidency": "PASS - fish active, parakeet healthy"
+  },
+  "per_sample": [
+    {"n": 1, "phase": "WARMUP", "ttft_ms": 60.9, "total_ms": 498.2, "tokens": 150, "tps": 301.1, "prompt": "911 what is your emergency"},
+    {"n": 2, "phase": "WARMUP", "ttft_ms": 42.2, "total_ms": 480.1, "tokens": 149, "tps": 310.4, "prompt": "someone is having a heart attack"},
+    {"n": 3, "phase": "WARMUP", "ttft_ms": 41.3, "total_ms": 480.1, "tokens": 150, "tps": 312.4, "prompt": "there's a fire at my building"},
+    {"n": 4, "phase": "WARMUP", "ttft_ms": 41.9, "total_ms": 480.2, "tokens": 150, "tps": 312.4, "prompt": "I need police there's a break-in"},
+    {"n": 5, "phase": "WARMUP", "ttft_ms": 42.0, "total_ms": 480.8, "tokens": 149, "tps": 309.9, "prompt": "my child stopped breathing"},
+    {"n": 6, "phase": "BENCH", "ttft_ms": 44.1, "total_ms": 483.3, "tokens": 149, "tps": 308.3, "prompt": "there's been a car accident on the highway"},
+    {"n": 7, "phase": "BENCH", "ttft_ms": 42.0, "total_ms": 480.7, "tokens": 150, "tps": 312.0, "prompt": "I think I'm having a stroke"},
+    {"n": 8, "phase": "BENCH", "ttft_ms": 41.9, "total_ms": 479.4, "tokens": 150, "tps": 312.9, "prompt": "there's a shooting at the mall"},
+    {"n": 9, "phase": "BENCH", "ttft_ms": 41.7, "total_ms": 479.7, "tokens": 150, "tps": 312.7, "prompt": "someone fell and can't get up"},
+    {"n": 10, "phase": "BENCH", "ttft_ms": 43.2, "total_ms": 481.5, "tokens": 150, "tps": 311.5, "prompt": "I smell gas in my apartment"},
+    {"n": 11, "phase": "BENCH", "ttft_ms": 42.5, "total_ms": 481.0, "tokens": 149, "tps": 309.7, "prompt": "there's a man with a knife outside"},
+    {"n": 12, "phase": "BENCH", "ttft_ms": 43.9, "total_ms": 482.3, "tokens": 149, "tps": 309.0, "prompt": "my neighbor collapsed"},
+    {"n": 13, "phase": "BENCH", "ttft_ms": 42.3, "total_ms": 481.0, "tokens": 149, "tps": 309.8, "prompt": "the building is flooding"},
+    {"n": 14, "phase": "BENCH", "ttft_ms": 42.1, "total_ms": 481.1, "tokens": 149, "tps": 309.7, "prompt": "I was just robbed at gunpoint"},
+    {"n": 15, "phase": "BENCH", "ttft_ms": 43.2, "total_ms": 482.3, "tokens": 149, "tps": 308.9, "prompt": "my baby isn't moving"},
+    {"n": 16, "phase": "BENCH", "ttft_ms": 41.4, "total_ms": 478.9, "tokens": 149, "tps": 311.1, "prompt": "there's a domestic violence situation"},
+    {"n": 17, "phase": "BENCH", "ttft_ms": 41.6, "total_ms": 479.2, "tokens": 149, "tps": 310.9, "prompt": "someone overdosed on pills"},
+    {"n": 18, "phase": "BENCH", "ttft_ms": 40.7, "total_ms": 478.9, "tokens": 149, "tps": 311.1, "prompt": "there's a serious crash on route 9"},
+    {"n": 19, "phase": "BENCH", "ttft_ms": 40.2, "total_ms": 479.1, "tokens": 149, "tps": 311.0, "prompt": "I hear screaming next door"},
+    {"n": 20, "phase": "BENCH", "ttft_ms": 40.1, "total_ms": 478.6, "tokens": 150, "tps": 313.4, "prompt": "my husband isn't breathing and has no pulse"},
+    {"n": 21, "phase": "BENCH", "ttft_ms": 40.1, "total_ms": 478.9, "tokens": 150, "tps": 313.2, "prompt": "911 send help I'm being attacked"},
+    {"n": 22, "phase": "BENCH", "ttft_ms": 40.2, "total_ms": 479.1, "tokens": 150, "tps": 313.1, "prompt": "fire in the kitchen I can't stop it"},
+    {"n": 23, "phase": "BENCH", "ttft_ms": 40.3, "total_ms": 479.1, "tokens": 150, "tps": 313.1, "prompt": "man down on the sidewalk unresponsive"},
+    {"n": 24, "phase": "BENCH", "ttft_ms": 40.2, "total_ms": 477.6, "tokens": 149, "tps": 312.0, "prompt": "my daughter is choking"},
+    {"n": 25, "phase": "BENCH", "ttft_ms": 40.2, "total_ms": 477.8, "tokens": 149, "tps": 311.8, "prompt": "there's a hit and run near the school"}
+  ]
+}
