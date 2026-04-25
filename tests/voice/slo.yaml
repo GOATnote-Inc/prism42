@@ -74,3 +74,14 @@ pod:
   services:
     - prism42-worker.service
     - prism42-fish.service
+
+# LLM backend acceptance gates (Phase D strict protocol).
+# Referenced by tests/voice/test_llm_backend_acceptance.py.
+# cloud = Anthropic / cloud-X backends (generous ceiling; TLS round-trip).
+# local = vLLM-local on pod (strict gate; "materially better" = ≥60% vs Anthropic baseline ~500ms).
+llm_backend:
+  warmed_p95_ttft_ms:
+    cloud: 700        # generous ceiling for cloud baselines (Anthropic Sonnet 4.6 ~500ms + margin)
+    local: 200        # strict gate: ≥60% reduction vs Anthropic baseline ~500ms
+  tokens_per_sec_p50_min: 30   # minimum sustainable streaming rate for voice
+  jit_penalty_max_ratio: 3.0   # sample-1 TTFT / warmed-median TTFT ceiling
