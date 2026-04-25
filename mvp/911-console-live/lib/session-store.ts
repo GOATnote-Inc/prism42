@@ -54,6 +54,36 @@ export function getSession(id: string): SessionRecord | undefined {
   return rec;
 }
 
+/**
+ * Adopt an externally-minted session id (e.g. from a LiveKit room name)
+ * and create the in-memory record if missing. Used by the SSE route +
+ * the worker's turn-ingest endpoint so a Vercel-instance cold start
+ * doesn't 404 a live LiveKit voice call. Phase 2b replaces this with
+ * Upstash Redis backed shared state.
+ */
+export function attachToSession(id: string): SessionRecord {
+  const existing = SESSIONS.get(id);
+  if (existing) {
+    existing.last_touched_at = Date.now();
+    return existing;
+  }
+  const now = Date.now();
+  const rec: SessionRecord = {
+    id,
+    created_at: now,
+    last_touched_at: now,
+    phase: { name: "intake" },
+    turns: [],
+    grades: [],
+    alerts: [],
+    subscriber_count: 0,
+  };
+  SESSIONS.set(id, rec);
+  LISTENERS.set(id, new Set());
+  gcOldSessions();
+  return rec;
+}
+
 export function requireSession(id: string): SessionRecord {
   const rec = getSession(id);
   if (!rec) throw new Error(`session not found: ${id}`);
