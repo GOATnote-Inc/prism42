@@ -23,6 +23,7 @@ export type PsapAgent =
 
 export type PsapAction =
   | "speak"
+  | "listen"
   | "defer"
   | "refuse"
   | "escalate"
