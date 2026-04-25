@@ -1,0 +1,40 @@
+{
+  "utc_iso": "2026-04-25T11:38:08Z",
+  "services_before": {
+    "prism42-worker": "active",
+    "prism42-fish": "active",
+    "parakeet": "process_only_no_systemd_unit",
+    "parakeet_pid": 236296,
+    "parakeet_etime": "03:34:52",
+    "vllm": "process_only_no_systemd_unit",
+    "vllm_pid": 285669,
+    "vllm_etime": "01:02:00",
+    "fish_pid": 217878,
+    "fish_etime": "06:49:33"
+  },
+  "ports_listening": {
+    "vllm_8001": true,
+    "fish_9200": true,
+    "parakeet_9100": true
+  },
+  "vllm_v1_models_http": 200,
+  "log_baseline_lines": {
+    "worker.log": 12714,
+    "fish.log": 5213,
+    "parakeet.log": 72,
+    "vllm-rebuild.log": 10314
+  },
+  "anthropic_count_before": 6,
+  "anthropic_lines_before": [
+    "1: anthropic.tool_schema_patched (2026-04-24 18:41:14)",
+    "32: anthropic.tool_schema_patched (2026-04-24 18:47:25)",
+    "143: anthropic.tool_schema_patched (2026-04-24 19:15:14)",
+    "246: anthropic.tool_schema_patched (2026-04-24 19:16:03)",
+    "363: anthropic.tool_schema_patched (2026-04-24 19:19:13)",
+    "508: anthropic.tool_schema_patched (2026-04-24 19:22:06)"
+  ],
+  "anthropic_count_before_note": "All 6 mentions are stale tool_schema_patched module-init events from prior day; zero are API calls. Test window count starts from line 12715.",
+  "vllm_models_endpoint_check": "200 OK at 11:36 UTC",
+  "phase_e_env_keys_present": ["LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET", "LLM_BACKEND", "VLLM_BASE_URL"],
+  "phase_e_env_values_verification": "Cannot verify values without reading .env (per security boundary). Trusted from result.json a22a8f0 + key presence in .env."
+}
