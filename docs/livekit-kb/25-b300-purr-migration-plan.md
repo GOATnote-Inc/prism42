@@ -169,6 +169,34 @@ time curl -sN http://127.0.0.1:8001/v1/chat/completions \
 
 **Acceptance**: 200 OK, streaming TTFT < 100 ms warm, GPU memory rises to ~50 GB while serving.
 
+### Phase D acceptance — strict performance gate (replaces ad-hoc smoke)
+
+**Retracted claim**: an earlier draft of this doc said the `TORCH_CUDA_ARCH_LIST=10.0a` workaround had "negligible inference perf cost." That was unmeasured. The corrected acceptance gate measures it.
+
+Phase D is **not accepted on `vllm serve` boot success alone**. Required before any Phase E flip:
+
+1. **Toolchain inventory recorded** (verbatim, in result.json):
+   - `nvidia-smi --query-gpu=driver_version,compute_cap`
+   - `nvcc --version`
+   - `torch.version.cuda` + `torch.cuda.get_device_capability()`
+   - `vllm.__version__` + `flashinfer.__version__`
+
+2. **Attention backend classified** by parsing vllm.log startup:
+   - **OPTIMAL** = FA4 / FlashInfer / TRTLLM (Blackwell-optimized) → continue
+   - **DEGRADED** = FA3 / FA2 / xFormers / TritonAttention / EagerAttention → mark Phase D DEGRADED, do NOT proceed to Phase E even if other gates pass
+   - **UNKNOWN** = no recognizable backend line → DEGRADED
+
+3. **Latency benchmark — 5 warmup + 20 measured** dispatcher prompts (5-12 words). Per sample: TTFT (POST → first SSE chunk), Total (POST → `[DONE]`), token count. Aggregate p50/p95/max for each. Tokens/sec p50 = tokens / total. **JIT penalty reported separately**: sample-1 TTFT vs warmed-median (samples 6-25) TTFT.
+
+4. **Phase E green-light requires ALL**:
+   - attention backend = OPTIMAL
+   - warmed-p95 TTFT < 200 ms (Anthropic Sonnet 4.6 baseline ~500 ms; "materially better" = ≥60% reduction)
+   - tokens/sec p50 ≥ 30 (sustainable streaming for voice)
+   - vllm.log free of Traceback / OOM / errors during the bench
+   - prism42-fish + Parakeet still listening on 9200/9100 (no co-residency OOM)
+
+If ANY gate fails: leave `vllm serve` running for inspection, mark which gate(s) failed in result.json, **do NOT flip Phase E**. Mainline stays on Anthropic.
+
 ### Phase E — Flip `LLM_BACKEND=vllm-local` on the worker + bench | 15 min
 
 ```
