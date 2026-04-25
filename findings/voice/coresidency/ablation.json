@@ -1,0 +1,105 @@
+{
+  "ts": "2026-04-25T12:23Z",
+  "pod": "prism-mla-b300-h4h5",
+  "gpu": "NVIDIA B300 SXM6 AC (sm_103, single GPU, no MIG, no MPS)",
+  "utterance": "Nine one one, what is your location and emergency?",
+  "audio_ms_p50": 3715.7,
+  "n_samples_per_condition": 5,
+  "method": {
+    "fish_endpoint": "POST http://127.0.0.1:9200/v1/tts (ormsgpack, streaming wav, raw PCM16 @ 44.1kHz)",
+    "fish_params": {"chunk_length": 200, "seed": 911, "temperature": 0.1, "top_p": 0.7, "use_memory_cache": "on"},
+    "ttfb_definition": "wall-clock from POST send to first response byte",
+    "rtf_definition": "total_synthesis_ms / generated_audio_ms (lower is faster, 1.0 = real-time)",
+    "vllm_load_pattern": "back-to-back streaming chat-completions, max_tokens=300, single-flight",
+    "parakeet_load_pattern": "single WS, 10s clip streamed at 20ms frame pace, repeat with flush",
+    "warm_call_dropped": true
+  },
+  "fish_alone": {
+    "ttfb_ms": {"p50": 3.4, "p95": 3.4, "min": 2.7, "max": 3.7},
+    "total_ms": {"p50": 7314.5, "p95": 7332.7},
+    "rtf": {"p50": 1.969, "min": 1.966, "max": 1.974},
+    "n": 5,
+    "errors": 0
+  },
+  "fish_vllm_busy": {
+    "ttfb_ms": {"p50": 3.7, "p95": 3.8, "min": 2.6, "max": 4.3},
+    "total_ms": {"p50": 13002.8, "p95": 13296.7},
+    "rtf": {"p50": 3.499, "min": 3.439, "max": 3.582},
+    "vllm_rollouts_in_flight": 36,
+    "vllm_rollout_ms_p50_during_fish": 2270,
+    "n": 5,
+    "errors": 0
+  },
+  "fish_parakeet_busy": {
+    "ttfb_ms": {"p50": 4.3, "p95": 4.3, "min": 3.8, "max": 4.3},
+    "total_ms": {"p50": 8122.5, "p95": 8163.7},
+    "rtf": {"p50": 2.186, "min": 2.179, "max": 2.198},
+    "parakeet_rollouts_in_flight": 4,
+    "n": 5,
+    "errors": 0
+  },
+  "fish_all_busy": {
+    "ttfb_ms": {"p50": 3.4, "p95": 7.2, "min": 2.7, "max": 15.8},
+    "total_ms": {"p50": 14245.0, "p95": 14294.5},
+    "rtf": {"p50": 3.834, "min": 3.793, "max": 3.853},
+    "vllm_rollouts_in_flight": 35,
+    "parakeet_rollouts_in_flight": 8,
+    "n": 5,
+    "errors": 0
+  },
+  "delta_vs_alone": {
+    "ttfb_ms_p95": {
+      "vllm": "+0.4 ms (+12%)",
+      "parakeet": "+0.9 ms (+26%)",
+      "all": "+3.8 ms (+112%)"
+    },
+    "total_ms_p50": {
+      "vllm": "+5688 ms (+78%)",
+      "parakeet": "+808 ms (+11%)",
+      "all": "+6931 ms (+95%)"
+    },
+    "rtf_p50": {
+      "vllm": "+1.530 (+78%) — Fish nearly halves throughput",
+      "parakeet": "+0.217 (+11%)",
+      "all": "+1.865 (+95%) — Fish 2x slower"
+    }
+  },
+  "nvidia_smi_during_each": {
+    "baseline_idle":    {"sm_p50": 0,  "mem_p50": 0,  "pwr_p50_W": 237},
+    "fish_alone":       {"sm_p50": 92, "sm_p95": 93, "mem_p50": 33, "pwr_p50_W": 530, "pwr_max_W": 535},
+    "fish_vllm_busy":   {"sm_p50": 97, "sm_p95": 98, "mem_p50": 24, "pwr_p50_W": 463, "pwr_max_W": 474},
+    "fish_parakeet_busy": {"sm_p50": 92, "sm_p95": 93, "mem_p50": 29, "pwr_p50_W": 516, "pwr_max_W": 522},
+    "fish_all_busy":    {"sm_p50": 97, "sm_p95": 98, "mem_p50": 22, "pwr_p50_W": 458, "pwr_max_W": 466}
+  },
+  "interpretation_keys": {
+    "fish_alone_already_at_sm_92pct": "Fish standalone is itself SM-bound; little headroom exists for any cohabitant.",
+    "vllm_pushes_sm_to_97pct_but_memutil_DROPS": "Pattern (SM up, mem util down, power down) is classic scheduling/SM-contention — kernels stall waiting for SMs, idle on the bus and consuming less HBM bandwidth.",
+    "ttfb_unchanged": "Fish HTTP server stays sub-5ms TTFB across all conditions — bottleneck is wall-clock to render, not first-byte latency.",
+    "no_oom_no_throttle": "FB stayed 88-90 GB / 274 GB total. mclk pinned at 3996 MHz. pviol/tviol = 0. No HBM saturation, no thermal/power throttle.",
+    "single_cuda_context_no_mps": "All four PIDs (Parakeet 173799, Fish 217878, vLLM 285669/285796, support 236296) share GPU 0 with no MPS partition — every kernel funnels through the same default-priority CUDA stream pool."
+  },
+  "nsys_path": null,
+  "nsys_skip_reason": "nsys 2024.6.2 supports launch-only profiling; would require restarting Fish under nsys wrapper. Restart violates the 'no architectural changes' constraint. SM/mem/power telemetry alone is sufficient to infer the bottleneck class with this magnitude of effect.",
+  "verdict": "scheduling (SM-contention) — NOT HBM-bandwidth, NOT compute-saturation per se",
+  "verdict_justification": [
+    "Fish standalone already runs at 92% SM util on B300 — it is itself compute-heavy.",
+    "Adding vLLM raises SM util only +5pp (92->97) but kills Fish throughput by 78%. If both kernels were truly running in parallel we'd see SM saturate near 100% with mem util ALSO climbing; instead mem util DROPS from 33% to 24% and power drops from 530W to 463W.",
+    "That signature (SM% high, mem util AND power both fall) is the canonical fingerprint of CUDA stream serialization — the SM scheduler is rotating between the two contexts; while one waits the other is stalled, so HBM gets less work.",
+    "HBM bandwidth is NOT the bottleneck: 8 TB/s aggregate, only ~24-34% mem util observed. There are 184 GB free VRAM; no eviction.",
+    "Compute alone is NOT the bottleneck either: Fish-alone p95 RTF 1.97 already represents the pure-compute ceiling on the current S2-Pro PyTorch graph; the +95% degradation under all-busy is purely contention-induced.",
+    "Parakeet-only adds just +11% RTF: confirms vLLM is the dominant noise source, not Parakeet. vLLM's 30B-A3B MoE constantly issues large GEMMs that occupy SMs for long bursts and starve Fish's smaller kernels."
+  ],
+  "ooda_top_action": {
+    "primary": "Enable CUDA MPS with stream-priority hints; assign Fish HIGH priority and vLLM DEFAULT. MPS partitions SMs at the kernel-scheduler level instead of round-robin context-switching, which is exactly what removes the observed 'SM% up, mem util down' fingerprint.",
+    "secondary": "Re-pin vLLM's --gpu-memory-utilization (currently 0.20 with --max-num-seqs 8, --kv-cache-dtype fp8) to free a fixed SM budget for Fish — vLLM's --num-scheduler-steps and --cuda-graph-sizes can be tuned to reduce kernel granularity, giving Fish more interleave windows.",
+    "tertiary": "If MPS+priority insufficient, the next lever is moving Fish's text2semantic to a separate CUDA stream with cudaStreamCreateWithPriority and submitting in a torch.cuda.stream() block. This is a Fish-side change, not a service-restart issue.",
+    "do_not_do": "Quantizing Fish or moving its KV cache off-card. HBM is not the bottleneck — there's 184 GB free and mem util is 24-34%. Optimizing what isn't broken would burn time and possibly hurt latency."
+  },
+  "raw_logs": [
+    "fish-alone.json", "fish-alone.raw.log", "dmon-alone.log",
+    "fish-vllm.json", "fish-vllm.raw.log", "dmon-vllm.log",
+    "fish-parakeet.json", "fish-parakeet.raw.log", "dmon-parakeet.log",
+    "fish-all.json", "fish-all.raw.log", "dmon-all.log",
+    "baseline-idle.log"
+  ]
+}
