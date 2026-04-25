@@ -1,0 +1,17 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+===MIG===
+Disabled
+===DAEMON===
+OK: no daemon
+===PIPE_DIR===
+OK: no pipe dir
+===BIN===
+/usr/bin/nvidia-cuda-mps-control
+pgrep: pattern that searches for process name longer than 15 characters will result in zero matches
+Try `pgrep -f' option to match against the complete command line.
+===COMPUTE_MODE===
+    Compute Mode                                       : Default
+===DRIVER===
+580.126.09, 10.3
+===CUDA===
+| NVIDIA-SMI 580.126.09             Driver Version: 580.126.09     CUDA Version: 13.0     |
