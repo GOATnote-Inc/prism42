@@ -211,6 +211,41 @@ These are post-hackathon. Acceptance: `t_stt_ms` p50 < 50 ms; `t_fish_total_ms` 
 | 11 | `--kv-cache-dtype` not specified | Model card mandates `fp8` for NVFP4 | Set `--kv-cache-dtype fp8` |
 | 12 | `VLLM_WORKER_MULTIPROC_METHOD` default `fork` | CUDA state corruption with co-resident processes | Set to `spawn` |
 
+## Phase C addendum (2026-04-25, learned the hard way)
+
+The KB 23 install recipe assumed `pip install vllm==0.20.*` would just work. Three things that broke it:
+
+1. **PyPI hadn't propagated v0.20.0 binary wheels** at the time of the migration (released 2026-04-23, attempted install 2026-04-25). `pip index versions vllm --no-cache-dir` topped at 0.19.1.
+2. **The vLLM nightly wheel** at `wheels.vllm.ai/nightly/cu130` (which advertised post-0.20.0 commits) **was compiled against torch 2.11**. ATen renamed `at::cuda::getCurrentCUDABlasHandle` between 2.11 → 2.13; the nightly wheel's `_C.abi3.so` fails to load on the .venv-nightly's torch 2.13. ABI break, no LD_LIBRARY_PATH fix possible.
+3. **Source build works but the pod has a CUDA toolchain split**: driver is 13.0 (sm_103a-aware) but `nvcc` is 12.8 (no `compute_103` arch). Symptom: `nvcc fatal: Unsupported gpu architecture 'compute_103'` on every CUDA file. Workaround used: `TORCH_CUDA_ARCH_LIST="10.0a"` so nvcc emits sm_100 PTX which the runtime JIT-compiles to sm_103 on first kernel call. Negligible inference perf cost. Clean fix: `sudo apt-get install -y cuda-nvcc-13-0`.
+
+Plus one source-build patch was required: `vllm/cmake/CMakeLists.txt` gates MXFP4 experts-quant kernels on CUDA ≥ 12.8 but the source actually requires CUDA ≥ 12.9 for PACK16 E2M1 intrinsics. Removed `mxfp4_experts_quant.cu` and `mxfp4_blockwise_moe_kernel.cu` from `_C_stable_libtorch` source list. NVFP4 (which Nemotron Nano 3 uses), FP8, CUTLASS MLA, Marlin, INT8 paths all still compile.
+
+Concrete recipe (replaces the `pip install` line in Phase C):
+
+```bash
+cd /tmp
+rm -rf vllm-build
+git clone --depth=1 --branch v0.20.0 https://github.com/vllm-project/vllm.git vllm-build
+cd vllm-build
+
+# Patch out the CUDA-12.9-required kernels (until pod nvcc is upgraded)
+sed -i '/mxfp4_experts_quant\.cu\|mxfp4_blockwise_moe_kernel\.cu/d' cmake/CMakeLists.txt
+
+export TORCH_CUDA_ARCH_LIST="10.0a"          # sm_100 PTX, JIT to sm_103 at runtime
+export VLLM_USE_PRECOMPILED=0                 # force real compile, not bundled pre-built kernels
+export MAX_JOBS=$(nproc)
+export NVCC_THREADS=4
+
+VENV=/opt/prism42/infra/b300/services/fish-speech/.venv-nightly
+"$VENV/bin/pip" install --no-deps cmake ninja setuptools wheel pybind11 'cython>=3.0' packaging build
+"$VENV/bin/pip" install -e . --no-build-isolation --no-deps -v
+```
+
+Total compile time: ~70-80 min on a 96-vCPU pod with `MAX_JOBS=$(nproc)`. Once the binary is built, `import vllm` works persistently across worker restarts; only re-build is needed on torch-version bumps.
+
+If the pod ever gets a CUDA 13 nvcc (`apt-get install -y cuda-nvcc-13-0`), drop the `10.0a` workaround and use `TORCH_CUDA_ARCH_LIST="10.0;10.3"` for native sm_103 codegen.
+
 ## Acceptance criteria (across all phases)
 
 - Mainline LiveKit voice path stays functional throughout. Each phase is env-flag-gated with one-command rollback.
