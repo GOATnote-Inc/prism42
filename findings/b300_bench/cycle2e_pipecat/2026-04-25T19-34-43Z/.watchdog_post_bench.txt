@@ -1,0 +1,9 @@
+=== cycle-2 4-service health watchdog @ 2026-04-25T19:41:44Z ===
+OK   worker.systemd
+OK   fish.systemd
+OK   fish.http
+OK   parakeet.http
+OK   vllm.http
+OK   vllm.pid
+
+=== PASS: all 4 services green ===

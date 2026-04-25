@@ -1,0 +1,30 @@
+P1|I think I am having a heart attack. Chest pain and short of breath.
+P1|My neighbor's not breathing. He's on the floor.
+P1|There's a fire on the second floor. We're trapped.
+P2|Someone broke into my house and I think they are still here.
+P2|I just got hit by a car at the intersection of fifth and main.
+P2|My toddler swallowed a battery.
+P3|I want to report a stolen vehicle from last night.
+P3|There's a domestic happening next door.
+P4|My power's out, is there an outage?
+P4|I want to report a noise complaint.
+P1|My husband is having a stroke. His face is drooping and he can't speak.
+P1|My daughter is choking on a piece of food right now.
+P1|There's been a serious car crash with people hurt.
+P1|I am bleeding heavily from my arm and I can't stop it.
+P1|My baby is not waking up and feels very cold.
+P2|I fell down the stairs and I think I broke my hip.
+P2|My friend overdosed on pills, please send help.
+P2|There is a man on the roof threatening to jump.
+P2|My elderly mother fell and can't get up.
+P2|I am being followed by a car right now.
+P3|There is a person trespassing on my property.
+P3|I want to report someone driving recklessly on the highway.
+P3|A package was stolen from my porch this morning.
+P3|My car has been vandalized in the parking lot.
+P3|There is a loud party next door past midnight.
+P4|My streetlight has been out for three days.
+P4|There is a pothole on my street that needs to be fixed.
+P4|How do I get a copy of an old police report?
+P4|Someone parked illegally in front of my driveway.
+P4|I want to ask about adopting a stray dog I found.

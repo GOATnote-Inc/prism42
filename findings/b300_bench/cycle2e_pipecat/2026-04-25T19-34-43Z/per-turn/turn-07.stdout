@@ -1,0 +1,58 @@
+=== cycle-2e turn 7 (flag ON): I want to report a stolen vehicle from last night. ===
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Nvidia Encoder is supported.
+Nvidia Decoder is supported.
+=== STAGE A: generate caller audio for 'I want to report a stolen vehicle from last night.' ===
+[gen] synthesizing caller audio: 'I want to report a stolen vehicle from last night.'
+[gen] got 225,324 bytes (2.55s of audio at 44100Hz)
+[gen] resampled to 48000Hz, duration 2.55s
+
+=== STAGE B: mint session + token via https://prism42-console.vercel.app ===
+[mint] session_id=e015531b-292e-10ee-6985-cb70ccee9b69 url=wss://ai-therapy-v3svfd9o.livekit.cloud
+
+=== STAGE C: connect + listen ===
+[stage C] connected @ +0.62s
+[evt] participant_connected: identity='agent-AJ_xQjEY6YpyzYS'
+[stage C] AGENT JOINED @ +1.14s (agent-AJ_xQjEY6YpyzYS)
+[evt] track_subscribed kind=1 from=agent-AJ_xQjEY6YpyzYS
+[stage C] AUDIO TRACK SUBSCRIBED @ +1.57s
+
+=== STAGE D: wait for pre-roll (0.5s) ===
+[stage D] pre-roll audio: 0 non-silent frames, peak 2
+
+=== STAGE E: publish caller audio (2.6s) ===
+[stage E] track published @ +2.10s
+[stage E] publish ended @ +4.90s
+
+=== STAGE F: wait up to 30.0s for agent reply ===
+[stage F] filler-skip-window: 2.5s after pub-end
+[stage F] + 0.50s after pub-end | reply_peak=1 useful_peak=0 (0 = silence)
+[stage F] + 1.00s after pub-end | reply_peak=1 useful_peak=0 (0 = silence)
+[stage F] AGENT REPLY DETECTED (raw) @ +6.40s (1.50s after caller end), peak 22223
+[stage F] + 1.50s after pub-end | reply_peak=22223 useful_peak=0 (0 = silence)
+[stage F] + 2.00s after pub-end | reply_peak=22223 useful_peak=0 (0 = silence)
+[stage F] + 2.50s after pub-end | reply_peak=22223 useful_peak=1 (0 = silence)
+[stage F] + 3.00s after pub-end | reply_peak=22223 useful_peak=1 (0 = silence)
+[stage F] AGENT USEFUL REPLY DETECTED @ +8.01s (3.11s after caller end), peak 22195
+[stage F] listening 1.0s more to confirm sustained speech ...
+[evt] disconnected reason=1
+
+======================================================================
+RESULT
+======================================================================
+agent_joined          : YES
+audio_track_subscribed: YES
+preroll_speech_frames : 0 (peak 2)
+reply_speech_amp_max  : 25030
+reply_latency_after_pubend: +1.50s
+filler_skip_window_s  : 2.5
+useful_reply_amp_max  : 25030
+first_useful_audio_after_speech_ms: 3111
+first_audio_after_speech_ms: 1503
+useful_audio_skipped_filler=True raw_to_useful_delta_ms=1608
+total_speech_frames   : 170
+global_peak_amplitude : 25030
+first_segment_min_ms  : 200.0
+tts_total_ms          : 4432
+useful_audio_duration_ms: 1320
+VERDICT: PASS — full turn round-trip works

@@ -16,13 +16,212 @@ The parallel oversight evaluators (safety-monitor, ohca-detector, intent-
 verifier) are NOT gone — they are now registered as background tasks on
 `on_user_turn_completed` so they still populate the dispatcher UI but
 never block speech. See worker.py for the wiring.
+
+Cycle-2e (2026-04-25) addition: optional Pipecat-style sentence-buffer +
+first-segment token cap, gated on PRISM42_CYCLE_2E_BUFFER=1. When OFF
+(default) the agent path is byte-for-byte identical to the cycle-2d
+baseline. When ON, BufferedDispatcherAgent overrides tts_node() to ship
+the first sentence (or token-capped chunk) to TTS as soon as it's
+available, so audio can start earlier in the LLM stream.
 """
 from __future__ import annotations
 
+import os
+import re
+import time
+from collections.abc import AsyncGenerator, AsyncIterable
+from typing import Any
+
 import structlog
+from livekit import rtc
 from livekit.agents import Agent
+from livekit.agents.voice.agent import ModelSettings  # type: ignore[attr-defined]
 
 log = structlog.get_logger()
+
+
+# ---------------------------------------------------------------------
+# Cycle-2e — Pipecat sentence-buffer constants + helpers.
+# ---------------------------------------------------------------------
+
+# Pipecat sentence regex — terminator + optional close-quote/paren + whitespace.
+# Verbatim from pipecat_bots/sentence_buffer.py:64.
+_SENTENCE_RE = re.compile(r'[.!?]["\'\)]*\s')
+
+# Pipecat InputParams defaults (llama_cpp_buffered_llm.py InputParams).
+_FIRST_SEGMENT_MAX_TOKENS = int(os.environ.get("PRISM42_CYCLE_2E_FIRST_TOKENS", "24"))
+_SEGMENT_MAX_TOKENS = int(os.environ.get("PRISM42_CYCLE_2E_NEXT_TOKENS", "32"))
+_SEGMENT_HARD_MAX_TOKENS = int(os.environ.get("PRISM42_CYCLE_2E_HARD_TOKENS", "96"))
+
+# Metric-honesty: first segment must contain at least this many chars of LLM
+# text before we let TTS render it. Rejects ".", "Yes.", and similar pure-
+# punctuation flushes that the bench's peak>1000 check might still count as
+# the first useful audio frame. Tunable so a flat-fail bench can prove the
+# threshold isn't smuggling pollution.
+_MIN_FIRST_SEGMENT_CHARS = int(os.environ.get("PRISM42_CYCLE_2E_MIN_CHARS", "8"))
+
+
+def _approx_tokens(text: str) -> int:
+    """Coarse char-to-token count. The cap is a fence, not a guillotine."""
+    return max(len(text) // 4, 1)
+
+
+class _SentenceBuffer:
+    """Verbatim port of Pipecat's pipecat_bots/sentence_buffer.py priority
+    ladder: sentence > clause > word > everything.
+
+    `extract_complete_sentences()` returns the prefix up through the LAST
+    regex match (multi-sentence segments stay together — important for
+    prosody). `extract_at_boundary()` is the force-flush fallback.
+    """
+
+    def __init__(self) -> None:
+        self.text: str = ""
+        self.token_count: int = 0
+
+    def add(self, delta: str) -> None:
+        self.text += delta
+        self.token_count += _approx_tokens(delta)
+
+    def has_content(self) -> bool:
+        return bool(self.text and self.text.strip())
+
+    def reset_token_count(self) -> None:
+        self.token_count = 0
+
+    def extract_complete_sentences(self) -> str | None:
+        """Return prefix through the LAST sentence terminator, or None."""
+        matches = list(_SENTENCE_RE.finditer(self.text))
+        if not matches:
+            return None
+        end = matches[-1].end()
+        out, self.text = self.text[:end], self.text[end:]
+        return out
+
+    def extract_at_boundary(self) -> str | None:
+        """Force-flush at sentence > clause > word > everything."""
+        sent = self.extract_complete_sentences()
+        if sent is not None:
+            return sent
+        # Clause boundary.
+        for ch in (",", ";", "\n"):
+            idx = self.text.rfind(ch)
+            if idx >= 0:
+                end = idx + 1
+                # Eat a trailing space if present.
+                if end < len(self.text) and self.text[end] == " ":
+                    end += 1
+                out, self.text = self.text[:end], self.text[end:]
+                return out
+        # Word boundary.
+        idx = self.text.rfind(" ")
+        if idx >= 0:
+            out, self.text = self.text[:idx + 1], self.text[idx + 1:]
+            return out
+        # Last resort — flush everything.
+        if self.text:
+            out, self.text = self.text, ""
+            return out
+        return None
+
+
+class BufferedDispatcherAgent(Agent):
+    """Sentence-boundary buffered TTS emit + first-segment token cap.
+
+    See findings/voice/cycle-2e-pipecat/pattern.md and
+    findings/b300_bench/cycle2e_orchestration/patch_plan.md.
+
+    Override tts_node so the first segment ships on the earliest of:
+      - first sentence terminator (.!? + space)
+      - approximately FIRST_SEGMENT_MAX_TOKENS
+
+    Subsequent segments use SEGMENT_MAX_TOKENS / SEGMENT_HARD_MAX_TOKENS.
+    Metric-honesty check (a) — first segment must contain >= MIN_CHARS
+    of LLM-generated text before it's allowed to flush.
+    """
+
+    async def tts_node(  # type: ignore[override]
+        self,
+        text: AsyncIterable[str],
+        model_settings: ModelSettings,
+    ) -> AsyncGenerator[rtc.AudioFrame, None]:
+        local_log = structlog.get_logger()
+        buf = _SentenceBuffer()
+        # Mutable state captured by closure for _gated().
+        is_first = [True]
+        cap = [_FIRST_SEGMENT_MAX_TOKENS]
+        hard_cap = [_FIRST_SEGMENT_MAX_TOKENS]
+        first_segment_chars: list[int] = []
+        t_llm_first_delta: list[float] = []
+        t_first_segment_published: list[float] = []
+
+        async def _gated() -> AsyncGenerator[str, None]:
+            async for delta in text:
+                if not delta:
+                    # Risk-2 guard: ignore reasoning-content / FlushSentinel
+                    # / empty deltas (pattern.md §4 Risk 2).
+                    continue
+                if not t_llm_first_delta:
+                    t_llm_first_delta.append(time.monotonic())
+                buf.add(delta)
+
+                # Sentence-boundary path.
+                seg = buf.extract_complete_sentences()
+                # Token-cap force-flush.
+                if seg is None and buf.token_count >= cap[0]:
+                    seg = buf.extract_at_boundary()
+                # Hard cap.
+                if seg is None and buf.token_count >= hard_cap[0]:
+                    seg = buf.extract_at_boundary()
+
+                if seg:
+                    buf.reset_token_count()
+                    if is_first[0]:
+                        # Metric-honesty check (a): first segment must contain
+                        # at least MIN_CHARS of LLM text. If under, push back
+                        # into buffer and keep accumulating.
+                        if len(seg) < _MIN_FIRST_SEGMENT_CHARS:
+                            buf.text = seg + buf.text
+                            buf.token_count += _approx_tokens(seg)
+                            continue
+                        first_segment_chars.append(len(seg))
+                        is_first[0] = False
+                        cap[0] = _SEGMENT_MAX_TOKENS
+                        hard_cap[0] = _SEGMENT_HARD_MAX_TOKENS
+                        t_first_segment_published.append(time.monotonic())
+                        # Telemetry: how long did we hold the LLM stream
+                        # before publishing the first segment?
+                        if t_llm_first_delta:
+                            dt_ms = int(
+                                (t_first_segment_published[0] - t_llm_first_delta[0]) * 1000
+                            )
+                            local_log.info(
+                                "overlap.first_segment_published_after_llm_ms",
+                                ms=dt_ms,
+                                chars=first_segment_chars[0],
+                                approx_tokens=_approx_tokens(seg),
+                                cap_used=_FIRST_SEGMENT_MAX_TOKENS,
+                            )
+                    yield seg
+            # End-of-stream — flush the incomplete tail.
+            if buf.has_content():
+                tail = buf.text.strip()
+                if tail:
+                    if is_first[0] and len(tail) < _MIN_FIRST_SEGMENT_CHARS:
+                        # Edge case: the entire reply is shorter than the
+                        # min-chars threshold (e.g. "OK."). Ship it anyway —
+                        # silence is worse. Log so the bench can flag it.
+                        local_log.info(
+                            "overlap.first_segment_below_threshold",
+                            chars=len(tail),
+                            min_chars=_MIN_FIRST_SEGMENT_CHARS,
+                        )
+                    yield tail
+
+        # Delegate to Agent.default.tts_node — already wraps the underlying
+        # TTS plugin (livekit.agents.voice.agent.Agent.default).
+        async for frame in Agent.default.tts_node(self, _gated(), model_settings):
+            yield frame
 
 
 FAST_DISPATCHER_SYSTEM_PROMPT = """\
@@ -195,9 +394,17 @@ def make_orchestrator(session_id: str) -> Agent:
     AgentSession's LLM (set in worker.py) generates the reply directly
     from the caller's last turn. Parallel oversight tasks run as
     background asyncio tasks outside the speech-blocking path.
+
+    Cycle-2e: When PRISM42_CYCLE_2E_BUFFER=1, returns BufferedDispatcherAgent
+    instead of plain Agent. Default is OFF — must match cycle-2d behavior
+    exactly when flag is unset/0.
     """
     instructions = (
         FAST_DISPATCHER_SYSTEM_PROMPT
         + f"\n\n# SESSION CONTEXT\nsession_id: {session_id}\n"
     )
+    if os.environ.get("PRISM42_CYCLE_2E_BUFFER", "0") == "1":
+        log.info("orchestrator.cycle2e_buffer.enabled", session_id=session_id)
+        return BufferedDispatcherAgent(instructions=instructions, tools=[])
+    log.info("orchestrator.cycle2e_buffer.disabled", session_id=session_id)
     return Agent(instructions=instructions, tools=[])
