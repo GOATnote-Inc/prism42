@@ -318,12 +318,46 @@ async def entrypoint(ctx: JobContext) -> None:
 
     # AgentSession composition — STT + LLM + TTS + VAD + turn detection.
     #
-    # LLM = claude-sonnet-4-6 for the FAST single-LLM path (2026-04-24).
-    # The archived orchestrator_full.py used Opus 4.7 + 4 parallel tools +
-    # a STEP 2 Opus call → 14-20s reply latency, fatal for voice demo.
-    # Sonnet 4.6 streaming TTFT ~500ms puts first audio in the caller's
-    # ears in ~2-3s. See docs/livekit-kb/08-opus-47-refusal-patterns.md §7.
-    from livekit.plugins.anthropic import LLM as AnthropicLLM  # noqa: PLC0415
+    # LLM backend selector — Phase B of the B300 purr migration plan
+    # (docs/livekit-kb/25-b300-purr-migration-plan.md). Default
+    # LLM_BACKEND=anthropic preserves the current Sonnet 4.6 cloud path.
+    # LLM_BACKEND=vllm-local routes to a local vLLM 0.20 server (default
+    # http://127.0.0.1:8001/v1, configurable via VLLM_BASE_URL) hosting
+    # Nemotron Nano 3 MoE NVFP4 on B300 — 15-30 ms TTFT vs Sonnet 4.6's
+    # 500 ms cloud round-trip. Each branch lazy-imports its plugin so a
+    # missing dep only breaks the backend that needs it, not the other.
+    _llm_backend = os.environ.get("LLM_BACKEND", "anthropic").lower()
+    if _llm_backend == "vllm-local":
+        from livekit.plugins.openai import LLM as OpenAILLM  # noqa: PLC0415
+
+        # _strict_tool_schema=False is REQUIRED — the openai plugin's
+        # default True injects "strict": true + additionalProperties:false
+        # into every tool schema, which vLLM's qwen3_coder tool-call
+        # parser does not handle correctly. KB 24 §3 documents the
+        # symptom (silent mishandling of tool turns).
+        _llm: Any = OpenAILLM(
+            model=os.environ.get(
+                "VLLM_MODEL",
+                "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4",
+            ),
+            base_url=os.environ.get("VLLM_BASE_URL", "http://127.0.0.1:8001/v1"),
+            api_key="EMPTY",  # vLLM doesn't enforce
+            _strict_tool_schema=False,
+            max_completion_tokens=int(
+                os.environ.get("VLLM_MAX_COMPLETION_TOKENS", "256")
+            ),
+        )
+        log.info("llm.backend", backend="vllm-local", model=getattr(_llm, "model", "?"))
+    else:
+        # Cloud Anthropic baseline. Sonnet 4.6 + ephemeral caching.
+        # Archived orchestrator_full.py used Opus 4.7 + 4 parallel tools +
+        # STEP 2 Opus → 14-20 s reply latency, fatal for voice demo.
+        # Sonnet 4.6 streaming TTFT ~500 ms puts first audio in the
+        # caller's ears in ~2-3 s. See KB 08 §7.
+        from livekit.plugins.anthropic import LLM as AnthropicLLM  # noqa: PLC0415
+
+        _llm = AnthropicLLM(model="claude-sonnet-4-6", caching="ephemeral")
+        log.info("llm.backend", backend="anthropic", model="claude-sonnet-4-6")
 
     # TTS backend selector — Lever 1 (KB 15).
     # Default stays "fish" (self-hosted B300) for zero regression.
@@ -384,7 +418,7 @@ async def entrypoint(ctx: JobContext) -> None:
     session = AgentSession(
         vad=silero.VAD.load(),
         stt=ParakeetSTT(ParakeetOptions()),
-        llm=AnthropicLLM(model="claude-sonnet-4-6", caching="ephemeral"),
+        llm=_llm,
         tts=_tts,
         turn_handling={
             "endpointing": {
