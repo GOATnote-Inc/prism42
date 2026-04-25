@@ -1,0 +1,105 @@
+From: Brandon Dent <b@thegoatnote.com>
+Date: 2026-04-25
+Subject: [PATCH] inference: defensive --compile guard for Blackwell B300 + stable PyTorch
+
+Adds a startup-time safety check around `torch.compile(decode_one_token, ...)`.
+On NVIDIA Blackwell B300 (compute capability 10.3 / sm_103a), stable
+PyTorch (<2.11.dev) bundles a Triton whose PTXAS does not recognize
+sm_103a. Engaging --compile triggers `torch._inductor.exc.InductorError:
+... PTXASError: Internal Triton PTX codegen error` on first inference,
+serving HTTP 500 on every TTS request until rollback.
+
+Without this guard: operator runs `python tools/api_server.py --compile`,
+sees Fish load successfully, then every request returns 500. Recovery
+requires rolling back the systemd unit / docker image, eating 5-15 min
+of downtime + an outage.
+
+With this guard: operator gets an actionable warning at startup
+("install torch nightly to enable --compile on B300") and Fish falls
+back to PyTorch eager mode. No outage; no surprise.
+
+Verified by direct B300 deployment 2026-04-25; full discovery write-up
+at https://github.com/GOATnote-Inc/prism42/blob/main/docs/livekit-kb/
+20-blackwell-b300-torch-compile-discovery.md.
+
+References:
+- PyTorch Discuss (Dec 2025): "current stable torch (2.9.1+cu130) points to a Triton version where PTXAS is not compiled for SM103"
+- Triton issues #9181, #8539, #8632 (sm_121a, sm_120, sm_110a — same class)
+
+Note: the patch does NOT fix the underlying PyTorch-Triton-PTXAS gap
+(that's upstream PyTorch / Triton work). It only prevents fish-speech
+operators from hitting a 500-on-every-request failure mode.
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+---
+ fish_speech/models/text2semantic/inference.py | 47 ++++++++++++++++++-
+ 1 file changed, 46 insertions(+), 1 deletion(-)
+
+diff --git a/fish_speech/models/text2semantic/inference.py b/fish_speech/models/text2semantic/inference.py
+--- a/fish_speech/models/text2semantic/inference.py
++++ b/fish_speech/models/text2semantic/inference.py
+@@ -380,12 +380,57 @@
+     # Mark whether cache has been initialized
+     model._cache_setup_done = False
+
+-    if compile:
++    compile_ok, compile_skip_reason = _can_safely_compile()
++    if compile and compile_ok:
+         logger.info("Compiling function...")
+         decode_one_token = torch.compile(
+             decode_one_token,
+             backend="inductor" if torch.cuda.is_available() else "aot_eager",
+             mode="default" if torch.cuda.is_available() else None,
+             fullgraph=True,
+         )
++    elif compile:
++        # User asked for --compile but the toolchain can't deliver. Warn
++        # loudly + run eager mode rather than 500-loop on every request.
++        logger.warning(compile_skip_reason)
+
+     return model.eval(), decode_one_token
++
++
++def _can_safely_compile() -> tuple[bool, str]:
++    """Returns (compile_ok, rationale).
++
++    Auto-disables `torch.compile` on hardware/software combinations
++    known to fail at codegen time. Today the only blocked combination
++    is NVIDIA Blackwell B300 (compute capability 10.3 / sm_103a) on
++    stable PyTorch < 2.11.dev — the bundled Triton's PTXAS does not
++    recognize sm_103a and emits 'Internal Triton PTX codegen error'
++    on every compile attempt. Fix is torch nightly:
++
++        pip install --pre torch torchvision torchaudio \\
++            --index-url https://download.pytorch.org/whl/nightly/cu130
++
++    Refs: PyTorch Discuss Dec-2025; Triton issues #9181, #8539, #8632.
++    """
++    if not torch.cuda.is_available():
++        return True, ""
++    try:
++        cap = torch.cuda.get_device_capability(0)
++    except Exception:  # pragma: no cover - defensive
++        return True, ""
++    if cap != (10, 3):
++        return True, ""
++    # B300 detected. Check torch version.
++    try:
++        major_str, minor_str = torch.__version__.split(".")[:2]
++        major = int(major_str)
++        minor = int(minor_str)
++        if major > 2 or (major == 2 and minor >= 11):
++            return True, ""
++    except (ValueError, AttributeError):  # pragma: no cover - defensive
++        return True, ""
++    return False, (
++        f"NVIDIA Blackwell B300 (sm_103) detected with torch "
++        f"{torch.__version__}. Stable PyTorch < 2.11 has a bundled-"
++        f"Triton/PTXAS regression that fails 'Internal Triton PTX "
++        f"codegen error' on sm_103a. Auto-disabling --compile. Install "
++        f"torch nightly (>=2.11.dev) with `--index-url https://download."
++        f"pytorch.org/whl/nightly/cu130` to enable compile on B300."
++    )
+--
+2.43.0
