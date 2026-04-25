@@ -29,6 +29,7 @@ import random
 import time
 from typing import Any
 
+import httpx
 import structlog
 from livekit.agents import (
     AgentSession,
@@ -100,6 +101,73 @@ FILLER_DELAY_S: float = float(os.environ.get("PRISM42_FILLER_DELAY_S", "0.3"))
 # numeric ms value back out. 0 disables the hook; default 12 chars
 # ≈ "I have chest pain" prefix from the canonical bench utterance.
 EARLY_LLM_CHARS: int = int(os.environ.get("PRISM42_EARLY_LLM_CHARS", "12"))
+
+
+# ---------------------------------------------------------------------
+# Transcript bus — POST each finalized turn (caller + dispatcher) to
+# the Vercel SSE endpoint so the /prism42/livekit dispatcher UI renders
+# the live transcript that the ElevenLabs path already shows. Without
+# this, the LiveKit voice path's transcript panel stays at "0 turns ·
+# state no-transcript" even with audio flowing.
+#
+# Endpoint: POST {PRISM42_BASE_URL}/prism42/api/session/{id}/turn
+# Body: {"role": "user"|"assistant", "content": "...", "ts_ms": ...}
+# Header: x-prism42-worker-key (only required when the env is set on
+#         the Vercel side; absent = open for demo/private use).
+# ---------------------------------------------------------------------
+
+PRISM42_BASE_URL = os.environ.get(
+    "PRISM42_BASE_URL", "https://prism42-console.vercel.app"
+)
+PRISM42_WORKER_KEY = os.environ.get("PRISM42_WORKER_KEY", "")
+
+_TRANSCRIPT_CLIENT: httpx.AsyncClient | None = None
+
+
+def _transcript_client() -> httpx.AsyncClient:
+    global _TRANSCRIPT_CLIENT
+    if _TRANSCRIPT_CLIENT is None:
+        _TRANSCRIPT_CLIENT = httpx.AsyncClient(timeout=5.0)
+    return _TRANSCRIPT_CLIENT
+
+
+async def _post_turn_to_bus(session_id: str, role: str, content: str) -> None:
+    """Fire-and-forget transcript POST.
+
+    Failures log a warning but never raise — the voice pipeline must
+    not block on a frontend SSE bus that may be cold-starting on
+    Vercel. Worst case the dispatcher UI just doesn't see the turn;
+    audio still plays.
+    """
+    if not content or not session_id:
+        return
+    url = f"{PRISM42_BASE_URL}/prism42/api/session/{session_id}/turn"
+    headers = {"Content-Type": "application/json"}
+    if PRISM42_WORKER_KEY:
+        headers["x-prism42-worker-key"] = PRISM42_WORKER_KEY
+    body = {"role": role, "content": content, "ts_ms": int(time.time() * 1000)}
+    try:
+        client = _transcript_client()
+        resp = await client.post(url, json=body, headers=headers)
+        if resp.status_code != 200:
+            log.warning(
+                "transcript.post_non_200",
+                status=resp.status_code,
+                session_id=session_id,
+                role=role,
+                body=resp.text[:200] if resp.text else None,
+            )
+        else:
+            log.debug(
+                "transcript.post_ok",
+                session_id=session_id,
+                role=role,
+                len=len(content),
+            )
+    except Exception as e:  # noqa: BLE001
+        log.warning(
+            "transcript.post_error", err=str(e)[:200], session_id=session_id, role=role
+        )
 
 
 # ---------------------------------------------------------------------
@@ -489,6 +557,12 @@ async def entrypoint(ctx: JobContext) -> None:
                 asyncio.create_task(_grade_async(session_id, latest, item))
             # Fire-and-forget latency telemetry → /prism42/livekit V2 strip.
             asyncio.create_task(_publish_latency(ctx, session_id, latest))
+            # Push assistant turn to the dispatcher SSE bus so the
+            # /prism42/livekit transcript panel renders live.
+            if latest.action == "speak" and latest.content:
+                asyncio.create_task(
+                    _post_turn_to_bus(session_id, "assistant", str(latest.content))
+                )
         except Exception as e:  # noqa: BLE001
             log.warning("on_item.error", err=str(e)[:200])
 
@@ -623,6 +697,12 @@ async def entrypoint(ctx: JobContext) -> None:
                 # LLM request kicks off as soon as the transcript is final.
                 if cur.get("t_llm_start") is None:
                     cur["t_llm_start"] = now
+                # Push caller turn to the dispatcher SSE bus so the
+                # /prism42/livekit transcript panel renders live.
+                if text:
+                    asyncio.create_task(
+                        _post_turn_to_bus(session_id, "user", text)
+                    )
                 # If we missed the VAD speaking→listening transition,
                 # approximate user_speech_end by subtracting transcript_delay.
                 if cur.get("t_user_speech_end") is None:

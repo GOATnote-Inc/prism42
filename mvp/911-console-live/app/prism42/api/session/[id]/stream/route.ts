@@ -9,8 +9,8 @@
 
 import type { NextRequest } from "next/server";
 import {
+  attachToSession,
   ensureHeartbeat,
-  getSession,
   subscribe,
 } from "@/lib/session-store";
 import { createSseWriter, sseHeaders, writeSessionEvent } from "@/lib/sse";
@@ -22,13 +22,12 @@ export async function GET(
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
-  const session = getSession(id);
-  if (!session) {
-    return new Response(
-      JSON.stringify({ error: "session_not_found", session_id: id }),
-      { status: 404, headers: { "Content-Type": "application/json" } },
-    );
-  }
+  // attachToSession (vs getSession) absorbs the Vercel-cold-start
+  // / LiveKit-room-mints-id-elsewhere case: if the SSE call lands on
+  // a serverless instance that doesn't yet have the session in its
+  // in-memory map, we materialize an empty record and start
+  // subscribing. The worker's /turn POST will populate it.
+  const session = attachToSession(id);
 
   ensureHeartbeat();
   const sse = createSseWriter();
