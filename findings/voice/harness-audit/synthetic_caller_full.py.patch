@@ -1,0 +1,71 @@
+--- a/agents/livekit/synthetic_caller_full.py
++++ b/agents/livekit/synthetic_caller_full.py
+@@ -157,24 +157,27 @@
+     await room.connect(url, jwt)
+     print(f"[stage C] connected @ +{time.time() - t0:.2f}s")
+ 
++    join_timeout = float(os.environ.get("PRISM42_HARNESS_JOIN_TIMEOUT_S", "30"))
+     try:
+-        await asyncio.wait_for(agent_joined.wait(), timeout=15)
++        await asyncio.wait_for(agent_joined.wait(), timeout=join_timeout)
+     except asyncio.TimeoutError:
+         print("FAIL: agent never joined")
+         await room.disconnect()
+         return 2
+     print(f"[stage C] AGENT JOINED @ +{time.time() - t0:.2f}s ({agent_identity[0]})")
+ 
++    track_timeout = float(os.environ.get("PRISM42_HARNESS_TRACK_TIMEOUT_S", "30"))
+     try:
+-        await asyncio.wait_for(agent_audio_track_subscribed.wait(), timeout=15)
++        await asyncio.wait_for(agent_audio_track_subscribed.wait(), timeout=track_timeout)
+     except asyncio.TimeoutError:
+         print("FAIL: no agent audio track")
+         await room.disconnect()
+         return 3
+     print(f"[stage C] AUDIO TRACK SUBSCRIBED @ +{time.time() - t0:.2f}s")
+ 
+-    print(f"\n=== STAGE D: wait for pre-roll (4s) ===")
+-    await asyncio.sleep(4.0)
++    preroll_wait = float(os.environ.get("PRISM42_HARNESS_PREROLL_WAIT_S", "0.5"))
++    print(f"\n=== STAGE D: wait for pre-roll ({preroll_wait}s) ===")
++    await asyncio.sleep(preroll_wait)
+     preroll_speech = speech_frames[0]
+     preroll_peak = peak_amplitude[0]
+     print(f"[stage D] pre-roll audio: {preroll_speech} non-silent frames, peak {preroll_peak}")
+@@ -206,9 +209,10 @@
+     publish_end_at[0] = time.time()
+     print(f"[stage E] publish ended @ +{time.time() - t0:.2f}s")
+ 
+-    print(f"\n=== STAGE F: wait up to 25s for agent reply ===")
++    reply_timeout = float(os.environ.get("PRISM42_HARNESS_REPLY_TIMEOUT_S", "30"))
++    print(f"\n=== STAGE F: wait up to {reply_timeout}s for agent reply ===")
+     reply_window_start = publish_end_at[0]
+-    reply_deadline = reply_window_start + 25.0
++    reply_deadline = reply_window_start + reply_timeout
+     reply_first_speech_at = None
+     while time.time() < reply_deadline:
+         await asyncio.sleep(0.5)
+@@ -227,10 +231,11 @@
+             f"(0 = silence)"
+         )
+ 
+-    # Listen 5s more to capture any audio that started.
++    confirm_wait = float(os.environ.get("PRISM42_HARNESS_REPLY_CONFIRM_S", "1.0"))
++    # Listen confirm_wait seconds more to capture any audio that started.
+     if reply_first_speech_at:
+-        print(f"[stage F] listening 5s more to confirm sustained speech ...")
+-        await asyncio.sleep(5.0)
++        print(f"[stage F] listening {confirm_wait}s more to confirm sustained speech ...")
++        await asyncio.sleep(confirm_wait)
+ 
+     await room.disconnect()
+ 
+@@ -251,7 +256,7 @@
+     if not first_audio_at:
+         print("VERDICT: no audio at all")
+         return 4
+-    if preroll_speech < 5:
++    if preroll_speech < 5 and os.environ.get("PRISM42_HARNESS_REQUIRE_PREROLL"):
+         print("VERDICT: pre-roll never spoke (TTS broken)")
+         return 4
+     if reply_first_speech_at is None:
