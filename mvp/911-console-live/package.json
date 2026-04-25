@@ -13,7 +13,9 @@
     "build": "next build",
     "start": "next start --port 3042",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.0",
@@ -37,6 +39,7 @@
     "@types/react-dom": "^19.2.0",
     "eslint": "^9.18.0",
     "eslint-config-next": "^16.2.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.5"
   }
 }

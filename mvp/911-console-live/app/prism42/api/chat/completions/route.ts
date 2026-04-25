@@ -137,43 +137,100 @@ export async function POST(req: NextRequest) {
         // hears the model's content; the dispatcher UI sees a
         // verify-failed alert so the validation miss is surfaced but
         // not fatal. Production voice latency > schema strictness.
-        spokenText = parse.lenient_content;
-        recordTurn(resolvedSessionId, {
-          agent: "psap-team-coordinator",
-          turn_id: `t-${resolvedSessionId.slice(0, 6)}-${session.turns.length}`,
-          action: "speak",
-          content: parse.lenient_content,
-          rationale:
-            "Lenient serve — coordinator JSON parsed but failed Zod schema. " +
-            "Caller heard the content field; full turn failed strict validation.",
-          cites: ["sp:SP-006"],
-          confidence: 0.5,
-          confidence_basis: "uncertain",
-          self_verify: {
-            checks: [
-              { name: "json-parseable", passed: true },
+        //
+        // SECURITY (fix/glasswing-lenient-serve, DEFEND-20260424T1245):
+        // lenient_content is unvalidated — prompt injection can plant
+        // medically harmful instructions (anti-911, medication mis-advice)
+        // that reach TTS on this path because Zod never ran on the content
+        // field. Apply detectRefusalLeak() (now including the medical-harm
+        // block list) BEFORE assigning spokenText. On match, fall through
+        // to SAFE_FALLBACK_CONTENT and record a high-severity alert.
+        if (detectRefusalLeak(parse.lenient_content)) {
+          spokenText = SAFE_FALLBACK_CONTENT;
+          recordTurn(resolvedSessionId, {
+            agent: "psap-team-coordinator",
+            turn_id: `t-${resolvedSessionId.slice(0, 6)}-${session.turns.length}`,
+            action: "defer",
+            content: SAFE_FALLBACK_CONTENT,
+            rationale:
+              "Lenient-serve path: content blocked by detectRefusalLeak — " +
+              "potential prompt-injection carrying harmful or anti-911 instruction. " +
+              "Safe fallback spoken; original content preserved in debug for audit.",
+            cites: ["sp:SP-001", "sp:SP-006"],
+            confidence: 0.0,
+            confidence_basis: "blocked",
+            self_verify: {
+              checks: [
+                { name: "json-parseable", passed: true },
+                {
+                  name: "zod-schema-valid",
+                  passed: false,
+                  note: parse.zod_error ?? "unknown",
+                },
+                {
+                  name: "refusal-leak-check",
+                  passed: false,
+                  note: "harmful substring matched on lenient_content",
+                },
+              ],
+              all_passed: false,
+            },
+            alerts: [
               {
-                name: "zod-schema-valid",
-                passed: false,
-                note: parse.zod_error ?? "unknown",
+                kind: "injection-blocked",
+                severity: "high",
+                detail: `lenient-serve injection blocked: ${parse.lenient_content.slice(0, 120)}`,
+                source_agent: "psap-team-coordinator",
               },
             ],
-            all_passed: false,
-          },
-          alerts: [
-            {
-              kind: "verify-failed",
-              severity: "medium",
-              detail: `lenient-served: ${parse.zod_error ?? "zod rejected"}`,
-              source_agent: "psap-team-coordinator",
+            debug: {
+              ts_ms: Date.now(),
+              raw_head: fullText.slice(0, 240),
+              zod_error: parse.zod_error,
+              blocked_content: parse.lenient_content.slice(0, 240),
             },
-          ],
-          debug: {
-            ts_ms: Date.now(),
-            raw_head: fullText.slice(0, 240),
-            zod_error: parse.zod_error,
-          },
-        });
+          });
+        } else {
+          // Lenient content passed the harm check — serve it with a
+          // medium-severity verify-failed alert for dispatcher review.
+          spokenText = parse.lenient_content;
+          recordTurn(resolvedSessionId, {
+            agent: "psap-team-coordinator",
+            turn_id: `t-${resolvedSessionId.slice(0, 6)}-${session.turns.length}`,
+            action: "speak",
+            content: parse.lenient_content,
+            rationale:
+              "Lenient serve — coordinator JSON parsed but failed Zod schema. " +
+              "Caller heard the content field; full turn failed strict validation.",
+            cites: ["sp:SP-006"],
+            confidence: 0.5,
+            confidence_basis: "uncertain",
+            self_verify: {
+              checks: [
+                { name: "json-parseable", passed: true },
+                {
+                  name: "zod-schema-valid",
+                  passed: false,
+                  note: parse.zod_error ?? "unknown",
+                },
+              ],
+              all_passed: false,
+            },
+            alerts: [
+              {
+                kind: "verify-failed",
+                severity: "medium",
+                detail: `lenient-served: ${parse.zod_error ?? "zod rejected"}`,
+                source_agent: "psap-team-coordinator",
+              },
+            ],
+            debug: {
+              ts_ms: Date.now(),
+              raw_head: fullText.slice(0, 240),
+              zod_error: parse.zod_error,
+            },
+          });
+        }
       } else {
         // Malformed JSON — safe fallback, no content to serve.
         spokenText = SAFE_FALLBACK_CONTENT;

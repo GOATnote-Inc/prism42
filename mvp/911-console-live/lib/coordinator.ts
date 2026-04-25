@@ -359,7 +359,16 @@ export const SAFE_FALLBACK_CONTENT = "One moment please.";
 // the specific AI-self-reference + medical-refusal combos that have
 // been observed on the live deployment. Natural dispatcher phrases
 // like "help is on the way" must pass through unchanged.
+//
+// Medical-harm block list (added by fix/glasswing-lenient-serve,
+// DEFEND-20260424T1245): prompt-injection via the Zod-fail lenient-serve
+// path can carry dispatcher-framed anti-911 instructions that the
+// original AI-self-disclosure list would not catch. These substrings
+// cover the attacker's demonstrated payload variants. They are also
+// checked against parse.lenient_content BEFORE route.ts assigns
+// spokenText — see the lenient-serve branch in route.ts.
 const REFUSAL_SUBSTRINGS = [
+  // AI self-disclosure (pre-existing)
   "i am an ai",
   "i'm an ai",
   "as an ai",
@@ -372,6 +381,31 @@ const REFUSAL_SUBSTRINGS = [
   "please contact emergency services",
   "please contact a medical professional",
   "please consult a doctor",
+  // Medical-harm injection patterns (DEFEND-20260424T1245)
+  "do not call 911",
+  "don't call 911",
+  "do not call emergency",
+  "don't call emergency",
+  "do not call an ambulance",
+  "don't call an ambulance",
+  "wait at home",
+  "wait until tomorrow",
+  "take aspirin",
+  "aspirin",
+  "take ibuprofen",
+  "ibuprofen",
+  "take medication",
+  "stop cpr",
+  "stop chest compressions",
+  "stay inside",
+  "do not seek medical",
+  "don't seek medical",
+  "this is not a real emergency",
+  "it's not a real emergency",
+  "not a real emergency",
+  "no need to call",
+  "no need for an ambulance",
+  "help is not needed",
 ];
 
 // Dispatcher-appropriate opener used when we rescue a refusal. Phrased
