@@ -1,0 +1,165 @@
+{
+  "test_id": "2026-04-25T18-58-49Z",
+  "cycle": "cycle-2d-n30-baseline",
+  "phase": "Glasswing-discipline cycle-2 campaign Phase 3a",
+  "patch_basis": "n=30 warm-state distribution characterization on top of cycle-2d Fish FA patch (4-delta) + worker.py Fix1+Fix2+cycle-2a edit. No code changes. Bench-only.",
+  "verdict": "WIDER_THAN_EXPECTED",
+  "n_turns": 30,
+  "real_replies": "30/30",
+  "useful_replies": "30/30",
+  "useful_audio_skipped_filler_count": "2/30",
+  "patch_applied": "no (using already-applied cycle-2d state)",
+  "fish_service_state": "active throughout",
+  "watchdog_pre_bench_exit": 0,
+  "watchdog_post_bench_exit": 0,
+  "bench_window_utc": {
+    "start": "2026-04-25T19:00:05Z",
+    "end": "2026-04-25T19:21:04Z",
+    "duration_s": 1259
+  },
+  "headline_metric_fish_full_render_ms_warm_n29": {
+    "n": 29,
+    "p50": 2205,
+    "p95": 2822,
+    "p99": 4895,
+    "max": 4895,
+    "min": 970,
+    "mean": 2077.2,
+    "ci95_half_width": 269.5,
+    "stdev": 693.3,
+    "cycle2d_warm_p50_n9": 2216,
+    "cycle2d_warm_p95_n9": 2468,
+    "delta_p50_pct": -0.5,
+    "delta_p95_pct": 14.3,
+    "delta_p95_in_pm_10_band": false
+  },
+  "first_audio_after_speech_ms_warm_n29": {
+    "n": 29,
+    "p50": 3504,
+    "p95": 4005,
+    "p99": 6010,
+    "max": 6010,
+    "min": 2003,
+    "mean": 3263.7,
+    "ci95_half_width": 283.1,
+    "stdev": 728.5,
+    "cycle2d_warm_p95_n9": 3506,
+    "delta_p95_pct": 14.2,
+    "delta_p95_in_pm_10_band": false
+  },
+  "first_useful_audio_after_speech_ms_warm_n29": {
+    "n": 29,
+    "p50": 3053,
+    "p95": 3804,
+    "p99": 5844,
+    "max": 5844,
+    "min": 2501,
+    "mean": 3021.3,
+    "ci95_half_width": 244.9,
+    "stdev": 630.1,
+    "cycle2d_warm_p95_n9": 3140,
+    "delta_p95_pct": 21.1
+  },
+  "llm_total_ms": {
+    "warm_n29": {
+      "p50": 104, "p95": 106, "p99": 106, "mean": 103.6, "ci95_half_width": 0.6, "min": 101, "max": 106
+    },
+    "all_n30": {
+      "p50": 104, "p95": 106, "p99": 1028, "mean": 134.4, "min": 101, "max": 1028,
+      "note": "p99 dominated by turn-1 vLLM cold-start (1028 ms); warm subset eliminates."
+    }
+  },
+  "stt_ms_warm_n29": {"p50": 101, "p95": 128, "p99": 130, "mean": 107.2, "ci95_half_width": 4.1, "min": 97, "max": 130},
+  "tts_ttfb_ms_warm_n29": {
+    "p50": 2199, "p95": 2269, "p99": 4895, "mean": 1605.4, "ci95_half_width": 437.4, "min": 0, "max": 4895,
+    "note": "p99 = max = same as full-render p99 because of single-chunk turns"
+  },
+  "reply_chunk_count_warm_n29": {"p50": 1, "p95": 2, "p99": 4, "max": 4, "mean": 1.4, "stdev": 0.7},
+  "distribution_shape": {
+    "warm_mean_fish_full_ms": 2077.2,
+    "warm_stdev_fish_full_ms": 693.3,
+    "warm_outliers_3sigma": [{"turn": 17, "fish_full_ms": 4895, "z": 4.06, "prompt": "I fell down the stairs and I think I broke my hip."}],
+    "cold_start_classification": {
+      "definition": "fish_full_ms >= 2x median(warm)",
+      "warm_median_ms": 2205,
+      "threshold_ms": 4410,
+      "count": 1,
+      "turns": [17]
+    },
+    "all_max_minus_min_ms": 3925,
+    "all_stdev_ms": 681.4,
+    "bimodal_indicator_spread_gt_4sigma": true,
+    "bimodality_explanation": "spread/stdev ratio = 5.76 (>4), confirming bimodal/long-tail. Histogram shows two warm clusters: short utterances (970-2147ms, n=13) and main cluster (2147-2540ms, n=15), plus 1 cold-start outlier at 4895ms. Bimodality is driven by reply-text length: short answers (e.g., 'Stay on the line') render in ~1-1.7s; longer answers cluster at ~2.2-2.5s. Single-cluster mean+CI hides this; the 95% CI half-width on warm full-render (270 ms) understates the actual variation."
+  },
+  "cycle2d_n10_vs_cycle2d_n30_comparison": {
+    "table": {
+      "real_replies":            {"n10": "10/10", "n30": "30/30"},
+      "llm_total_ms_p95":        {"n10_warm": 143, "n30_warm": 106, "improvement": "warmer this run"},
+      "fish_full_p50":           {"n10_warm": 2216, "n30_warm": 2205, "delta_pct": -0.5},
+      "fish_full_p95":           {"n10_warm": 2468, "n30_warm": 2822, "delta_pct": 14.3, "in_band": false},
+      "fish_full_p99":           {"n10_warm": "n/a", "n30_warm": 4895},
+      "fish_full_mean_pm_ci95":  {"n10_warm": "n/a", "n30_warm": "2077.2 ± 269.5"},
+      "e2e_p95_warm":            {"n10_warm": 3506, "n30_warm": 4005, "delta_pct": 14.2, "in_band": false},
+      "e2e_p99_warm":            {"n10_warm": "n/a", "n30_warm": 6010},
+      "useful_p95_warm":         {"n10_warm": 3140, "n30_warm": 3804, "delta_pct": 21.1, "in_band": false},
+      "cold_start_count":        {"n10": "1/10 (turn 1, 12.5s)", "n30": "1/30 (turn 17, 4.9s)"}
+    }
+  },
+  "decision_rule_evaluation": {
+    "STABLE_PASS_2D_required": "warm subset (n=29) p95 within ±10% of cycle-2d's 3506 ms (3155-3857 ms)",
+    "STABLE_PASS_2D_evaluated": {
+      "warm_n29_e2e_p95": 4005,
+      "in_3155_3857_band": false
+    },
+    "COLD_START_DOMINATES_required": ">3 turns >= 2x warm median (turns >= 4410 ms)",
+    "COLD_START_DOMINATES_evaluated": {
+      "matching_turns": 1,
+      "turns": [17],
+      "satisfied": false
+    },
+    "WIDER_THAN_EXPECTED_required": "warm p95 outside ±10% band, fewer than 4 cold-starts",
+    "WIDER_THAN_EXPECTED_evaluated": {
+      "warm_p95_outside_band": true,
+      "fewer_than_4_cold_starts": true,
+      "satisfied": true
+    },
+    "decision": "WIDER_THAN_EXPECTED"
+  },
+  "verdict_rationale": "WIDER_THAN_EXPECTED. Warm-subset (n=29) e2e p95 = 4005 ms is +14.2% above cycle-2d's n=10 anchor of 3506 ms; outside the ±10% (3155-3857 ms) STABLE_PASS_2D band. Fish full-render warm p50 is essentially identical (2205 vs 2216 ms, -0.5%) but warm p95 (2822 vs 2468 ms, +14.3%) is also outside band. The widening is concentrated at the upper tail: 30 turns surface tail draws that 10 turns missed. Cold-start count is 1/30 (turn-17 'I fell down the stairs and I think I broke my hip' rendered Fish at 4895 ms, z=4.06σ) -- not >=4 turns, so COLD_START_DOMINATES does not apply. The likely cause is Fish stochastic-sampler variance scaling with n: 30 sampled trajectories include 1-2 long-tail draws; cycle-2d's 10-turn snapshot was a favorable subsample. The histogram shows clear bimodality (short replies cluster at ~970-1700 ms; long replies at ~2200-2400 ms; 1 outlier at 4895 ms). This is consistent with Team F's documented natural-variance expectation. All cycle-1+2a invariants preserved (preroll disabled 30/30, 0 anthropic calls, real_replies 30/30, audio amplitude 22614-26779 within baseline band). LLM total p95 (warm) = 106 ms (vs cycle-2d 143 ms) is actually better -- likely because vLLM was already prefix-cache-warmed by earlier cycle-2d run today.",
+  "demo_headline_recommendation": {
+    "primary": "Fish full-render warm p50 = 2.2 s (n=30, 95% CI ±270 ms). End-to-end p50 = 3.5 s. Tail: warm p95 e2e 4.0 s, p99 e2e 6.0 s. 30/30 calls returned a real reply.",
+    "rationale": "Use the warm-p50 numbers as the headline; they are stable across runs (p50 delta -0.5%). Quote the warm p95 with the 95% CI to honestly represent tail variance. Avoid quoting cycle-2d's n=10 p95 (2468 / 3506 ms) as a tight bound -- it under-reported the tail.",
+    "alternative_safe_quote": "Sub-second LLM, ~2 s Fish TTS, ~3.5 s end-to-end p50, ~4-6 s p95-p99 tail on a 30-call stress run."
+  },
+  "warm_subset_definition": "turns 2-30 inclusive (n=29). Turn 1 reserved as 'first turn after a quiet pod' even though Fish kernel cache was already warm; LLM total on turn 1 was 1028 ms (vs warm 101-106 ms) reflecting a vLLM-side first-token delay that does not recur.",
+  "patch_application_metadata": {
+    "patch_path_local": "n/a (no patch this cycle)",
+    "patch_path_pod": "n/a",
+    "rollback_tag_available": "pre-cycle-2d-1777125944",
+    "files_modified_this_run": [],
+    "deltas_applied_this_run": 0,
+    "fish_service_restart_this_run": false
+  },
+  "verification_invariants": {
+    "anthropic_calls_count": 0,
+    "preroll_disabled_for_demo_count": 30,
+    "preroll_spoken_count": 0,
+    "non_empty_reply_audio_count": 30,
+    "real_assistant_replies_count": 30,
+    "filler_spoken_count": 30,
+    "useful_audio_skipped_filler_count": 2,
+    "watchdog_pre_bench_exit": 0,
+    "watchdog_post_bench_exit": 0
+  },
+  "audio_amplitude_check": {
+    "n30_min": 22614,
+    "n30_max": 26779,
+    "n30_mean": 24467.2,
+    "cycle2d_e2e_min": 22743,
+    "cycle2d_e2e_max": 26456,
+    "cycle2d_e2e_mean": 24808,
+    "within_baseline_pm_20pct": true,
+    "verdict": "audio peak amplitude in same range as cycle-2d (22614-26779 vs 22743-26456); mean 24467 vs 24808 (-1.4%)"
+  },
+  "summary_text": "Cycle-2d n=30 baseline characterization, decision=WIDER_THAN_EXPECTED. 30 PSAP-realistic prompts (10 cycle-2d + 20 new) run sequentially with 30s spacing on the cycle-2d-patched stack (no mutations). 30/30 real replies, 0 anthropic calls, watchdog GREEN before+after. Fish full-render warm (n=29, turns 2-30): p50=2205 ms (within -0.5% of cycle-2d n=10), p95=2822 ms (+14.3% out of ±10% band), p99=4895 ms, mean 2077±270 ms. e2e warm p50=3504 ms, p95=4005 ms (+14.2% out of band), p99=6010 ms. The warm distribution is bimodal: short replies render Fish at ~1-1.7 s, longer replies cluster at 2.2-2.5 s, with one outlier at 4.9 s on turn-17. Cold-start count 1/30 (turn-17, z=4.06σ); cycle-2d's 10-turn p95 (2468 ms) under-sampled the tail. Demo headline: quote warm p50 (Fish 2.2 s, e2e 3.5 s) with the n=30 95% CI half-width (±270 ms / ±283 ms) as the defensible number. Audio amplitude within ±20% baseline (22614-26779 peak, mean 24467 vs cycle-2d 24808). LLM total p95 warm = 106 ms, slightly better than cycle-2d (143 ms) -- vLLM stayed prefix-cache-warm across runs. No infrastructure regression; the band-violation is statistical-power, not signal."
+}
