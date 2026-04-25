@@ -115,6 +115,14 @@ async def main(text: str) -> int:
     # raw `audio_after_publish_end_amp_max` field.
     filler_skip_s = float(os.environ.get("PRISM42_HARNESS_FILLER_SKIP_S", "2.5"))
 
+    # Cycle-2e metric-honesty check (c): require N ms of sustained speech
+    # (peak>1000) before counting the first frame as "first useful audio".
+    # Defends against chunked-mask false wins where Pipecat-style chunking
+    # ships a glitch frame that passes peak>1000 but is content-free.
+    first_segment_min_ms = float(
+        os.environ.get("PRISM42_HARNESS_FIRST_SEGMENT_MIN_MS", "200")
+    )
+
     agent_joined = asyncio.Event()
     agent_audio_track_subscribed = asyncio.Event()
     first_audio_at: list[float] = []
@@ -124,8 +132,15 @@ async def main(text: str) -> int:
     # NEW: amplitude max after the filler-skip-window (proxy for first useful
     # assistant-content audio, distinct from filler bridge tail).
     audio_after_filler_skip_amp_max = [0]
-    # NEW: timestamp of the first peak>1000 frame after the filler skip window.
+    # NEW: timestamp of the first peak>1000 frame after the filler skip window
+    # — gated by `first_segment_min_ms` of sustained speech (cycle-2e check c).
     first_useful_audio_at: list[float] = []
+    # Cycle-2e: track sustained-speech run for check (c).
+    sustained_run_started_at: list[float] = []
+    # Cycle-2e: timestamp of the LAST audio frame above peak>1000 — proxy for
+    # tts_total_ms (publish_end → end_of_audio). Used to detect chunking
+    # overhead vs real win.
+    last_useful_audio_at: list[float] = []
     publish_end_at = [0.0]
     agent_identity: list[str] = []
 
@@ -165,8 +180,29 @@ async def main(text: str) -> int:
                 if publish_end_at[0] > 0 and time.time() > publish_end_at[0] + filler_skip_s:
                     if peak > audio_after_filler_skip_amp_max[0]:
                         audio_after_filler_skip_amp_max[0] = peak
-                    if peak > 1000 and not first_useful_audio_at:
-                        first_useful_audio_at.append(time.time())
+                    # Cycle-2e check (c): require sustained-speech run of
+                    # `first_segment_min_ms` before counting first useful
+                    # audio. Defends against chunked-mask glitch frames.
+                    now_t = time.time()
+                    if peak > 1000:
+                        if not sustained_run_started_at:
+                            sustained_run_started_at.append(now_t)
+                        run_duration_s = now_t - sustained_run_started_at[0]
+                        if (
+                            run_duration_s * 1000.0 >= first_segment_min_ms
+                            and not first_useful_audio_at
+                        ):
+                            first_useful_audio_at.append(sustained_run_started_at[0])
+                        # Track the most recent useful frame for tts_total_ms.
+                        if last_useful_audio_at:
+                            last_useful_audio_at[0] = now_t
+                        else:
+                            last_useful_audio_at.append(now_t)
+                    else:
+                        # Silence — break the run; require a fresh sustained
+                        # window before the next first-useful candidate.
+                        if sustained_run_started_at and not first_useful_audio_at:
+                            sustained_run_started_at.clear()
 
         asyncio.create_task(_drain())
 
@@ -317,6 +353,22 @@ async def main(text: str) -> int:
     )
     print(f"total_speech_frames   : {speech_frames[0]}")
     print(f"global_peak_amplitude : {peak_amplitude[0]}")
+    # Cycle-2e: tts_total_ms proxy = publish_end → last useful audio frame.
+    # Used to detect chunking overhead (real win = stays within ±10% of
+    # baseline; chunked-mask = inflates because TTS re-init per chunk).
+    print(f"first_segment_min_ms  : {first_segment_min_ms}")
+    if last_useful_audio_at and publish_end_at[0] > 0:
+        tts_total_ms = round((last_useful_audio_at[0] - publish_end_at[0]) * 1000)
+    else:
+        tts_total_ms = -1
+    print(f"tts_total_ms          : {tts_total_ms}")
+    if first_useful_audio_at and last_useful_audio_at:
+        useful_audio_duration_ms = round(
+            (last_useful_audio_at[0] - first_useful_audio_at[0]) * 1000
+        )
+    else:
+        useful_audio_duration_ms = -1
+    print(f"useful_audio_duration_ms: {useful_audio_duration_ms}")
     if not first_audio_at:
         print("VERDICT: no audio at all")
         return 4

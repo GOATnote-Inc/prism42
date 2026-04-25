@@ -455,6 +455,7 @@ async def entrypoint(ctx: JobContext) -> None:
     # Emitted before any session event so Team B's parser can tie a run
     # window to the flags that produced it. Keep in sync with the env
     # vars documented under FILLERS / EARLY_LLM_CHARS above.
+    _cycle2e_enabled = os.environ.get("PRISM42_CYCLE_2E_BUFFER", "0") == "1"
     log.info(
         "overlap.config",
         session_id=session_id,
@@ -463,6 +464,9 @@ async def entrypoint(ctx: JobContext) -> None:
         preemptive_generation_enabled=True,
         preemptive_tts_enabled=True,
         tts_backend=_tts_backend,
+        cycle_2e_buffer_enabled=_cycle2e_enabled,
+        cycle_2e_first_tokens=int(os.environ.get("PRISM42_CYCLE_2E_FIRST_TOKENS", "24")),
+        cycle_2e_min_chars=int(os.environ.get("PRISM42_CYCLE_2E_MIN_CHARS", "8")),
     )
 
     orchestrator = make_orchestrator(session_id)

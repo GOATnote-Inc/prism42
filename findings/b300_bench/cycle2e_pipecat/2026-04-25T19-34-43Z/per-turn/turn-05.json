@@ -1,0 +1,15 @@
+{
+  "first_useful_audio_after_speech_ms": 3180,
+  "first_audio_after_speech_ms": 3506,
+  "reply_speech_amp_max": 24348,
+  "useful_reply_amp_max": 24348,
+  "global_peak_amplitude": 24348,
+  "total_speech_frames": 88,
+  "tts_total_ms": 4170,
+  "useful_audio_duration_ms": 990,
+  "useful_audio_skipped_filler": false,
+  "raw_to_useful_delta_ms": -326,
+  "verdict_pass": true,
+  "turn": 5,
+  "stdout_path": "per-turn/turn-05.stdout"
+}
