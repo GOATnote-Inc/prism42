@@ -1,0 +1,38 @@
+ROLLBACK_2F
+
+Trigger: smoke test (flag OFF) e2e p95 outside ±10% band of cycle-2d-n30 4005 ms.
+  smoke turn 1: 11518 ms (cold-start + LLM degradation)
+  smoke turn 2: 29544 ms (LLM hallucination, 274+ tokens of garbage)
+  smoke turn 3: 12021 ms (LLM hallucination, 274 tokens including garbled non-ASCII)
+
+Root cause: PRE-EXISTING vLLM/Nemotron-Nano LLM degradation independent of
+the cycle-2f patch. Direct vLLM probe with neutral system prompt confirms:
+LLM emits JavaScript-like garbage ")(){\n    (()=>(()=>(()=> ([],...))" for
+"I am having chest pain" prompt. cycle-2d-n30 (19:00-19:21Z) fish.log shows
+the SAME LLM was producing perfect dispatcher replies ("Help is on the way",
+"Lay him flat. Start compressions...") only ~2 hours earlier, so the
+degradation occurred in the interval between cycle-2d-n30 and cycle-2f.
+
+Patch correctness: VERIFIED WIRE-EQUIVALENT WHEN FLAG OFF.
+  - worker.cycle2f_prosody_init: cycle2f_prosody=disabled, fillers_variant=plain
+  - Fish rendered "Okay, stay with me." (plain filler) on smoke turn 1, NOT
+    "[soft] Stay with me." (would require flag ON).
+  - Pre-cycle2f canonical SHAs restored after rollback:
+      worker.py: f4053900847db8da58c00b7b03e6bb263bddde553015b58f56e69f819958e44a
+      orchestrator.py: 9e96dad6ec9589e778224a3e2bb2c4a82a68fcc56120f638b5d222ff4dbdbf97
+
+Action taken:
+  1. Restored /opt/prism42/agents/livekit/{worker.py,orchestrator.py} from
+     pre-cycle2f backups (still present on pod).
+  2. Restarted prism42-worker (active, pid 387857).
+  3. NEVER created /etc/systemd/system/prism42-worker.service.d/40-cycle2f.conf
+     because smoke failed at step 6, blocking step 7. Nothing to remove.
+  4. All 4 services HTTP-healthy post-rollback (worker:active, fish:200,
+     parakeet:200, vllm:200). Watchdog .pid line still mismatches its stale
+     snapshot (expected 285669, actual 381330) — this was already the case
+     in pre-state and is not a cycle-2f regression.
+
+Recommendation: investigate vLLM Nemotron-Nano degradation as a separate
+thread (out of cycle-2f scope per "ONLY worker.py + orchestrator.py
+mutations, NO vLLM restart"). Once LLM is restored to clean baseline
+behavior, cycle-2f patch can be re-attempted.
