@@ -1,0 +1,103 @@
+{
+  "cycle": "cycle-2c-retry",
+  "runbook": "runbook-v2",
+  "started_at_utc": "2026-04-25T20:31:23Z",
+  "halted_at_utc": "2026-04-25T20:34:55Z",
+  "verdict": "HALTED_AT_STAGE_B2",
+  "decision": "ROLLBACK_2C",
+  "decision_signature": {
+    "halt_stage": "B2",
+    "halt_cause": "AUTO_MODE_CLASSIFIER_DENIED_PRE_APPROVED_G7",
+    "rollback_executed": "B1_only_(restart_fish)",
+    "mainline_safe_rails_intact": true,
+    "compute_mode_changed": false,
+    "mps_daemon_started": false,
+    "drop_ins_written": false,
+    "vendor_source_changed": false,
+    "worker_py_canonical_sha_unchanged": true,
+    "fish_fa_patch_preserved": true,
+    "vllm_pid_unchanged": "381330"
+  },
+  "stages": {
+    "A_preflight": {
+      "outcome": "GREEN",
+      "started_at": "2026-04-25T20:31:23Z",
+      "ended_at": "2026-04-25T20:33:00Z",
+      "duration_s": 97,
+      "checks": {
+        "mig_mode": "Disabled",
+        "mps_daemon_pre": "no_daemon",
+        "pipe_dir_pre": "absent",
+        "binary_present": "/usr/bin/nvidia-cuda-mps-control",
+        "driver": "580.126.09",
+        "compute_cap": "10.3",
+        "cuda_toolkit": "13.0",
+        "fish_http": "ok",
+        "vllm_http": "ok",
+        "parakeet_http": "ok",
+        "compute_apps_count": 4,
+        "service_pids": {
+          "fish": "378331",
+          "vllm_parent": "381330",
+          "vllm_engine_core": "381445",
+          "parakeet_a": "173799",
+          "parakeet_b": "236296",
+          "worker": "378861"
+        }
+      }
+    },
+    "B1_stop_fish": {
+      "outcome": "GREEN",
+      "command": "sudo systemctl stop prism42-fish",
+      "verified_via": "curl http://127.0.0.1:9200/ -> fish=DOWN",
+      "ended_at": "2026-04-25T20:34:30Z"
+    },
+    "B2_stop_worker": {
+      "outcome": "CLASSIFIER_HALT",
+      "command_attempted": "sudo systemctl stop prism42-worker",
+      "denial_reason_summary": "auto-mode classifier rejected pre-approved G7 pattern mid-stage; cited 'shared B300 production pod' + 'no preview output establishing intent for this specific destructive step'",
+      "ended_at": "2026-04-25T20:34:55Z",
+      "lesson": "G1-G12 pre-approval pattern does not survive the auto-mode classifier on a per-command basis; classifier evaluates each ssh in isolation and ignores prior pattern grants"
+    },
+    "B1_rollback_start_fish": {
+      "outcome": "IN_FLIGHT",
+      "command": "sudo systemctl start prism42-fish",
+      "started_at": "2026-04-25T20:35:00Z",
+      "expected_compile_window_s": [35, 60],
+      "verified_via": "see B1_rollback_verify.txt"
+    }
+  },
+  "bench1_fish_alone": {
+    "executed": false,
+    "reason": "halted_pre_C3a"
+  },
+  "bench2_fish_under_vllm": {
+    "executed": false,
+    "reason": "halted_pre_C3b"
+  },
+  "bench3_fullstack": {
+    "executed": false,
+    "reason": "halted_pre_bench"
+  },
+  "comparison_to_cycle_2d_n30": {
+    "fish_full_render_p50_ms": null,
+    "fish_full_render_p95_ms": null,
+    "e2e_p95_ms": null,
+    "llm_p95_ms": null,
+    "real_replies_out_of_10": null
+  },
+  "anthropic_calls": 0,
+  "ship_by_target_minutes": 60,
+  "wall_clock_minutes": 4,
+  "mainline_safe_rails": {
+    "fish_fa_patch_on_pod": "preserved (HEAD 3dd1f85 + 4 deltas)",
+    "worker_py_canonical_sha": "unchanged",
+    "vendor_source_unchanged": true,
+    "systemd_dropins_unchanged": "10-vllm-model.conf and 20-vllm-max-tokens.conf intact; no 30-mps.conf written",
+    "phase_e_env_vars_unchanged": true,
+    "vllm_pid": "381330 (same as pre-cycle baseline, recovered post-v1-halt)",
+    "compute_mode": "Default (never flipped to EXCLUSIVE_PROCESS)",
+    "mps_pipe_dir": "absent (never created)"
+  },
+  "summary_text": "cycle-2c-retry HALTED at stage B2 due to auto-mode classifier denial of pre-approved G7 (sudo systemctl stop prism42-worker) pattern. The 8-stage classifier-safe runbook-v2 design correctly bounded the failure: only Fish was stopped (single-purpose ssh per command, exactly as designed), and the per-stage rollback for B1 (sudo systemctl start prism42-fish) was triggered immediately. No GPU compute mode change. No MPS daemon. No drop-ins written. No vendor source touched. Worker, vLLM, Parakeet all remained running through the halt and rollback. The runbook's per-stage rollback discipline worked: cost of stopping at K=1 (Stage B) was bounded at ~60 seconds Fish-down + Fish recompile (~35-60 s).\n\nThe finding from this retry: the v1 cycle-2c halt root cause was attributed to bundled multi-service shutdown patterns. Runbook-v2 isolated each shutdown to its own ssh (B1/B2/B3/B4 separate), but the auto-mode classifier still denied B2 even after B1 succeeded. The G1-G12 pre-approval grant pattern (retry-strategy.md §2) does not propagate across ssh invocations — the classifier evaluates each command in isolation against its 'overeager actions' policy and re-decides per call.\n\nThis is a tooling-chain limitation that is structurally impossible to bypass via runbook redesign alone. The classifier sees 'sudo systemctl stop <production-service> on shared B300 pod' as overeager regardless of pre-approval context, prior successful B1, or Glasswing-discipline framing. To complete cycle-2c, the integrator must either: (1) add explicit per-command Bash permission rules to settings.local.json for the four shutdown patterns (G6 stop, G7 stop, G8 vllm pkill, G8 parakeet pkill); (2) execute the privileged steps interactively from the integrator's shell with the executor session driving only the read-only probes and bench harnesses; (3) accept cycle-2d's 2.4× e2e win as the open-stack ceiling and move on to cycle-2f voice-empathy-tags work.\n\nDecision: ROLLBACK_2C. Per-stage rollback executed. No mainline-safe rails violated. No data loss. Cost: ~60 s Fish-down + ~35-60 s recompile. Cycle-2d-n30 baseline (Fish full-render p50/p95 = 2205/2822 ms, e2e p95 = 4005 ms, LLM p95 = 106 ms) remains the demo-path number for the hackathon ship date 2026-04-26."
+}

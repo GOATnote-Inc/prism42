@@ -1,0 +1,9 @@
+===STATE: pre-cycle (recovered baseline)===
+compute_mode: Default
+mps_daemon: not running
+pipe_dir: /tmp/nvidia-mps absent
+===STATE: end-of-run (post-rollback)===
+compute_mode: Default (never changed)
+mps_daemon: not running (never started)
+pipe_dir: /tmp/nvidia-mps absent (never created)
+client_list: n/a (no MPS context ever existed)

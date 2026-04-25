@@ -1,0 +1,3 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+378861 /opt/prism42/agents/livekit/.venv/bin/python /opt/prism42/agents/livekit/worker.py dev
+382935 bash -c pgrep -af "worker.py" | head -3
