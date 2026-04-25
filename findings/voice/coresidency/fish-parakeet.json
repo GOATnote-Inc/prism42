@@ -1,0 +1,46 @@
+{
+  "mode": "parakeet_busy",
+  "utterance": "Nine one one, what is your location and emergency?",
+  "n_samples": 5,
+  "fish": {
+    "n": 5,
+    "ttfb_ms": {
+      "p50": 4.3,
+      "p95": 4.3,
+      "min": 3.8,
+      "max": 4.3,
+      "samples": [
+        3.8,
+        4.1,
+        4.3,
+        4.3,
+        4.3
+      ]
+    },
+    "total_ms": {
+      "p50": 8122.5,
+      "p95": 8163.7,
+      "samples": [
+        8095.5,
+        8113.8,
+        8122.5,
+        8163.7,
+        8166.9
+      ]
+    },
+    "rtf": {
+      "p50": 2.186,
+      "min": 2.179,
+      "max": 2.198,
+      "samples": [
+        2.179,
+        2.184,
+        2.186,
+        2.197,
+        2.198
+      ]
+    },
+    "audio_ms_p50": 3715.7,
+    "errors": 0
+  }
+}

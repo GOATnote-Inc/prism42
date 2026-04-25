@@ -86,3 +86,4 @@ third_party/*
 # multi-agent harness and need to be tracked for reproducibility.
 !.claude/agents/
 .vercel
+/vendor/fish-speech/
