@@ -44,7 +44,8 @@ export type AlertKind =
   | "caller-distress"
   | "intent-ambiguous"
   | "verify-failed"
-  | "latency-breach";
+  | "latency-breach"
+  | "injection-blocked";
 
 export type AlertSeverity = "info" | "medium" | "high" | "critical";
 
