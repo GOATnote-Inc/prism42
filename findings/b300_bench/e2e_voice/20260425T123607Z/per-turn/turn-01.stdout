@@ -1,0 +1,41 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Nvidia Encoder is supported.
+Nvidia Decoder is supported.
+=== STAGE A: generate caller audio for 'I think I am having a heart attack. Chest pain and short of breath.' ===
+[gen] synthesizing caller audio: 'I think I am having a heart attack. Chest pain and short of breath.'
+[gen] got 335,916 bytes (3.81s of audio at 44100Hz)
+[gen] resampled to 48000Hz, duration 3.81s
+
+=== STAGE B: mint session + token via https://prism42-console.vercel.app ===
+[mint] session_id=dde34c1e-a8e6-b897-a486-c8e6a95868c6 url=wss://ai-therapy-v3svfd9o.livekit.cloud
+
+=== STAGE C: connect + listen ===
+[stage C] connected @ +0.86s
+[evt] participant_connected: identity='agent-AJ_Nb8uCXZxaPwv'
+[stage C] AGENT JOINED @ +1.51s (agent-AJ_Nb8uCXZxaPwv)
+[evt] track_subscribed kind=1 from=agent-AJ_Nb8uCXZxaPwv
+[stage C] AUDIO TRACK SUBSCRIBED @ +1.83s
+
+=== STAGE D: wait for pre-roll (4s) ===
+[stage D] pre-roll audio: 0 non-silent frames, peak 2
+
+=== STAGE E: publish caller audio (3.8s) ===
+[stage E] track published @ +5.86s
+[stage E] publish ended @ +10.05s
+
+=== STAGE F: wait up to 25s for agent reply ===
+[stage F] AGENT REPLY DETECTED @ +10.55s (0.50s after caller end), peak 8115
+[stage F] listening 5s more to confirm sustained speech ...
+[evt] disconnected reason=1
+
+======================================================================
+RESULT
+======================================================================
+agent_joined          : YES
+audio_track_subscribed: YES
+preroll_speech_frames : 0 (peak 2)
+reply_speech_amp_max  : 23871
+reply_latency_after_pubend: +0.50s
+total_speech_frames   : 207
+global_peak_amplitude : 24767
+VERDICT: pre-roll never spoke (TTS broken)
