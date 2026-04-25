@@ -115,17 +115,22 @@ class _FishSpeechStream(tts.ChunkedStream):
         #                    flowing into the AudioEmitter → LiveKit)
         # TTS_T_FLUSH = end-of-synthesis flush (total duration)
         t0 = time.monotonic()
-        # AudioEmitter frame_size_ms defaults to 200 → first audio frame
-        # arrives after we've pushed >= 200ms of samples. Drop to 40ms
-        # so the first audible frame reaches WebRTC as soon as Fish emits
-        # its first ~3.5KB (~40ms * 44100 * 2 bytes).
+        # frame_size_ms = playback buffer size (PRISM42_TTS_FRAME_MS env-tunable).
+        # 40 ms = lowest latency but most underrun-prone — Fish on B300 stable
+        # PyTorch is RTF ~1.96 (production rate is HALF playback), so 40ms
+        # buffer hits underrun on every utterance and the user hears
+        # "first word, then pauses." 200 ms gives the receiver enough audio
+        # to ride out a generation hiccup. The TTFA cost is ~160ms vs 40ms,
+        # which is negligible alongside the LLM TTFT (~500ms).
+        # Tunable per env so we can A/B if Fish RTF improves.
+        _frame_ms = int(os.environ.get("PRISM42_TTS_FRAME_MS", "200"))
         output_emitter.initialize(
             request_id=utils.shortuuid(),
             sample_rate=SAMPLE_RATE,
             num_channels=CHANNELS,
             mime_type="audio/pcm",
             stream=False,
-            frame_size_ms=40,
+            frame_size_ms=_frame_ms,
         )
         body = {
             "text": self._text,
@@ -170,6 +175,14 @@ class _FishSpeechStream(tts.ChunkedStream):
                 t_first_byte = None
                 t_first_push = None
                 total_bytes = 0
+                # chunk_gap instrumentation: measure max wall-time between
+                # consecutive emitter.push() calls. A long gap = underrun
+                # risk = "audio starts/stops between chunks" (the user's
+                # exact complaint). Logged at end-of-stream so the
+                # dashboard can flag underrun-prone calls.
+                t_last_push: float | None = None
+                max_gap_ms: int = 0
+                push_count: int = 0
                 async for chunk in resp.aiter_bytes():
                     if not chunk:
                         continue
@@ -189,8 +202,9 @@ class _FishSpeechStream(tts.ChunkedStream):
                     else:
                         odd = b""
                     if buf:
+                        now = time.monotonic()
                         if t_first_push is None:
-                            t_first_push = time.monotonic()
+                            t_first_push = now
                             log.info(
                                 "fishspeech.t_first_push",
                                 ms_since_t0=int((t_first_push - t0) * 1000),
@@ -199,18 +213,29 @@ class _FishSpeechStream(tts.ChunkedStream):
                                 ),
                                 first_push_bytes=len(buf),
                             )
+                        else:
+                            gap_ms = int((now - t_last_push) * 1000) if t_last_push else 0
+                            if gap_ms > max_gap_ms:
+                                max_gap_ms = gap_ms
+                        t_last_push = now
+                        push_count += 1
                         output_emitter.push(bytes(buf))
                     buf.clear()
                     buf.extend(odd)
             output_emitter.flush()
             t_flush = time.monotonic()
+            audio_ms = int(total_bytes / 2 / SAMPLE_RATE * 1000)
+            total_ms = int((t_flush - t0) * 1000)
             log.info(
                 "fishspeech.done",
-                total_ms=int((t_flush - t0) * 1000),
+                total_ms=total_ms,
                 total_bytes=total_bytes,
-                audio_duration_ms=int(
-                    total_bytes / 2 / SAMPLE_RATE * 1000
-                ),
+                audio_duration_ms=audio_ms,
+                # Conversational rendering metrics (Tier 1):
+                rtf=round(total_ms / audio_ms, 2) if audio_ms else None,
+                chunk_count=push_count,
+                max_chunk_gap_ms=max_gap_ms,
+                frame_buffer_ms=_frame_ms,
             )
         except httpx.HTTPError as e:
             log.warning("fishspeech.transport_error", err=str(e)[:200])
