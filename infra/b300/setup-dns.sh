@@ -44,7 +44,11 @@ response=$(curl -s -w "\n%{http_code}" -X PUT "${API_URL}" \
   -H "Content-Type: application/json" \
   -d "[{\"data\":\"${POD_PUBLIC_IP}\",\"ttl\":${TTL}}]")
 
-body=$(echo "${response}" | head -n -1)
+# Drop the last line (HTTP status) for the body. Use sed instead of
+# `head -n -1`: GNU head supports negative line counts but BSD head
+# (macOS) does not, and this script is run from both a Linux pod and
+# a macOS dev box.
+body=$(echo "${response}" | sed '$d')
 code=$(echo "${response}" | tail -n 1)
 
 if [[ "${code}" != "200" ]]; then
