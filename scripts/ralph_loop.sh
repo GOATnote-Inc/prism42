@@ -96,7 +96,7 @@ e2e_p95 = g("t_reply_e2e_ms", "p95") or g("t_reply_e2e_ms", "max")
 
 # Bottleneck = highest-median hop excluding the e2e rollup.
 per_hop = {k: v for k, v in hops.items() if k != "t_reply_e2e_ms"}
-bn = max(per_hop.values(), key=lambda h: h.get("median", 0), default={})
+bn = max(per_hop.values(), key=lambda h: (h.get("median") or 0), default={})
 
 out = {
     "ts": int(time.time()),
@@ -116,11 +116,13 @@ try:
     import yaml  # type: ignore
     slo = yaml.safe_load(slo_path.read_text())
     t = slo["latency"]["t_reply_e2e_ms"]
+    p50_thr = t.get("p50_ms") or t.get("p50")
+    p95_thr = t.get("p95_ms") or t.get("p95")
     if e2e_p50 is None:
         slo_badge = "NO-DATA"
-    elif e2e_p50 <= t["p50"] and (e2e_p95 or 0) <= t["p95"]:
+    elif e2e_p50 <= p50_thr and (e2e_p95 or 0) <= p95_thr:
         slo_badge = "GREEN"
-    elif e2e_p50 <= t["p50"] * 1.2:
+    elif e2e_p50 <= p50_thr * 1.2:
         slo_badge = "YELLOW"
     else:
         slo_badge = "RED"
