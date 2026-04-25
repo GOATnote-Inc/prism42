@@ -3,6 +3,7 @@
 // docs/anthropic-elevenlabs-agent-bp-2026-04-21.md §3.1 for the contract.
 //
 // Pipeline for each inbound turn:
+//   0. Verify ElevenLabs HMAC-SHA256 callback signature (DEFEND-20260424T1200).
 //   1. Resolve session_id from the request body/user field (fallback:
 //      create-on-first-use).
 //   2. Build coordinator messages from the inbound OpenAI messages list
@@ -21,6 +22,7 @@
 // a cold-start hit on the first turn of each call and doesn't win
 // much when the per-turn budget is dominated by LLM inference.
 
+import crypto from "node:crypto";
 import type { NextRequest } from "next/server";
 import {
   COORDINATOR_SYSTEM_PROMPT,
@@ -37,6 +39,106 @@ import type { CustomLLMRequest, PsapTurn } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // seconds — Vercel Node cap.
+
+// ---------------------------------------------------------------------------
+// HMAC-SHA256 signature verification (DEFEND-20260424T1200)
+// ---------------------------------------------------------------------------
+// ElevenLabs Conversational AI sends an `elevenlabs-signature` header on
+// every callback. Format:
+//   elevenlabs-signature: t=<unix_timestamp>,v0=<hex_hmac_sha256>
+//
+// Signing input:  timestamp + "." + raw_request_body
+// Secret:         ELEVENLABS_SIGNING_SECRET env var
+// Stale window:   reject if |now - timestamp| > 300 seconds
+//
+// Dev escape hatch: if ELEVENLABS_SIGNING_SECRET is unset, OR if
+// NEXT_PUBLIC_VERCEL_ENV === "preview" AND PRISM42_SKIP_HMAC_PREVIEW === "1",
+// verification is skipped with a console warning. NEVER set either in prod.
+
+const HMAC_STALE_SECONDS = 300;
+
+type HmacVerifyResult =
+  | { ok: true }
+  | { ok: false; status: 401; reason: string };
+
+function verifyElevenLabsSignature(
+  rawBody: string,
+  signatureHeader: string | null,
+): HmacVerifyResult {
+  const secret = process.env.ELEVENLABS_SIGNING_SECRET;
+
+  // Dev escape: no secret configured.
+  if (!secret) {
+    console.warn(
+      "[prism42/hmac] ELEVENLABS_SIGNING_SECRET is not set — " +
+        "HMAC verification SKIPPED. Set this env var on Vercel before going live.",
+    );
+    return { ok: true };
+  }
+
+  // Preview escape: explicit opt-out for CI preview deployments.
+  if (
+    process.env.NEXT_PUBLIC_VERCEL_ENV === "preview" &&
+    process.env.PRISM42_SKIP_HMAC_PREVIEW === "1"
+  ) {
+    console.warn(
+      "[prism42/hmac] PRISM42_SKIP_HMAC_PREVIEW=1 on a preview env — " +
+        "HMAC verification SKIPPED.",
+    );
+    return { ok: true };
+  }
+
+  // Header must be present.
+  if (!signatureHeader) {
+    return { ok: false, status: 401, reason: "missing signature header" };
+  }
+
+  // Parse t=... and v0=... from the comma-separated header.
+  let timestamp: string | undefined;
+  let receivedSig: string | undefined;
+  for (const part of signatureHeader.split(",")) {
+    const [key, val] = part.trim().split("=", 2);
+    if (key === "t") timestamp = val;
+    if (key === "v0") receivedSig = val;
+  }
+
+  if (!timestamp || !receivedSig) {
+    return { ok: false, status: 401, reason: "invalid signature" };
+  }
+
+  // Staleness check.
+  const ts = parseInt(timestamp, 10);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > HMAC_STALE_SECONDS) {
+    return { ok: false, status: 401, reason: "invalid signature" };
+  }
+
+  // Compute expected HMAC.
+  const signingInput = `${timestamp}.${rawBody}`;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(signingInput)
+    .digest("hex");
+
+  // Timing-safe comparison.
+  let match: boolean;
+  try {
+    match = crypto.timingSafeEqual(
+      Buffer.from(expected, "hex"),
+      Buffer.from(receivedSig, "hex"),
+    );
+  } catch {
+    // Buffers of different lengths throw — treat as mismatch.
+    match = false;
+  }
+
+  if (!match) {
+    return { ok: false, status: 401, reason: "invalid signature" };
+  }
+
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
 
 // Matches the session_id substring ElevenLabs templates into the
 // system prompt via the widget's `dynamic-variables` attribute. The
@@ -66,7 +168,23 @@ function resolveSessionId(body: CustomLLMRequest): string {
 }
 
 export async function POST(req: NextRequest) {
-  const body = (await req.json()) as CustomLLMRequest;
+  // Read raw body text first — HMAC signing input is the raw bytes before JSON
+  // parsing. Calling req.text() here consumes the body; we JSON.parse manually
+  // below rather than using req.json().
+  const rawBody = await req.text();
+
+  const sigResult = verifyElevenLabsSignature(
+    rawBody,
+    req.headers.get("elevenlabs-signature"),
+  );
+  if (!sigResult.ok) {
+    return new Response(JSON.stringify({ error: "invalid signature" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const body = JSON.parse(rawBody) as CustomLLMRequest;
   const sessionId = resolveSessionId(body);
   const session = getSession(sessionId) ?? createSession();
   const resolvedSessionId = session.id;
@@ -137,43 +255,100 @@ export async function POST(req: NextRequest) {
         // hears the model's content; the dispatcher UI sees a
         // verify-failed alert so the validation miss is surfaced but
         // not fatal. Production voice latency > schema strictness.
-        spokenText = parse.lenient_content;
-        recordTurn(resolvedSessionId, {
-          agent: "psap-team-coordinator",
-          turn_id: `t-${resolvedSessionId.slice(0, 6)}-${session.turns.length}`,
-          action: "speak",
-          content: parse.lenient_content,
-          rationale:
-            "Lenient serve — coordinator JSON parsed but failed Zod schema. " +
-            "Caller heard the content field; full turn failed strict validation.",
-          cites: ["sp:SP-006"],
-          confidence: 0.5,
-          confidence_basis: "uncertain",
-          self_verify: {
-            checks: [
-              { name: "json-parseable", passed: true },
+        //
+        // SECURITY (fix/glasswing-lenient-serve, DEFEND-20260424T1245):
+        // lenient_content is unvalidated — prompt injection can plant
+        // medically harmful instructions (anti-911, medication mis-advice)
+        // that reach TTS on this path because Zod never ran on the content
+        // field. Apply detectRefusalLeak() (now including the medical-harm
+        // block list) BEFORE assigning spokenText. On match, fall through
+        // to SAFE_FALLBACK_CONTENT and record a high-severity alert.
+        if (detectRefusalLeak(parse.lenient_content)) {
+          spokenText = SAFE_FALLBACK_CONTENT;
+          recordTurn(resolvedSessionId, {
+            agent: "psap-team-coordinator",
+            turn_id: `t-${resolvedSessionId.slice(0, 6)}-${session.turns.length}`,
+            action: "defer",
+            content: SAFE_FALLBACK_CONTENT,
+            rationale:
+              "Lenient-serve path: content blocked by detectRefusalLeak — " +
+              "potential prompt-injection carrying harmful or anti-911 instruction. " +
+              "Safe fallback spoken; original content preserved in debug for audit.",
+            cites: ["sp:SP-001", "sp:SP-006"],
+            confidence: 0.0,
+            confidence_basis: "blocked",
+            self_verify: {
+              checks: [
+                { name: "json-parseable", passed: true },
+                {
+                  name: "zod-schema-valid",
+                  passed: false,
+                  note: parse.zod_error ?? "unknown",
+                },
+                {
+                  name: "refusal-leak-check",
+                  passed: false,
+                  note: "harmful substring matched on lenient_content",
+                },
+              ],
+              all_passed: false,
+            },
+            alerts: [
               {
-                name: "zod-schema-valid",
-                passed: false,
-                note: parse.zod_error ?? "unknown",
+                kind: "injection-blocked",
+                severity: "high",
+                detail: `lenient-serve injection blocked: ${parse.lenient_content.slice(0, 120)}`,
+                source_agent: "psap-team-coordinator",
               },
             ],
-            all_passed: false,
-          },
-          alerts: [
-            {
-              kind: "verify-failed",
-              severity: "medium",
-              detail: `lenient-served: ${parse.zod_error ?? "zod rejected"}`,
-              source_agent: "psap-team-coordinator",
+            debug: {
+              ts_ms: Date.now(),
+              raw_head: fullText.slice(0, 240),
+              zod_error: parse.zod_error,
+              blocked_content: parse.lenient_content.slice(0, 240),
             },
-          ],
-          debug: {
-            ts_ms: Date.now(),
-            raw_head: fullText.slice(0, 240),
-            zod_error: parse.zod_error,
-          },
-        });
+          });
+        } else {
+          // Lenient content passed the harm check — serve it with a
+          // medium-severity verify-failed alert for dispatcher review.
+          spokenText = parse.lenient_content;
+          recordTurn(resolvedSessionId, {
+            agent: "psap-team-coordinator",
+            turn_id: `t-${resolvedSessionId.slice(0, 6)}-${session.turns.length}`,
+            action: "speak",
+            content: parse.lenient_content,
+            rationale:
+              "Lenient serve — coordinator JSON parsed but failed Zod schema. " +
+              "Caller heard the content field; full turn failed strict validation.",
+            cites: ["sp:SP-006"],
+            confidence: 0.5,
+            confidence_basis: "uncertain",
+            self_verify: {
+              checks: [
+                { name: "json-parseable", passed: true },
+                {
+                  name: "zod-schema-valid",
+                  passed: false,
+                  note: parse.zod_error ?? "unknown",
+                },
+              ],
+              all_passed: false,
+            },
+            alerts: [
+              {
+                kind: "verify-failed",
+                severity: "medium",
+                detail: `lenient-served: ${parse.zod_error ?? "zod rejected"}`,
+                source_agent: "psap-team-coordinator",
+              },
+            ],
+            debug: {
+              ts_ms: Date.now(),
+              raw_head: fullText.slice(0, 240),
+              zod_error: parse.zod_error,
+            },
+          });
+        }
       } else {
         // Malformed JSON — safe fallback, no content to serve.
         spokenText = SAFE_FALLBACK_CONTENT;
