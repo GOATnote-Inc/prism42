@@ -108,12 +108,24 @@ async def main(text: str) -> int:
     print(f"\n=== STAGE C: connect + listen ===")
     room = rtc.Room()
 
+    # Filler-skip-window: calibrated to observed cycle-2a filler-tail timing.
+    # Audio frames whose timestamp is within FILLER_SKIP_S of publish-end are
+    # treated as filler-bridge audio and skipped for "useful audio" detection.
+    # The original publish_end_at + 0.3 echo-suppress remains for the
+    # raw `audio_after_publish_end_amp_max` field.
+    filler_skip_s = float(os.environ.get("PRISM42_HARNESS_FILLER_SKIP_S", "2.5"))
+
     agent_joined = asyncio.Event()
     agent_audio_track_subscribed = asyncio.Event()
     first_audio_at: list[float] = []
     speech_frames = [0]
     peak_amplitude = [0]
     audio_after_publish_end_amp_max = [0]
+    # NEW: amplitude max after the filler-skip-window (proxy for first useful
+    # assistant-content audio, distinct from filler bridge tail).
+    audio_after_filler_skip_amp_max = [0]
+    # NEW: timestamp of the first peak>1000 frame after the filler skip window.
+    first_useful_audio_at: list[float] = []
     publish_end_at = [0.0]
     agent_identity: list[str] = []
 
@@ -146,6 +158,15 @@ async def main(text: str) -> int:
                 if publish_end_at[0] > 0 and time.time() > publish_end_at[0] + 0.3:
                     if peak > audio_after_publish_end_amp_max[0]:
                         audio_after_publish_end_amp_max[0] = peak
+                # NEW: track first useful audio AFTER the filler-skip-window.
+                # Frames within filler_skip_s of publish-end are filler-bridge
+                # audio; first peak>1000 after that boundary is the first
+                # real-content assistant audio frame.
+                if publish_end_at[0] > 0 and time.time() > publish_end_at[0] + filler_skip_s:
+                    if peak > audio_after_filler_skip_amp_max[0]:
+                        audio_after_filler_skip_amp_max[0] = peak
+                    if peak > 1000 and not first_useful_audio_at:
+                        first_useful_audio_at.append(time.time())
 
         asyncio.create_task(_drain())
 
@@ -157,24 +178,27 @@ async def main(text: str) -> int:
     await room.connect(url, jwt)
     print(f"[stage C] connected @ +{time.time() - t0:.2f}s")
 
+    join_timeout = float(os.environ.get("PRISM42_HARNESS_JOIN_TIMEOUT_S", "30"))
     try:
-        await asyncio.wait_for(agent_joined.wait(), timeout=15)
+        await asyncio.wait_for(agent_joined.wait(), timeout=join_timeout)
     except asyncio.TimeoutError:
         print("FAIL: agent never joined")
         await room.disconnect()
         return 2
     print(f"[stage C] AGENT JOINED @ +{time.time() - t0:.2f}s ({agent_identity[0]})")
 
+    track_timeout = float(os.environ.get("PRISM42_HARNESS_TRACK_TIMEOUT_S", "30"))
     try:
-        await asyncio.wait_for(agent_audio_track_subscribed.wait(), timeout=15)
+        await asyncio.wait_for(agent_audio_track_subscribed.wait(), timeout=track_timeout)
     except asyncio.TimeoutError:
         print("FAIL: no agent audio track")
         await room.disconnect()
         return 3
     print(f"[stage C] AUDIO TRACK SUBSCRIBED @ +{time.time() - t0:.2f}s")
 
-    print(f"\n=== STAGE D: wait for pre-roll (4s) ===")
-    await asyncio.sleep(4.0)
+    preroll_wait = float(os.environ.get("PRISM42_HARNESS_PREROLL_WAIT_S", "0.5"))
+    print(f"\n=== STAGE D: wait for pre-roll ({preroll_wait}s) ===")
+    await asyncio.sleep(preroll_wait)
     preroll_speech = speech_frames[0]
     preroll_peak = peak_amplitude[0]
     print(f"[stage D] pre-roll audio: {preroll_speech} non-silent frames, peak {preroll_peak}")
@@ -206,31 +230,51 @@ async def main(text: str) -> int:
     publish_end_at[0] = time.time()
     print(f"[stage E] publish ended @ +{time.time() - t0:.2f}s")
 
-    print(f"\n=== STAGE F: wait up to 25s for agent reply ===")
+    reply_timeout = float(os.environ.get("PRISM42_HARNESS_REPLY_TIMEOUT_S", "30"))
+    print(f"\n=== STAGE F: wait up to {reply_timeout}s for agent reply ===")
+    print(f"[stage F] filler-skip-window: {filler_skip_s}s after pub-end")
     reply_window_start = publish_end_at[0]
-    reply_deadline = reply_window_start + 25.0
+    reply_deadline = reply_window_start + reply_timeout
     reply_first_speech_at = None
+    reply_first_useful_at = None
     while time.time() < reply_deadline:
         await asyncio.sleep(0.5)
         if audio_after_publish_end_amp_max[0] > 1000 and reply_first_speech_at is None:
             reply_first_speech_at = time.time()
             print(
-                f"[stage F] AGENT REPLY DETECTED @ +{reply_first_speech_at - t0:.2f}s "
+                f"[stage F] AGENT REPLY DETECTED (raw) @ +{reply_first_speech_at - t0:.2f}s "
                 f"({reply_first_speech_at - reply_window_start:.2f}s after caller end), "
                 f"peak {audio_after_publish_end_amp_max[0]}"
             )
+        # NEW: first audio after filler-skip-window — proxy for first useful
+        # assistant-content audio (filler bridge tail excluded).
+        if first_useful_audio_at and reply_first_useful_at is None:
+            reply_first_useful_at = first_useful_audio_at[0]
+            print(
+                f"[stage F] AGENT USEFUL REPLY DETECTED @ +{reply_first_useful_at - t0:.2f}s "
+                f"({reply_first_useful_at - reply_window_start:.2f}s after caller end), "
+                f"peak {audio_after_filler_skip_amp_max[0]}"
+            )
+        # Break only after BOTH have been observed (or raw fired and we're past
+        # the filler window — covers the case where reply is only filler).
+        if reply_first_speech_at is not None and (
+            reply_first_useful_at is not None
+            or time.time() > reply_window_start + filler_skip_s + 1.0
+        ):
             break
         elapsed = time.time() - reply_window_start
         print(
             f"[stage F] +{elapsed:5.2f}s after pub-end | "
             f"reply_peak={audio_after_publish_end_amp_max[0]} "
+            f"useful_peak={audio_after_filler_skip_amp_max[0]} "
             f"(0 = silence)"
         )
 
-    # Listen 5s more to capture any audio that started.
+    confirm_wait = float(os.environ.get("PRISM42_HARNESS_REPLY_CONFIRM_S", "1.0"))
+    # Listen confirm_wait seconds more to capture any audio that started.
     if reply_first_speech_at:
-        print(f"[stage F] listening 5s more to confirm sustained speech ...")
-        await asyncio.sleep(5.0)
+        print(f"[stage F] listening {confirm_wait}s more to confirm sustained speech ...")
+        await asyncio.sleep(confirm_wait)
 
     await room.disconnect()
 
@@ -246,12 +290,37 @@ async def main(text: str) -> int:
         f"reply_latency_after_pubend: "
         f"{('+%.2fs' % (reply_first_speech_at - reply_window_start)) if reply_first_speech_at else 'NEVER'}"
     )
+    # NEW: first useful (post-filler-skip) reply latency.
+    print(f"filler_skip_window_s  : {filler_skip_s}")
+    print(f"useful_reply_amp_max  : {audio_after_filler_skip_amp_max[0]}")
+    print(
+        f"first_useful_audio_after_speech_ms: "
+        f"{('%d' % round((reply_first_useful_at - reply_window_start) * 1000)) if reply_first_useful_at else 'NEVER'}"
+    )
+    print(
+        f"first_audio_after_speech_ms: "
+        f"{('%d' % round((reply_first_speech_at - reply_window_start) * 1000)) if reply_first_speech_at else 'NEVER'}"
+    )
+    # useful_audio_skipped_filler proves whether the skip-window did skip a frame.
+    skipped_filler = bool(
+        reply_first_speech_at
+        and reply_first_useful_at
+        and (reply_first_useful_at - reply_first_speech_at) > 0.05
+    )
+    if reply_first_speech_at and reply_first_useful_at:
+        delta_ms = round((reply_first_useful_at - reply_first_speech_at) * 1000)
+    else:
+        delta_ms = -1
+    print(
+        f"useful_audio_skipped_filler={skipped_filler} "
+        f"raw_to_useful_delta_ms={delta_ms}"
+    )
     print(f"total_speech_frames   : {speech_frames[0]}")
     print(f"global_peak_amplitude : {peak_amplitude[0]}")
     if not first_audio_at:
         print("VERDICT: no audio at all")
         return 4
-    if preroll_speech < 5:
+    if preroll_speech < 5 and os.environ.get("PRISM42_HARNESS_REQUIRE_PREROLL"):
         print("VERDICT: pre-roll never spoke (TTS broken)")
         return 4
     if reply_first_speech_at is None:

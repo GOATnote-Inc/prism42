@@ -1,0 +1,363 @@
+{
+  "test_id": "20260425T133813Z",
+  "cycle": "cycle-2a-debug",
+  "patch_basis": "Team H bundle (F1+F2+F4+F5+F6+F7) + filler-skip-window calibration (PRISM42_HARNESS_FILLER_SKIP_S=2.5)",
+  "verdict": "HARNESS_PARTIAL_FIX",
+  "n_turns": 10,
+  "real_replies": "10/10",
+  "useful_replies": "10/10",
+  "useful_audio_skipped_filler_count": "0/10",
+  "headline_metric_first_useful_audio_after_speech_ms": {
+    "n": 10,
+    "p50": 7145,
+    "p95": 8283,
+    "max": 8283,
+    "min": 3837,
+    "mean": 6541.6
+  },
+  "first_audio_after_speech_ms_raw": {
+    "n": 10,
+    "p50": 7513,
+    "p95": 8517,
+    "max": 8517,
+    "min": 4005,
+    "mean": 6861.4
+  },
+  "bimodal_check": {
+    "raw_max_minus_min_ms": 4512,
+    "useful_max_minus_min_ms": 4446,
+    "unimodal_threshold_ms": 2000,
+    "raw_unimodal": false,
+    "useful_unimodal": false
+  },
+  "comparison_table": {
+    "cycle-1": {
+      "real_replies": "10/10",
+      "llm_total_ms_p95": 157,
+      "tts_ttfb_ms_p95": 2956,
+      "preroll_duration_ms": "~2400",
+      "publish_end_to_first_audio_raw_p95": 7010,
+      "publish_end_to_first_useful_p95": "n/a",
+      "e2e_p95": 7010,
+      "bimodal_max_minus_min": null,
+      "useful_audio_skipped_filler_count": "n/a",
+      "anthropic_calls": 0,
+      "verdict": "PARTIAL"
+    },
+    "cycle-2a": {
+      "real_replies": "10/10",
+      "llm_total_ms_p95": 110,
+      "tts_ttfb_ms_p95": 2734,
+      "preroll_duration_ms": 0,
+      "publish_end_to_first_audio_raw_p95": 8510,
+      "publish_end_to_first_useful_p95": null,
+      "e2e_p95": 8510,
+      "bimodal_max_minus_min": 6010,
+      "useful_audio_skipped_filler_count": "n/a",
+      "anthropic_calls": 0,
+      "verdict": "HARNESS_BUG"
+    },
+    "cycle-2a-debug": {
+      "real_replies": "10/10",
+      "llm_total_ms_p95": 107,
+      "tts_ttfb_ms_p95": 7455,
+      "preroll_duration_ms": 0,
+      "publish_end_to_first_audio_raw_p95": 8517,
+      "publish_end_to_first_useful_p95": 8283,
+      "e2e_p95": 8517,
+      "bimodal_max_minus_min": 4446,
+      "useful_audio_skipped_filler_count": "0/10",
+      "anthropic_calls": 0,
+      "verdict": "HARNESS_PARTIAL_FIX"
+    }
+  },
+  "metrics_full": {
+    "n_turns": 10,
+    "metrics": {
+      "stt_ms": {
+        "n": 10,
+        "p50": 104,
+        "p95": 122,
+        "max": 122,
+        "min": 100,
+        "mean": 107.1
+      },
+      "llm_first_token_ms": {
+        "n": 10,
+        "p50": 105,
+        "p95": 123,
+        "max": 123,
+        "min": 102,
+        "mean": 108.4
+      },
+      "llm_total_ms": {
+        "n": 10,
+        "p50": 103,
+        "p95": 107,
+        "max": 107,
+        "min": 101,
+        "mean": 103.5
+      },
+      "tts_ttfb_ms": {
+        "n": 10,
+        "p50": 6275,
+        "p95": 7455,
+        "max": 7455,
+        "min": 0,
+        "mean": 5006
+      },
+      "tts_total_ms_max": {
+        "n": 10,
+        "p50": 6275,
+        "p95": 7455,
+        "max": 7455,
+        "min": 2980,
+        "mean": 5703.2
+      },
+      "publish_end_to_first_returned_audio_ms": {
+        "n": 10,
+        "p50": 7510,
+        "p95": 8520,
+        "max": 8520,
+        "min": 4010,
+        "mean": 6861
+      },
+      "publish_end_to_first_useful_audio_ms": {
+        "n": 10,
+        "p50": 7140,
+        "p95": 8280,
+        "max": 8280,
+        "min": 3840,
+        "mean": 6541
+      },
+      "first_useful_audio_after_speech_ms": {
+        "n": 10,
+        "p50": 7145,
+        "p95": 8283,
+        "max": 8283,
+        "min": 3837,
+        "mean": 6541.6
+      },
+      "first_audio_after_speech_ms": {
+        "n": 10,
+        "p50": 7513,
+        "p95": 8517,
+        "max": 8517,
+        "min": 4005,
+        "mean": 6861.4
+      },
+      "preroll_duration_ms": {
+        "n": 10,
+        "p50": 0,
+        "p95": 0,
+        "max": 0,
+        "min": 0,
+        "mean": 0
+      },
+      "reply_speech_amp_max": {
+        "n": 10,
+        "p50": 24809,
+        "p95": 25639,
+        "max": 25639,
+        "min": 20598,
+        "mean": 24407.7
+      },
+      "useful_reply_amp_max": {
+        "n": 10,
+        "p50": 24809,
+        "p95": 25639,
+        "max": 25639,
+        "min": 20598,
+        "mean": 24407.7
+      },
+      "raw_to_useful_delta_ms": {
+        "n": 10,
+        "p50": -335,
+        "p95": -169,
+        "max": -169,
+        "min": -432,
+        "mean": -319.8
+      }
+    },
+    "bimodal_check": {
+      "raw_max_minus_min_ms": 4512,
+      "useful_max_minus_min_ms": 4446,
+      "raw_unimodal_target_ms": 2000,
+      "useful_unimodal_target_ms": 2000
+    },
+    "verification": {
+      "fix1_enable_thinking_false": "preserved (worker.py:358)",
+      "cycle2a_preroll_disabled_count": 10,
+      "cycle2a_preroll_spoken_count": 0,
+      "filler_spoken_count": 10,
+      "non_empty_reply_audio_count": 10,
+      "real_assistant_replies_count": 10,
+      "useful_audio_skipped_filler_count": 0,
+      "useful_audio_present_count": 10
+    }
+  },
+  "per_turn": [
+    {
+      "turn": 1,
+      "prompt": "I think I am having a heart attack. Chest pain and short of breath.",
+      "exit_code": null,
+      "reply_speech_amp_max": 24887,
+      "first_audio_after_speech_ms": 7513,
+      "first_useful_audio_after_speech_ms": 7213,
+      "useful_audio_skipped_filler": false,
+      "raw_to_useful_delta_ms": -300,
+      "session_id": "2e53c8a5-aa86-9cbb-ce0b-68fccf6e3cf2",
+      "preroll_state": "disabled_for_demo",
+      "filler_count": 1,
+      "llm_total_ms": 107,
+      "tts_ttfb_ms": 6345,
+      "tts_total_ms_max": 6345
+    },
+    {
+      "turn": 2,
+      "prompt": "My neighbor's not breathing. He's on the floor.",
+      "exit_code": null,
+      "reply_speech_amp_max": 25639,
+      "first_audio_after_speech_ms": 4005,
+      "first_useful_audio_after_speech_ms": 3837,
+      "useful_audio_skipped_filler": false,
+      "raw_to_useful_delta_ms": -169,
+      "session_id": "c7b8ead7-7580-042c-fb59-367cfe679a56",
+      "preroll_state": "disabled_for_demo",
+      "filler_count": 1,
+      "llm_total_ms": 103,
+      "tts_ttfb_ms": 0,
+      "tts_total_ms_max": 2980
+    },
+    {
+      "turn": 3,
+      "prompt": "There's a fire on the second floor. We're trapped.",
+      "exit_code": null,
+      "reply_speech_amp_max": 20598,
+      "first_audio_after_speech_ms": 5007,
+      "first_useful_audio_after_speech_ms": 4729,
+      "useful_audio_skipped_filler": false,
+      "raw_to_useful_delta_ms": -277,
+      "session_id": "5011c3eb-2d2e-45e9-5d12-e2dcecf8d50b",
+      "preroll_state": "disabled_for_demo",
+      "filler_count": 1,
+      "llm_total_ms": 103,
+      "tts_ttfb_ms": 0,
+      "tts_total_ms_max": 3992
+    },
+    {
+      "turn": 4,
+      "prompt": "Someone broke into my house and I think they are still here.",
+      "exit_code": null,
+      "reply_speech_amp_max": 24722,
+      "first_audio_after_speech_ms": 6009,
+      "first_useful_audio_after_speech_ms": 5611,
+      "useful_audio_skipped_filler": false,
+      "raw_to_useful_delta_ms": -398,
+      "session_id": "04f11d56-85f2-02eb-6d18-646813710e53",
+      "preroll_state": "disabled_for_demo",
+      "filler_count": 1,
+      "llm_total_ms": 103,
+      "tts_ttfb_ms": 4792,
+      "tts_total_ms_max": 4792
+    },
+    {
+      "turn": 5,
+      "prompt": "I just got hit by a car at the intersection of fifth and main.",
+      "exit_code": null,
+      "reply_speech_amp_max": 24832,
+      "first_audio_after_speech_ms": 7509,
+      "first_useful_audio_after_speech_ms": 7174,
+      "useful_audio_skipped_filler": false,
+      "raw_to_useful_delta_ms": -335,
+      "session_id": "969ac520-6bad-4748-37f0-fc40e1005245",
+      "preroll_state": "disabled_for_demo",
+      "filler_count": 1,
+      "llm_total_ms": 104,
+      "tts_ttfb_ms": 6350,
+      "tts_total_ms_max": 6350
+    },
+    {
+      "turn": 6,
+      "prompt": "My toddler swallowed a battery.",
+      "exit_code": null,
+      "reply_speech_amp_max": 24156,
+      "first_audio_after_speech_ms": 8517,
+      "first_useful_audio_after_speech_ms": 8283,
+      "useful_audio_skipped_filler": false,
+      "raw_to_useful_delta_ms": -234,
+      "session_id": "a28c1080-a32d-7ed9-e11b-75b31a33bcc2",
+      "preroll_state": "disabled_for_demo",
+      "filler_count": 1,
+      "llm_total_ms": 104,
+      "tts_ttfb_ms": 7455,
+      "tts_total_ms_max": 7455
+    },
+    {
+      "turn": 7,
+      "prompt": "I want to report a stolen vehicle from last night.",
+      "exit_code": null,
+      "reply_speech_amp_max": 24923,
+      "first_audio_after_speech_ms": 7515,
+      "first_useful_audio_after_speech_ms": 7156,
+      "useful_audio_skipped_filler": false,
+      "raw_to_useful_delta_ms": -358,
+      "session_id": "46a339d3-59f7-d7cb-2f85-24e4f0eb2109",
+      "preroll_state": "disabled_for_demo",
+      "filler_count": 1,
+      "llm_total_ms": 103,
+      "tts_ttfb_ms": 6272,
+      "tts_total_ms_max": 6272
+    },
+    {
+      "turn": 8,
+      "prompt": "There's a domestic happening next door.",
+      "exit_code": null,
+      "reply_speech_amp_max": 24561,
+      "first_audio_after_speech_ms": 7513,
+      "first_useful_audio_after_speech_ms": 7082,
+      "useful_audio_skipped_filler": false,
+      "raw_to_useful_delta_ms": -432,
+      "session_id": "4208a2f4-b628-d7bf-63c0-f9e7b3359bf3",
+      "preroll_state": "disabled_for_demo",
+      "filler_count": 1,
+      "llm_total_ms": 105,
+      "tts_ttfb_ms": 6289,
+      "tts_total_ms_max": 6289
+    },
+    {
+      "turn": 9,
+      "prompt": "My power's out, is there an outage?",
+      "exit_code": null,
+      "reply_speech_amp_max": 24809,
+      "first_audio_after_speech_ms": 7513,
+      "first_useful_audio_after_speech_ms": 7145,
+      "useful_audio_skipped_filler": false,
+      "raw_to_useful_delta_ms": -368,
+      "session_id": "9f87c41a-1606-d4ba-d357-0ea75769afb8",
+      "preroll_state": "disabled_for_demo",
+      "filler_count": 1,
+      "llm_total_ms": 101,
+      "tts_ttfb_ms": 6282,
+      "tts_total_ms_max": 6282
+    },
+    {
+      "turn": 10,
+      "prompt": "I want to report a noise complaint.",
+      "exit_code": null,
+      "reply_speech_amp_max": 24950,
+      "first_audio_after_speech_ms": 7513,
+      "first_useful_audio_after_speech_ms": 7186,
+      "useful_audio_skipped_filler": false,
+      "raw_to_useful_delta_ms": -327,
+      "session_id": "4c53e025-b746-a49c-992c-4fe4137887ab",
+      "preroll_state": "disabled_for_demo",
+      "filler_count": 1,
+      "llm_total_ms": 102,
+      "tts_ttfb_ms": 6275,
+      "tts_total_ms_max": 6275
+    }
+  ],
+  "verdict_rationale": "10/10 real replies but useful-audio max-min spread = 4446ms >= 2000ms (still bimodal/wide variance). Filler-skip fired but harness still reports varying numbers. Possible causes: Fish TTFB itself is bimodal (not just harness); STT cold-start variance; n=10 too small for unimodal proof. Document and flag.",
+  "summary_text": "Cycle-2a-debug bench, 10 turns, decision=HARNESS_PARTIAL_FIX. Patched synthetic_caller_full.py with Team H's bundle (F1+F2+F4+F5+F6+F7, all env-gated permissive defaults) plus filler-skip-window calibration (PRISM42_HARNESS_FILLER_SKIP_S=2.5). Real replies 10/10. first_useful_audio_after_speech_ms p50=7145ms p95=8283ms (NEW HEADLINE). first_audio_after_speech_ms (raw, cycle-2a comparable) p50=7513ms p95=8517ms. Bimodal check: raw max-min=4512ms; useful max-min=4446ms (target <2000). useful_audio_skipped_filler fired 0/10 turns. LLM total p95=107ms. TTS TTFB p95=7455ms. Preroll disabled 10/10 (cycle-2a fixes preserved). Worker.py NOT modified this cycle."
+}

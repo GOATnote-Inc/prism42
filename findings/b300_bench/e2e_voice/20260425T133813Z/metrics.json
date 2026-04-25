@@ -1,0 +1,125 @@
+{
+  "n_turns": 10,
+  "metrics": {
+    "stt_ms": {
+      "n": 10,
+      "p50": 104,
+      "p95": 122,
+      "max": 122,
+      "min": 100,
+      "mean": 107.1
+    },
+    "llm_first_token_ms": {
+      "n": 10,
+      "p50": 105,
+      "p95": 123,
+      "max": 123,
+      "min": 102,
+      "mean": 108.4
+    },
+    "llm_total_ms": {
+      "n": 10,
+      "p50": 103,
+      "p95": 107,
+      "max": 107,
+      "min": 101,
+      "mean": 103.5
+    },
+    "tts_ttfb_ms": {
+      "n": 10,
+      "p50": 6275,
+      "p95": 7455,
+      "max": 7455,
+      "min": 0,
+      "mean": 5006
+    },
+    "tts_total_ms_max": {
+      "n": 10,
+      "p50": 6275,
+      "p95": 7455,
+      "max": 7455,
+      "min": 2980,
+      "mean": 5703.2
+    },
+    "publish_end_to_first_returned_audio_ms": {
+      "n": 10,
+      "p50": 7510,
+      "p95": 8520,
+      "max": 8520,
+      "min": 4010,
+      "mean": 6861
+    },
+    "publish_end_to_first_useful_audio_ms": {
+      "n": 10,
+      "p50": 7140,
+      "p95": 8280,
+      "max": 8280,
+      "min": 3840,
+      "mean": 6541
+    },
+    "first_useful_audio_after_speech_ms": {
+      "n": 10,
+      "p50": 7145,
+      "p95": 8283,
+      "max": 8283,
+      "min": 3837,
+      "mean": 6541.6
+    },
+    "first_audio_after_speech_ms": {
+      "n": 10,
+      "p50": 7513,
+      "p95": 8517,
+      "max": 8517,
+      "min": 4005,
+      "mean": 6861.4
+    },
+    "preroll_duration_ms": {
+      "n": 10,
+      "p50": 0,
+      "p95": 0,
+      "max": 0,
+      "min": 0,
+      "mean": 0
+    },
+    "reply_speech_amp_max": {
+      "n": 10,
+      "p50": 24809,
+      "p95": 25639,
+      "max": 25639,
+      "min": 20598,
+      "mean": 24407.7
+    },
+    "useful_reply_amp_max": {
+      "n": 10,
+      "p50": 24809,
+      "p95": 25639,
+      "max": 25639,
+      "min": 20598,
+      "mean": 24407.7
+    },
+    "raw_to_useful_delta_ms": {
+      "n": 10,
+      "p50": -335,
+      "p95": -169,
+      "max": -169,
+      "min": -432,
+      "mean": -319.8
+    }
+  },
+  "bimodal_check": {
+    "raw_max_minus_min_ms": 4512,
+    "useful_max_minus_min_ms": 4446,
+    "raw_unimodal_target_ms": 2000,
+    "useful_unimodal_target_ms": 2000
+  },
+  "verification": {
+    "fix1_enable_thinking_false": "preserved (worker.py:358)",
+    "cycle2a_preroll_disabled_count": 10,
+    "cycle2a_preroll_spoken_count": 0,
+    "filler_spoken_count": 10,
+    "non_empty_reply_audio_count": 10,
+    "real_assistant_replies_count": 10,
+    "useful_audio_skipped_filler_count": 0,
+    "useful_audio_present_count": 10
+  }
+}
