@@ -197,6 +197,8 @@ Phase D is **not accepted on `vllm serve` boot success alone**. Required before 
 
 If ANY gate fails: leave `vllm serve` running for inspection, mark which gate(s) failed in result.json, **do NOT flip Phase E**. Mainline stays on Anthropic.
 
+**Failure-mode diagnosis tree**: `findings/b300_bench/path1-anticipator/contingencies.md` (9 ranked failure modes — NVFP4 backend mismatch, sm_103-absent build, FlashInfer ABI, MoE CUDA-graph crash, etc.) and `findings/b300_bench/path1-anticipator/pre-flight-check.sh` (11 read-only probes, runs on pod before serve). When a gate fails, match the symptom to the contingency rank-ordered list rather than freelancing.
+
 ### Phase E — Flip `LLM_BACKEND=vllm-local` on the worker + bench | 15 min
 
 ```
