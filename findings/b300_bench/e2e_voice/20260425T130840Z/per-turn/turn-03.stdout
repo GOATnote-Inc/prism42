@@ -1,0 +1,47 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Nvidia Encoder is supported.
+Nvidia Decoder is supported.
+=== STAGE A: generate caller audio for 'There is a fire on the second floor. We are trapped.' ===
+[gen] synthesizing caller audio: 'There is a fire on the second floor. We are trapped.'
+[gen] got 311,340 bytes (3.53s of audio at 44100Hz)
+[gen] resampled to 48000Hz, duration 3.53s
+
+=== STAGE B: mint session + token via https://prism42-console.vercel.app ===
+[mint] session_id=1e47918d-eb49-f0f0-15b9-01d799adb840 url=wss://ai-therapy-v3svfd9o.livekit.cloud
+
+=== STAGE C: connect + listen ===
+[stage C] connected @ +0.63s
+[evt] participant_connected: identity='agent-AJ_DBrqLs8K5yWh'
+[stage C] AGENT JOINED @ +1.15s (agent-AJ_DBrqLs8K5yWh)
+[evt] track_subscribed kind=1 from=agent-AJ_DBrqLs8K5yWh
+[stage C] AUDIO TRACK SUBSCRIBED @ +1.52s
+
+=== STAGE D: wait for pre-roll (4s) ===
+[stage D] pre-roll audio: 0 non-silent frames, peak 2
+
+=== STAGE E: publish caller audio (3.5s) ===
+[stage E] track published @ +5.55s
+[stage E] publish ended @ +9.33s
+
+=== STAGE F: wait up to 25s for agent reply ===
+[stage F] + 0.50s after pub-end | reply_peak=1 (0 = silence)
+[stage F] + 1.00s after pub-end | reply_peak=2 (0 = silence)
+[stage F] + 1.50s after pub-end | reply_peak=2 (0 = silence)
+[stage F] + 2.00s after pub-end | reply_peak=2 (0 = silence)
+[stage F] + 2.51s after pub-end | reply_peak=2 (0 = silence)
+[stage F] + 3.01s after pub-end | reply_peak=2 (0 = silence)
+[stage F] + 3.51s after pub-end | reply_peak=2 (0 = silence)
+[stage F] AGENT REPLY DETECTED @ +13.34s (4.01s after caller end), peak 25132
+[stage F] listening 5s more to confirm sustained speech ...
+
+======================================================================
+RESULT
+======================================================================
+agent_joined          : YES
+audio_track_subscribed: YES
+preroll_speech_frames : 0 (peak 2)
+reply_speech_amp_max  : 25132
+reply_latency_after_pubend: +4.01s
+total_speech_frames   : 141
+global_peak_amplitude : 25132
+VERDICT: pre-roll never spoke (TTS broken)
