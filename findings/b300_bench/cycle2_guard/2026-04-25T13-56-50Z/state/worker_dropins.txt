@@ -1,0 +1,8 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+10-vllm-model.conf
+20-vllm-max-tokens.conf
+---DROP-IN-FILES---
+[Service]
+Environment="VLLM_MODEL=nemotron-nano"
+[Service]
+Environment="VLLM_MAX_COMPLETION_TOKENS=1024"
