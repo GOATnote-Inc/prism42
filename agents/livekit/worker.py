@@ -796,14 +796,7 @@ async def entrypoint(ctx: JobContext) -> None:
         if caller_spoke.is_set():
             log.info("preroll.skipped_caller_spoke_race", session_id=session_id)
         else:
-            try:
-                await session.say(
-                    "Nine one one. What's your emergency?",
-                    allow_interruptions=True,
-                )
-                log.info("preroll.spoken", session_id=session_id)
-            except Exception as e:  # noqa: BLE001
-                log.warning("preroll.failed", err=str(e)[:200])
+            log.info("preroll.disabled_for_demo", session_id=session_id)  # cycle-2a: drop preroll-always-on; first audio = real reply
 
     # ---- Bridge / filler utterance ---------------------------------
     # Fish TTS adds ~5-7s to first-audio latency. To avoid dead air
