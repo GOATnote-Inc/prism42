@@ -29,7 +29,12 @@ export type PsapAction =
   | "handoff"
   | "end";
 
-export type ConfidenceBasis = "citation" | "inference" | "uncertain";
+export type ConfidenceBasis =
+  | "citation"
+  | "inference"
+  | "uncertain"
+  | "default"
+  | "blocked";
 
 export type AlertKind =
   | "real-emergency-claim"
