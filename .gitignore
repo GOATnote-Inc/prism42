@@ -80,5 +80,9 @@ third_party/*
 *.swp
 
 # Claude Code / Desktop per-project scratch (inline comments not supported by gitignore)
-.claude/
+# Use .claude/* (not .claude/) so we can re-include specific subdirs.
+.claude/*
+# Exception: subagent role definitions are part of the Glasswing-aligned
+# multi-agent harness and need to be tracked for reproducibility.
+!.claude/agents/
 .vercel
