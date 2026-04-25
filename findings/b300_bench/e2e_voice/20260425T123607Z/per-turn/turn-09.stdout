@@ -1,0 +1,53 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Nvidia Encoder is supported.
+Nvidia Decoder is supported.
+=== STAGE A: generate caller audio for 'My power is out, is there an outage?' ===
+[gen] synthesizing caller audio: 'My power is out, is there an outage?'
+[gen] got 258,092 bytes (2.93s of audio at 44100Hz)
+[gen] resampled to 48000Hz, duration 2.93s
+
+=== STAGE B: mint session + token via https://prism42-console.vercel.app ===
+[mint] session_id=0612cfdf-281c-d8b6-3270-7d6a0d38305f url=wss://ai-therapy-v3svfd9o.livekit.cloud
+
+=== STAGE C: connect + listen ===
+[stage C] connected @ +0.73s
+[evt] participant_connected: identity='agent-AJ_VrQX9wfmk9Lp'
+[stage C] AGENT JOINED @ +1.20s (agent-AJ_VrQX9wfmk9Lp)
+[evt] track_subscribed kind=1 from=agent-AJ_VrQX9wfmk9Lp
+[stage C] AUDIO TRACK SUBSCRIBED @ +1.52s
+
+=== STAGE D: wait for pre-roll (4s) ===
+[stage D] pre-roll audio: 0 non-silent frames, peak 2
+
+=== STAGE E: publish caller audio (2.9s) ===
+[stage E] track published @ +5.55s
+[stage E] publish ended @ +8.67s
+
+=== STAGE F: wait up to 25s for agent reply ===
+[stage F] + 0.50s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 1.00s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 1.50s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 2.00s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 2.50s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 3.00s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 3.50s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 4.00s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 4.51s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 5.01s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 5.51s after pub-end | reply_peak=85 (0 = silence)
+[stage F] + 6.01s after pub-end | reply_peak=85 (0 = silence)
+[stage F] AGENT REPLY DETECTED @ +15.18s (6.51s after caller end), peak 22574
+[stage F] listening 5s more to confirm sustained speech ...
+[evt] disconnected reason=1
+
+======================================================================
+RESULT
+======================================================================
+agent_joined          : YES
+audio_track_subscribed: YES
+preroll_speech_frames : 0 (peak 2)
+reply_speech_amp_max  : 25114
+reply_latency_after_pubend: +6.51s
+total_speech_frames   : 471
+global_peak_amplitude : 26830
+VERDICT: pre-roll never spoke (TTS broken)

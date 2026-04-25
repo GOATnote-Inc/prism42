@@ -335,6 +335,15 @@ async def entrypoint(ctx: JobContext) -> None:
         # into every tool schema, which vLLM's qwen3_coder tool-call
         # parser does not handle correctly. KB 24 §3 documents the
         # symptom (silent mishandling of tool turns).
+        # Cycle-1 Fix 1 (2026-04-25): disable Nemotron nano_v3 reasoning-parser
+        # think-region generation. T5 forensic + synthesis.md showed that
+        # 10/10 turns produced empty `delta.content` because the model routed
+        # initial tokens to `delta.reasoning_content` and exhausted the budget
+        # inside <think> without emitting reply text. The model card for
+        # NVIDIA-Nemotron-3-Nano honors `chat_template_kwargs.enable_thinking`
+        # to skip the think-region entirely. Forwarded to vLLM via the
+        # OpenAI-plugin's typed `extra_body` kwarg (verified against
+        # livekit-plugins-openai 1.5.6 signature).
         _llm: Any = OpenAILLM(
             model=os.environ.get(
                 "VLLM_MODEL",
@@ -346,6 +355,7 @@ async def entrypoint(ctx: JobContext) -> None:
             max_completion_tokens=int(
                 os.environ.get("VLLM_MAX_COMPLETION_TOKENS", "256")
             ),
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
         log.info("llm.backend", backend="vllm-local", model=getattr(_llm, "model", "?"))
     else:
@@ -773,14 +783,27 @@ async def entrypoint(ctx: JobContext) -> None:
         await asyncio.wait_for(caller_spoke.wait(), timeout=0.5)
         log.info("preroll.skipped_caller_spoke_first", session_id=session_id)
     except asyncio.TimeoutError:
-        try:
-            await session.say(
-                "Nine one one. What's your emergency?",
-                allow_interruptions=True,
-            )
-            log.info("preroll.spoken", session_id=session_id)
-        except Exception as e:  # noqa: BLE001
-            log.warning("preroll.failed", err=str(e)[:200])
+        # Cycle-1 Fix 2 (2026-04-25): T5 forensic showed 4/10 turns paid
+        # +850 ms median pad because preroll TTS blocked `speech_created`
+        # firing. The wait_for timeout above only catches caller speech
+        # within the first 500 ms — but the caller can also start
+        # speaking between the timeout and the session.say() launch
+        # (race window) OR while session.say() is mid-utterance. The
+        # defensive is_set() check below skips the preroll entirely if
+        # the caller has already started, so the agent's first audio is
+        # always the actual reply, not a now-stale "What's your
+        # emergency?" greeting overlapping the caller.
+        if caller_spoke.is_set():
+            log.info("preroll.skipped_caller_spoke_race", session_id=session_id)
+        else:
+            try:
+                await session.say(
+                    "Nine one one. What's your emergency?",
+                    allow_interruptions=True,
+                )
+                log.info("preroll.spoken", session_id=session_id)
+            except Exception as e:  # noqa: BLE001
+                log.warning("preroll.failed", err=str(e)[:200])
 
     # ---- Bridge / filler utterance ---------------------------------
     # Fish TTS adds ~5-7s to first-audio latency. To avoid dead air
