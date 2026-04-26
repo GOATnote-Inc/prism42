@@ -1,0 +1,74 @@
+[
+  {
+    "id": "C01",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C01.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-283f1199-f132-4066-9af2-b5303f2409a8.mp4",
+    "size_mb": 2.219206,
+    "wall_s": 60.70263314247131
+  },
+  {
+    "id": "C02",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C02.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-0b859371-4365-48d2-8275-7d24829d5e08.mp4",
+    "size_mb": 1.918051,
+    "wall_s": 61.75359010696411
+  },
+  {
+    "id": "C03",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C03.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-ada2166a-a6e3-4027-a10d-26d89987de99.mp4",
+    "size_mb": 6.137229,
+    "wall_s": 61.49622821807861
+  },
+  {
+    "id": "C04",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C04.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-40d2960b-9024-47e6-9baa-96aa50556632.mp4",
+    "size_mb": 1.682835,
+    "wall_s": 48.63708710670471
+  },
+  {
+    "id": "C05",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C05.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-d64ed691-8765-4938-8faf-ce8f95475248.mp4",
+    "size_mb": 5.178795,
+    "wall_s": 50.37132906913757
+  },
+  {
+    "id": "C06",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C06.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-9def3b4e-f1b9-4445-bfde-e3ba55b0ef22.mp4",
+    "size_mb": 4.931455,
+    "wall_s": 50.1170539855957
+  },
+  {
+    "id": "C07",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C07.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-9dabe5ae-1e60-4444-8b7b-e311c86e96e3.mp4",
+    "size_mb": 2.568596,
+    "wall_s": 88.48202991485596
+  },
+  {
+    "id": "C08",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C08.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-1911397e-ae23-4b27-a38d-3b89b978ad10.mp4",
+    "size_mb": 2.514106,
+    "wall_s": 62.64947986602783
+  },
+  {
+    "id": "C09",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C09.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-0a22ccd8-1e05-4318-9bc9-620e2aeab3e1.mp4",
+    "size_mb": 1.153696,
+    "wall_s": 48.32001781463623
+  }
+]

@@ -1,0 +1,42 @@
+--- /Users/kiteboard/prism42/agents/livekit/parakeet_stt.py	2026-04-24 15:00:19
++++ /Users/kiteboard/prism42/.claude/worktrees/agent-ade5426f/agents/livekit/parakeet_stt.py	2026-04-24 16:12:42
+@@ -46,7 +46,7 @@
+ import json
+ import os
+ import wave
+-from dataclasses import dataclass
++from dataclasses import dataclass, field
+ 
+ import aiohttp
+ import httpx
+@@ -77,6 +77,14 @@
+ BYTES_PER_FRAME = 640  # 20 ms @ 16 kHz PCM16
+ 
+ 
++def _env_bool(name: str, default: bool) -> bool:
++    """Lightweight env bool parser — returns default if unset."""
++    v = os.environ.get(name)
++    if v is None:
++        return default
++    return v.strip().lower() in ("1", "true", "yes", "on")
++
++
+ @dataclass
+ class ParakeetOptions:
+     url: str = DEFAULT_URL
+@@ -90,7 +98,14 @@
+     # When True, the plugin advertises streaming + interim capabilities
+     # and uses /stream for every utterance. Kept as a flag so the batch
+     # path stays available as a fallback.
+-    streaming: bool = True
++    #
++    # PRISM42_PARAKEET_STREAMING=0 flips to batch (/transcribe) mode —
++    # useful when the streaming `/ws` endpoint is down or when A/B
++    # benching streaming vs batch on the same pod. Overlap-timing
++    # bench needs this while Team S's streaming server rolls out.
++    streaming: bool = field(
++        default_factory=lambda: _env_bool("PRISM42_PARAKEET_STREAMING", True)
++    )
+ 
+ 
+ class ParakeetSTT(stt.STT):

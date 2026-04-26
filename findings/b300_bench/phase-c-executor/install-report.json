@@ -1,0 +1,135 @@
+{
+  "report_version": "1.0",
+  "generated_utc": "2026-04-25T08:21:35Z",
+  "executor": "claude-sonnet-4-6",
+  "pod": "prism-mla-b300-h4h5 (31.22.104.100)",
+  "venv_path": "/opt/prism42/infra/b300/services/fish-speech/.venv-nightly",
+  "elapsed_seconds": 460,
+
+  "blockers": {
+    "blocker_3_nano_parser": {
+      "status": "resolved",
+      "description": "Download nano_v3_reasoning_parser.py to /opt/prism42/infra/b300/services/vllm/",
+      "actions": [
+        "mkdir -p /opt/prism42/infra/b300/services/vllm",
+        "curl -L -o .../nano_v3_reasoning_parser.py https://huggingface.co/.../resolve/main/nano_v3_reasoning_parser.py"
+      ],
+      "verify": {
+        "wc_l": 18,
+        "head_3_line_1": "from vllm.reasoning.abs_reasoning_parsers import ReasoningParserManager",
+        "head_3_line_2": "from vllm.reasoning.deepseek_r1_reasoning_parser import DeepSeekR1ReasoningParser",
+        "result": "PASS"
+      }
+    },
+
+    "blocker_2_hf_token": {
+      "status": "resolved",
+      "description": "Comment out invalid HF_TOKEN in /opt/prism42/agents/livekit/.env",
+      "action": "sudo sed -i 's/^HF_TOKEN=/# HF_TOKEN_DISABLED_INVALID_2026-04-25=/' /opt/prism42/agents/livekit/.env",
+      "verify": {
+        "grep_c_active_hf_token": 0,
+        "grep_c_disabled_comment": 1,
+        "anonymous_hf_download_status": "HTTP/2 307 then HTTP/2 200 (no auth header required)",
+        "result": "PASS"
+      }
+    },
+
+    "blocker_1_vllm_install": {
+      "status": "blocked",
+      "description": "Install vLLM 0.20.* in .venv-nightly without downgrading torch nightly",
+      "sub_steps": {
+        "step_1_pypi_nocache": {
+          "result": "FAIL",
+          "detail": "pip index versions vllm --no-cache-dir tops at 0.19.1; 0.20.0 published 2026-04-23 but not yet indexed"
+        },
+        "step_2_github_release_assets": {
+          "result": "FAIL",
+          "detail": "v0.20.0 tag exists (SHA 101584af) but 0 prebuilt binary assets; wheels not uploaded to release"
+        },
+        "step_2b_nightly_wheel_index": {
+          "result": "PARTIAL",
+          "wheel_found": "vllm-0.19.2rc1.dev206+g95995bbef-cp38-abi3-manylinux_2_35_x86_64.whl",
+          "wheel_url": "https://wheels.vllm.ai/nightly/cu130/vllm/",
+          "commit": "95995bbef81292e3ee1ef0df5ca3989bb481bdd5",
+          "commit_status_vs_v0_20_0": "183 commits ahead, 8 behind (post-0.20.0 code)",
+          "installed": true,
+          "installed_version": "0.19.2rc1.dev206+g95995bbef",
+          "pure_python_import": "PASS (vllm.__version__ returns correctly)",
+          "compiled_extension_import": "FAIL",
+          "failure": {
+            "error": "ImportError: vllm/_C.abi3.so: undefined symbol: _ZN2at4cuda24getCurrentCUDABlasHandleEv",
+            "root_cause": "ABI mismatch: nightly wheel compiled against torch==2.11.0; venv has torch==2.13.0.dev20260424+cu130. torch 2.13 renamed getCurrentCUDABlasHandleEv -> getCurrentCUDABlasHandleEb (added bool param). Symbol exists in libtorch_cuda.so but with different mangling. LD_LIBRARY_PATH does not resolve this.",
+            "torch_in_venv": "2.13.0.dev20260424+cu130",
+            "torch_required_by_wheel": "2.11.0",
+            "symbol_in_torch_2_13": "_ZN2at4cuda24getCurrentCUDABlasHandleEb (bool overload only)",
+            "symbol_in_wheel": "_ZN2at4cuda24getCurrentCUDABlasHandleEv (void signature)"
+          }
+        },
+        "step_3_source_build": {
+          "result": "SKIPPED",
+          "reason": "Per instructions: surface as hard blocker and stop. Build takes 30-60 min and is out of scope for tonight."
+        }
+      },
+      "overall_result": "HARD_BLOCKER"
+    }
+  },
+
+  "vllm_version_installed": "0.19.2rc1.dev206+g95995bbef (pure-Python import only; compiled extension non-functional)",
+  "vllm_functional": false,
+  "flashinfer_version_installed": "0.6.9",
+  "flashinfer_functional": true,
+  "weight_predownload": {
+    "attempted": false,
+    "reason": "Skipped: Blocker 1 had non-trivial issues (vLLM CUDA extension non-functional)"
+  },
+
+  "verifications_passed": [
+    "vllm.__version__ returns 0.19.2rc1.dev206+g95995bbef",
+    "import flashinfer succeeds",
+    "blocker_2 HF_TOKEN commented out (grep -c returns 0 active, 1 disabled)",
+    "anonymous HF download returns 200",
+    "nano_v3_reasoning_parser.py: 18 lines, valid Python at target path"
+  ],
+  "verifications_failed": [
+    "vllm --version: ImportError on _C.abi3.so (torch ABI mismatch)",
+    "from vllm import LLM: same _C.abi3.so error"
+  ],
+
+  "go_no_go_phase_d": "NO-GO",
+  "phase_d_blocker_reason": "vllm _C extension non-functional due to torch 2.11→2.13 ABI break. vllm serve cannot start without the CUDA platform module. Resolution requires building vLLM from source against torch 2.13.0.dev. The nightly wheel (0.19.2rc1.dev206) is post-v0.20.0 code but pinned to torch 2.11 ABI.",
+
+  "recommendations": [
+    {
+      "priority": 1,
+      "option": "Build vLLM from source against torch 2.13 nightly",
+      "effort": "30-60 min on pod",
+      "command": "cd /tmp && git clone --depth=1 --branch v0.20.0 https://github.com/vllm-project/vllm.git vllm-src && cd vllm-src && TORCH_CUDA_ARCH_LIST='10.0;10.3' /opt/prism42/infra/b300/services/fish-speech/.venv-nightly/bin/pip install -e . --no-build-isolation",
+      "note": "This is the durable fix. --enforce-eager still applies on first vllm serve boot."
+    },
+    {
+      "priority": 2,
+      "option": "Wait for PyPI 0.20.0 stable wheel (cu130, cp312)",
+      "effort": "0 operator hours; uncertain wait (could be hours or days)",
+      "note": "0.20.0 was published 2026-04-23 to PyPI as source distribution; cu130 binary wheel may be queued. Check: pip index versions vllm --no-cache-dir"
+    },
+    {
+      "priority": 3,
+      "option": "Pin torch 2.11.0 stable in .venv-nightly",
+      "effort": "5 min, HIGH RISK",
+      "note": "VIOLATES the hard constraint 'do NOT downgrade torch nightly'. Fish + Parakeet may break. Do not use."
+    }
+  ],
+
+  "unchanged_services": [
+    "prism42-worker: NOT touched",
+    "prism42-fish (port 9100 Parakeet python): NOT touched",
+    "/opt/prism42/agents/livekit/.env: only HF_TOKEN line modified"
+  ],
+
+  "unexpected_log_lines": [
+    "vllm METADATA: Requires-Dist: torch==2.11.0 — confirms nightly wheel is torch-2.11-ABI-linked despite being post-v0.20.0 code",
+    "Fish S2-Pro GPU footprint: 19.6 GB actual vs 8 GB projected (pre-flight warning confirmed)",
+    "nvidia-cudnn-frontend 1.22.1 installed; vllm 0.19.2rc1.dev206 requires <1.19.0 (incompatibility warning; non-blocking for pure deps)",
+    "transformers 5.6.2 installed; fish-speech requires <=4.57.3 (fish-speech compatibility warning; fish was already running so this is pre-existing)"
+  ]
+}

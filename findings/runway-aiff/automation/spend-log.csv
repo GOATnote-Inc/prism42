@@ -1,0 +1,63 @@
+timestamp,shot_id,action,amount_usd,note
+2026-04-25T12:23:58,xai-smoke,generate+download,0.2500,480p 5s smoke
+2026-04-25T12:25:17,B01,generate+download,0.4200,720p 6s
+2026-04-25T12:26:30,B02,generate+download,0.4200,720p 6s
+2026-04-25T12:28:47,B03,generate+download,0.4200,720p 6s
+2026-04-25T12:29:11,S1-KEN-bumper,tts,0.0027,openai-tts
+2026-04-25T12:29:16,S1-KEN-tease,tts,0.0034,openai-tts
+2026-04-25T12:29:20,S1-FIZZ-cold,tts,0.0029,openai-tts
+2026-04-25T12:29:23,S1-KEN-unbothered,tts,0.0005,openai-tts
+2026-04-25T12:29:27,S4-KEN-hardware,tts,0.0042,openai-tts
+2026-04-25T12:29:33,S4-KEN-broke,tts,0.0100,openai-tts
+2026-04-25T12:29:34,B04,generate+download,0.3500,720p 5s
+2026-04-25T12:29:39,S5-KEN-breaking,tts,0.0091,openai-tts
+2026-04-25T12:29:44,S5-KEN-passed,tts,0.0040,openai-tts
+2026-04-25T12:29:47,S5-FIZZ-quiet,tts,0.0025,openai-tts
+2026-04-25T12:29:50,S6-KEN-closer,tts,0.0036,openai-tts
+2026-04-25T12:29:53,S6-FIZZ-button,tts,0.0012,openai-tts
+2026-04-25T12:29:56,S6-KEN-out,tts,0.0008,openai-tts
+2026-04-25T12:30:21,B05,generate+download,0.3500,720p 5s
+2026-04-25T12:39:48,S1-KEN-bumper,tts,0.0091,elevenlabs-tts
+2026-04-25T12:39:49,S1-KEN-tease,tts,0.0113,elevenlabs-tts
+2026-04-25T12:39:50,S1-FIZZ-cold,tts,0.0098,elevenlabs-tts
+2026-04-25T12:39:51,S1-KEN-unbothered,tts,0.0017,elevenlabs-tts
+2026-04-25T12:39:52,S4-KEN-hardware,tts,0.0141,elevenlabs-tts
+2026-04-25T12:39:54,S4-KEN-broke,tts,0.0334,elevenlabs-tts
+2026-04-25T12:39:55,S5-KEN-breaking,tts,0.0304,elevenlabs-tts
+2026-04-25T12:39:56,S5-KEN-passed,tts,0.0132,elevenlabs-tts
+2026-04-25T12:39:57,S5-FIZZ-quiet,tts,0.0082,elevenlabs-tts
+2026-04-25T12:39:58,S6-KEN-closer,tts,0.0121,elevenlabs-tts
+2026-04-25T12:39:59,S6-FIZZ-button,tts,0.0040,elevenlabs-tts
+2026-04-25T12:40:00,S6-KEN-out,tts,0.0028,elevenlabs-tts
+2026-04-25T14:29:06,v2-S1-bumper,tts,0.0112,elevenlabs-tts
+2026-04-25T14:29:06,v2-S1-tease,tts,0.0118,elevenlabs-tts
+2026-04-25T14:29:08,v2-S2-stringer,tts,0.0177,elevenlabs-tts
+2026-04-25T14:29:09,v2-S2-stay,tts,0.0015,elevenlabs-tts
+2026-04-25T14:29:10,v2-S3-build,tts,0.0229,elevenlabs-tts
+2026-04-25T14:29:11,v2-S3-broke,tts,0.0347,elevenlabs-tts
+2026-04-25T14:29:13,v2-S4-firstboot,tts,0.0220,elevenlabs-tts
+2026-04-25T14:29:14,v2-S4-passed,tts,0.0091,elevenlabs-tts
+2026-04-25T14:29:15,v2-S4-quiet,tts,0.0050,elevenlabs-tts
+2026-04-25T14:29:16,v2-S5-closer,tts,0.0173,elevenlabs-tts
+2026-04-25T14:29:17,v2-S5-room,tts,0.0050,elevenlabs-tts
+2026-04-25T14:29:18,v2-S5-button,tts,0.0019,elevenlabs-tts
+2026-04-25T14:31:22,C01,generate+download,0.4200,720p 6s emergency
+2026-04-25T14:32:24,C02,generate+download,0.4200,720p 6s emergency
+2026-04-25T14:33:27,C03,generate+download,0.4200,720p 6s emergency
+2026-04-25T14:34:16,C04,generate+download,0.3500,720p 5s emergency
+2026-04-25T14:35:07,C05,generate+download,0.3500,720p 5s emergency
+2026-04-25T14:35:58,C06,generate+download,0.3500,720p 5s emergency
+2026-04-25T14:37:28,C07,generate+download,0.5600,720p 8s emergency
+2026-04-25T14:38:31,C08,generate+download,0.4200,720p 6s emergency
+2026-04-25T14:39:20,C09,generate+download,0.3500,720p 5s emergency
+2026-04-25T15:30:15,v3-B1-question,tts-v3,0.0000,harrison-gale-pro-bundled
+2026-04-25T15:30:17,v3-B2-physician,tts-v3,0.0000,harrison-gale-pro-bundled
+2026-04-25T15:30:19,v3-B4-baseline,tts-v3,0.0000,harrison-gale-pro-bundled
+2026-04-25T15:30:22,v3-B5-codegen,tts-v3,0.0000,harrison-gale-pro-bundled
+2026-04-25T15:30:24,v3-B6-broke,tts-v3,0.0000,harrison-gale-pro-bundled
+2026-04-25T15:30:26,v3-B7a-opus-intro,tts-v3,0.0000,harrison-gale-pro-bundled
+2026-04-25T15:30:28,v3-B7c-attribution,tts-v3,0.0000,harrison-gale-pro-bundled
+2026-04-25T15:30:30,v3-B8-managed-agents,tts-v3,0.0000,harrison-gale-pro-bundled
+2026-04-25T15:30:32,v3-B9-e2e,tts-v3,0.0000,harrison-gale-pro-bundled
+2026-04-25T15:30:34,v3-B10-shifts,tts-v3,0.0000,harrison-gale-pro-bundled
+2026-04-25T15:30:36,v3-B11-repo,tts-v3,0.0000,harrison-gale-pro-bundled

@@ -1,0 +1,153 @@
+{
+  "phase": "D-strict",
+  "timestamp": "2026-04-25T09:35:00Z",
+  "verdict": "FAIL",
+  "phase_e_action": "SKIPPED",
+  "phase_e_reason": "vllm serve never reached healthy state; all NVFP4 backends hard-crash on sm_103 with the current build",
+
+  "toolchain_inventory": {
+    "gpu_driver": "580.126.09",
+    "gpu_name": "NVIDIA B300 SXM6 AC",
+    "compute_capability": "(10, 3)",
+    "compute_capability_int": 103,
+    "nvcc": "NOT FOUND (no nvcc in PATH)",
+    "torch_version": "2.13.0.dev20260424+cu130",
+    "torch_cuda": "13.0",
+    "vllm_version": "0.20.0+cu128",
+    "flashinfer_version": "0.6.9",
+    "flashinfer_wheel_type": "pure-python (py3-none-any, no compiled CUDA extensions)",
+    "flashinfer_cubin": "NOT INSTALLED",
+    "torch_compiled_archs": ["sm_75", "sm_80", "sm_86", "sm_90", "sm_100", "sm_120", "compute_120"],
+    "sm_103_in_compiled_archs": false
+  },
+
+  "download": {
+    "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4",
+    "cache_path": "/home/shadeform/.cache/huggingface/hub/models--nvidia--NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4",
+    "disk_size_gb": 19,
+    "status": "complete"
+  },
+
+  "launch_attempts": [
+    {
+      "attempt": 1,
+      "env_flags": {
+        "TORCH_CUDA_ARCH_LIST": "10.0a",
+        "VLLM_USE_FLASHINFER_MOE_FP4": "1",
+        "VLLM_FLASHINFER_MOE_BACKEND": "throughput",
+        "VLLM_ATTENTION_BACKEND": "FLASHINFER",
+        "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
+        "PYTORCH_CUDA_ALLOC_CONF": "max_split_size_mb:512"
+      },
+      "outcome": "BOOT_FAIL",
+      "error": "ValueError: NvFp4 MoE backend 'FLASHINFER_CUTLASS' does not support the deployment configuration since kernel does not support current device cuda.",
+      "root_cause": "VLLM_FLASHINFER_MOE_BACKEND=throughput maps to FLASHINFER_CUTLASS which requires has_flashinfer_cutlass_fused_moe()=False (no nvcc, no cubin)"
+    },
+    {
+      "attempt": 2,
+      "env_flags": {
+        "TORCH_CUDA_ARCH_LIST": "10.0a",
+        "VLLM_USE_FLASHINFER_MOE_FP4": "1",
+        "VLLM_FLASHINFER_MOE_BACKEND": "latency",
+        "VLLM_ATTENTION_BACKEND": "FLASHINFER",
+        "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
+        "PYTORCH_CUDA_ALLOC_CONF": "max_split_size_mb:512"
+      },
+      "outcome": "BOOT_FAIL",
+      "error": "ValueError: NvFp4 MoE backend 'FLASHINFER_TRTLLM' does not support the deployment configuration since kernel does not support current device cuda.",
+      "root_cause": "VLLM_FLASHINFER_MOE_BACKEND=latency maps to FLASHINFER_TRTLLM which requires has_flashinfer_trtllm_fused_moe()=False. has_flashinfer_moe()=False because no nvcc and no flashinfer-cubin package."
+    },
+    {
+      "attempt": 3,
+      "env_flags": {
+        "TORCH_CUDA_ARCH_LIST": "10.0a",
+        "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
+        "PYTORCH_CUDA_ALLOC_CONF": "max_split_size_mb:512"
+      },
+      "moe_backend_selected": "VLLM_CUTLASS (auto-selected, all FlashInfer backends rejected)",
+      "attention_backend_selected": "FLASHINFER (vllm built-in MLA kernel, not python flashinfer package)",
+      "outcome": "BOOT_FAIL",
+      "error": "RuntimeError: runGemm, /tmp/vllm-build/csrc/libtorch_stable/quantization/fp4/nvfp4_scaled_mm_kernels.cu:194, Error Internal",
+      "root_cause": "VLLM_CUTLASS NVFP4 linear GEMM kernel was compiled for sm_100 (B100/B200). The B300 is sm_103. sm_103 is not in torch compiled arch list. Pre-compiled sm_100 kernels crash at runtime on sm_103. TORCH_CUDA_ARCH_LIST=10.0a has no effect on pre-compiled kernels (no nvcc for JIT). PTX fallback would need compute_103 or sm_103 PTX which is absent."
+    }
+  ],
+
+  "sm_103_architecture_analysis": {
+    "torch_arch_list": ["sm_75", "sm_80", "sm_86", "sm_90", "sm_100", "sm_120", "compute_120"],
+    "sm_103_present": false,
+    "sm_100_present": true,
+    "sm_120_present": true,
+    "gap": "sm_103 (B300 SXM6) sits between sm_100 (B100/B200) and sm_120 (GB200/Rubin). Neither compiled arch runs correctly on sm_103.",
+    "ptx_fallback": "compute_120 PTX is too new for sm_103 JIT. sm_100 compiled code fails at kernel execution.",
+    "torch_cuda_arch_list_env_effect": "TORCH_CUDA_ARCH_LIST=10.0a only governs JIT compilation via nvcc. nvcc absent, so env var has zero effect."
+  },
+
+  "flashinfer_analysis": {
+    "version": "0.6.9",
+    "wheel_type": "pure-python (flashinfer_python-0.6.9, py3-none-any)",
+    "has_flashinfer": false,
+    "has_flashinfer_cubin": false,
+    "has_flashinfer_moe": false,
+    "has_flashinfer_trtllm_fused_moe": false,
+    "has_flashinfer_cutlass_fused_moe": false,
+    "root_cause": "No nvcc binary and no flashinfer-cubin package. All FlashInfer backends gated behind has_flashinfer()=False.",
+    "note": "trtllm_fp4_block_scale_moe IS importable from flashinfer.fused_moe directly, but vllm's has_flashinfer_moe() gates on nvcc/cubin. Attention backend is different: uses vllm's compiled MLA kernel (flash_mla_with_kvcache in _custom_ops), not the python flashinfer package — so FLASHINFER attention backend name is misleading; it actually ran vllm's internal FlashMLA implementation which IS compiled."
+  },
+
+  "backend_gate_results": {
+    "attention_backend": "FLASHINFER (vllm built-in MLA, NOT python flashinfer pkg) — selected successfully in attempt 3",
+    "attention_backend_classification": "DEGRADED (not FA4/true FlashInfer; vllm compiled MLA kernel; does not have sm_103 explicit support)",
+    "moe_fp4_backend": "ALL FAILED — FLASHINFER_TRTLLM/CUTLASS/CUTEDSL/CUTEDSL_BATCHED: no nvcc+no cubin; VLLM_CUTLASS: sm_100 kernel crashes on sm_103",
+    "vllm_serve_healthy": false
+  },
+
+  "phase_d_gate_decisions": {
+    "gate_1_attention_backend_optimal": {
+      "result": "FAIL",
+      "detail": "Server never reached healthy state; backend was VLLM_CUTLASS MoE (not FlashInfer), attention was vllm built-in MLA not FA4/FlashInfer"
+    },
+    "gate_2_ttft_p95_lt_200ms": {
+      "result": "NOT_MEASURED",
+      "detail": "Server never started; no inference possible"
+    },
+    "gate_3_toks_per_sec_p50_gte_30": {
+      "result": "NOT_MEASURED",
+      "detail": "Server never started"
+    },
+    "gate_4_vllm_log_clean": {
+      "result": "FAIL",
+      "detail": "Three RuntimeError/ValueError boot crashes in vllm.log"
+    },
+    "gate_5_fish_parakeet_alive": {
+      "result": "PASS",
+      "detail": "prism42-fish pid=217878 on :9200 and Parakeet pid=236296 on :9100 both running and untouched throughout all attempts"
+    }
+  },
+
+  "jit_penalty_measurement": {
+    "result": "NOT_APPLICABLE",
+    "detail": "TORCH_CUDA_ARCH_LIST=10.0a PTX workaround is not a latency penalty on sm_103 — it is a correctness failure. The pre-compiled sm_100 NVFP4 CUTLASS kernel crashes at execution on sm_103 with RuntimeError: runGemm Error Internal. There is no JIT path available (no nvcc)."
+  },
+
+  "benchmark_data": null,
+  "aggregates": null,
+
+  "fix_path": {
+    "immediate": [
+      "Rebuild vllm from source with TORCH_CUDA_ARCH_LIST='10.0a' AND nvcc available (install cuda-toolkit-13 or cuda-toolkit-12.9 with sm_103 support), so NVFP4 GEMM kernels are compiled natively for sm_103",
+      "OR: install flashinfer-cubin package built for sm_103 to enable FlashInfer TRTLLM/CUTLASS/CUTEDSL MoE backends",
+      "OR: wait for an official vllm wheel that includes sm_103 in its compiled arch list"
+    ],
+    "nvfp4_skip": [
+      "Use a non-NVFP4 quantization format (fp8, bfloat16) that has correct sm_103 kernels in this build"
+    ]
+  },
+
+  "mainline_state": {
+    "prism42_worker": "NOT TOUCHED — remains on Anthropic backend",
+    "LLM_BACKEND": "unchanged (Anthropic)",
+    "vllm_serve": "not running (all boot attempts failed and exited cleanly)",
+    "prism42_fish": "running on :9200, pid=217878 — UNTOUCHED",
+    "parakeet": "running on :9100, pid=236296 — UNTOUCHED"
+  }
+}

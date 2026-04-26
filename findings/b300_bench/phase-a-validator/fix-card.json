@@ -1,0 +1,90 @@
+{
+  "phase": "A",
+  "date": "2026-04-24",
+  "validator": "phase-a-validator agent",
+  "summary": "No contract mismatch. Server /ws is live; client targets /ws. The user-reported /stream-only endpoint in openapi.json was a stale observation — current pod exposes /healthz + /transcribe + /stream (POST SSE, deprecated) but NOT /ws as a separate HTTP route in OpenAPI because FastAPI does not include WebSocket routes in the OpenAPI schema by design. The WS endpoint is registered via @app.websocket('/ws') and confirmed separately via direct connection.",
+
+  "live_pod_openapi_paths": {
+    "/healthz": ["get"],
+    "/transcribe": ["post"],
+    "/stream": ["post"]
+  },
+
+  "note_on_missing_ws_in_openapi": "FastAPI intentionally omits WebSocket endpoints from /openapi.json. The absence of /ws from openapi.json does NOT mean /ws is absent from the server — it is always omitted for WS routes. The correct probe is a direct WS connect, not /openapi.json inspection.",
+
+  "server_routes_actual": {
+    "/healthz": "GET — health check",
+    "/transcribe": "POST audio/wav — batch path (legacy)",
+    "/stream": "POST application/octet-stream — SSE streaming (deprecated, HTTP/1.1 buffering issue documented in server.py header)",
+    "/ws": "WebSocket — bidirectional streaming, registered via @app.websocket('/ws') at server.py:262"
+  },
+
+  "client_target": {
+    "file": "agents/livekit/parakeet_stt.py",
+    "class": "ParakeetSpeechStream",
+    "property": "_ws_url",
+    "line": "244",
+    "value": "ws://<host>:<port>/ws",
+    "batch_fallback": "/transcribe"
+  },
+
+  "mismatch": false,
+  "mismatch_detail": null,
+
+  "proposed_fix": null,
+  "proposed_diff": null,
+
+  "action_items": [
+    {
+      "id": "A1",
+      "priority": "low",
+      "description": "The /stream POST SSE endpoint in server.py is still registered and appears in openapi.json, which will confuse future validators into thinking it is the streaming path. Add a deprecation note or remove /stream entirely once /ws is confirmed stable in production.",
+      "file": "infra/b300/services/parakeet/server.py",
+      "risk": "zero — /stream is not wired by the client at all"
+    },
+    {
+      "id": "A2",
+      "priority": "medium",
+      "description": "The parakeet_stt.py class docstring (line 112-116) says 'Defaults to streaming via POST /stream (SSE)' — this is stale copy from before the WS migration. The actual streaming path is /ws. Fix the docstring to avoid future confusion.",
+      "file": "agents/livekit/parakeet_stt.py",
+      "line_range": "112-116",
+      "risk": "zero — doc-only change"
+    }
+  ],
+
+  "test_script": "findings/b300_bench/phase-a-validator/test_ws_contract.py",
+  "test_instructions": [
+    "Option A — run on the pod directly:",
+    "  scp findings/b300_bench/phase-a-validator/test_ws_contract.py prism-mla-b300-h4h5:/tmp/",
+    "  ssh prism-mla-b300-h4h5 'pip install aiohttp --break-system-packages -q && python3 /tmp/test_ws_contract.py'",
+    "",
+    "Option B — SSH tunnel then run locally:",
+    "  ssh -L 9100:127.0.0.1:9100 prism-mla-b300-h4h5 -N -f",
+    "  pip install aiohttp",
+    "  python findings/b300_bench/phase-a-validator/test_ws_contract.py"
+  ],
+  "expected_pass_criteria": "At least one JSON event with type in {partial, preflight, final} received before timeout",
+
+  "live_test_result": {
+    "status": "PASS",
+    "date": "2026-04-24",
+    "pod": "prism-mla-b300-h4h5",
+    "ws_url": "ws://127.0.0.1:9100/ws",
+    "connect_ms": 1,
+    "frames_sent": 50,
+    "audio_input": "1 s of PCM16 silence, 16 kHz mono",
+    "events_received": [
+      {"type": "partial", "text": "", "ms": 20},
+      {"type": "partial", "text": "", "ms": 36},
+      {"type": "partial", "text": "", "ms": 53},
+      {"type": "partial", "text": "", "ms": 69},
+      {"type": "partial", "text": "", "ms": 85},
+      {"type": "partial", "text": "", "ms": 101},
+      {"type": "final",   "text": "", "ms": 117, "confidence": 1.0}
+    ],
+    "event_types_seen": ["partial", "final"],
+    "server_latency_ms": 117,
+    "interim_interval_ms": 160,
+    "note": "partial fires every ~16 ms wall-clock (server INTERIM_INTERVAL_MS=160 of audio; silence means 6 partials before flush lands). final arrives 117 ms after flush. text is empty because silence has no decodable tokens — expected."
+  }
+}

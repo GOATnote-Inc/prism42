@@ -73,7 +73,7 @@ pip install --pre torch torchvision torchaudio \
 
 Per PyTorch Discuss (Dec 2025): *"Torch nightly version (2.11.0.dev20251215+cu130) seems to fix the issue"* — bundled Triton + PTXAS in nightly recognize sm_103a.
 
-For fish-speech specifically: project pins `torch==2.8.0`. Need to override the pin (`pip install ... --no-deps` then individually verify xformers / flash-attn / etc compatibility). Estimated multi-hour scope.
+For fish-speech specifically: project pins `torch==2.8.0`. Need to override the pin (`pip install ... --no-deps` then individually verify the transitively-pinned attention/kernel deps for compatibility). Estimated multi-hour scope.
 
 ### Option B — disable `--compile` on B300 detection (upstream PR proposal)
 

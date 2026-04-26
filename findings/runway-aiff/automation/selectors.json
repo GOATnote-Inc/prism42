@@ -1,0 +1,38 @@
+{
+  "global": {
+    "unlimited_badge": "button[data-testid='credit-info-button']",
+    "apps_nav": "button[aria-label='Apps']",
+    "recents_nav": "button[aria-label='Recents']",
+    "characters_nav": "button[aria-label='Characters']",
+    "chat_nav": "button[aria-label='Chat']",
+    "workflow_nav": "button[aria-label='Workflow']"
+  },
+  "tool_picker": {
+    "category_film": "text=Film or shorts",
+    "card_scene_builder": "text=Scene Builder",
+    "card_multi_shot": "text=Multi-Shot Video"
+  },
+  "multi_shot": {
+    "prompt_textarea": "textarea[aria-label='Describe your story idea']",
+    "aspect_button": "button[aria-label='Aspect ratio']",
+    "resolution_button": "button[aria-label='Resolution']",
+    "duration_button": "button[aria-label='Duration']",
+    "audio_button": "button[aria-label='Audio settings']",
+    "first_frame_button": "button[aria-label='Add first frame of video']",
+    "generate_button": "button[aria-label='Generate']"
+  },
+  "scene_builder": {
+    "step_frame": "button:has-text('Frame your scene')",
+    "step_animate": "button:has-text('Animate your scene')",
+    "prompt_textarea": "textarea[placeholder^='E.g.']",
+    "references_button": "button[aria-label='References']",
+    "aspect_button": "button[aria-label='Aspect ratio']",
+    "generate_frame_button": "button:has-text('Generate Frame')"
+  },
+  "task_status_hint": "(probed at runtime; selectors below are placeholders updated after first successful gen)",
+  "task_status": {
+    "progress_indicator": "[role='progressbar'], [aria-busy='true']",
+    "completed_marker": "video, [data-testid*='download' i]",
+    "download_button": "button[aria-label*='Download' i]"
+  }
+}

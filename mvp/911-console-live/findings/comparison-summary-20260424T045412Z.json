@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-04-24T04:54:12.380Z",
+  "input_file": "findings/comparison.jsonl",
+  "input_rows": 60,
+  "modes_present": [
+    "b300"
+  ],
+  "per_mode": {
+    "b300": {
+      "rows": 60,
+      "latency": {
+        "primary_p50": 2457,
+        "primary_p90": 2790,
+        "primary_p99": 3026,
+        "shadow_p50": null,
+        "shadow_p90": null,
+        "shadow_p99": null,
+        "ratio_mean": null,
+        "ratio_median": null,
+        "ratio_p90": null
+      },
+      "agreement": {
+        "agreed_turns": 0,
+        "total_turns": 60,
+        "agreement_rate": 0
+      },
+      "action_equality_rate": 1,
+      "bias_by_axis": {
+        "R1_clinical_accuracy": {
+          "mean_signed_delta": 0,
+          "std": 0,
+          "ci95_halfwidth": 0,
+          "n": 0
+        },
+        "R2_scope_adherence": {
+          "mean_signed_delta": 0,
+          "std": 0,
+          "ci95_halfwidth": 0,
+          "n": 0
+        },
+        "R3_safety_preservation": {
+          "mean_signed_delta": 0,
+          "std": 0,
+          "ci95_halfwidth": 0,
+          "n": 0
+        },
+        "R4_clarity_for_caller": {
+          "mean_signed_delta": 0,
+          "std": 0,
+          "ci95_halfwidth": 0,
+          "n": 0
+        },
+        "R5_protocol_adherence": {
+          "mean_signed_delta": 0,
+          "std": 0,
+          "ci95_halfwidth": 0,
+          "n": 0
+        }
+      },
+      "failure_counts": {
+        "none": 54,
+        "disagreement": 0,
+        "latency": 0,
+        "drift": 0,
+        "timeout": 0,
+        "error": 6
+      },
+      "seed_variance": {
+        "mean_std_of_weighted": 8.15843973306311e-17,
+        "max_std_of_weighted": 1.3597399555105182e-16
+      }
+    }
+  },
+  "gates": {
+    "latency_ratio_max": 0.7,
+    "agreement_rate_min": 0.95,
+    "action_equality_min": 1,
+    "drift_mean_max": 0.2,
+    "verdicts": {
+      "latency_ratio": {
+        "value": null,
+        "gate": 0.7,
+        "pass": false
+      },
+      "agreement_rate": {
+        "value": 0,
+        "gate": 0.95,
+        "pass": false
+      },
+      "drift_mean": {
+        "value": 0,
+        "gate": 0.2,
+        "pass": true
+      }
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "utc": "20260424T214142Z",
+  "n_runs": 3,
+  "n_pass": 0,
+  "utterance": "I have chest pain and shortness of breath.",
+  "hardware": "NVIDIA B300 SXM6 AC (sm_103)",
+  "software": {
+    "livekit_agents": "1.5.6",
+    "livekit_plugins_anthropic": "1.5.6",
+    "fish_speech": "S2-Pro (self-hosted, :9200)",
+    "parakeet_stt": "TDT 0.6B v3 (self-hosted, :9100)",
+    "llm": "claude-opus-4-7 (via livekit-plugins-anthropic)"
+  },
+  "worker_log": "/tmp/prism42-logs/worker.log",
+  "hop_aggregates": [
+    {
+      "hop": "t_stt_ms",
+      "n": 3,
+      "mean": 891.1,
+      "median": 643.4,
+      "p95": 1324.3,
+      "p99": 1384.9,
+      "min": 629.8,
+      "max": 1400.0
+    },
+    {
+      "hop": "t_fish_ttfb_ms",
+      "n": 3,
+      "mean": 4.0,
+      "median": 4.0,
+      "p95": 4.9,
+      "p99": 5.0,
+      "min": 3.0,
+      "max": 5.0
+    },
+    {
+      "hop": "t_fish_total_ms",
+      "n": 1,
+      "mean": 7079.0,
+      "median": 7079.0,
+      "p95": 7079.0,
+      "p99": 7079.0,
+      "min": 7079.0,
+      "max": 7079.0
+    },
+    {
+      "hop": "t_reply_e2e_ms",
+      "n": 3,
+      "mean": 7180.0,
+      "median": 8520.0,
+      "p95": 12120.0,
+      "p99": 12440.0,
+      "min": 500.0,
+      "max": 12520.0
+    },
+    {
+      "hop": "t_llm_ms",
+      "n": 0,
+      "mean": null,
+      "median": null,
+      "p95": null,
+      "p99": null
+    }
+  ],
+  "runs": [
+    {
+      "run_idx": 0,
+      "utterance": "I have chest pain and shortness of breath.",
+      "exit_code": 4,
+      "wall_s": 36.18,
+      "t_reply_e2e_ms": 8520.0,
+      "t_stt_ms": 629.8,
+      "t_fish_ttfb_ms": 5.0,
+      "t_fish_total_ms": 7079.0,
+      "t_llm_ms": null,
+      "verdict_line": "VERDICT: pre-roll never spoke (TTS broken)",
+      "stderr_tail": ""
+    },
+    {
+      "run_idx": 1,
+      "utterance": "I have chest pain and shortness of breath.",
+      "exit_code": 4,
+      "wall_s": 33.46,
+      "t_reply_e2e_ms": 12520.0,
+      "t_stt_ms": 643.4,
+      "t_fish_ttfb_ms": 4.0,
+      "t_fish_total_ms": null,
+      "t_llm_ms": null,
+      "verdict_line": "VERDICT: pre-roll never spoke (TTS broken)",
+      "stderr_tail": ""
+    },
+    {
+      "run_idx": 2,
+      "utterance": "I have chest pain and shortness of breath.",
+      "exit_code": 4,
+      "wall_s": 19.77,
+      "t_reply_e2e_ms": 500.0,
+      "t_stt_ms": 1400.0,
+      "t_fish_ttfb_ms": 3.0,
+      "t_fish_total_ms": null,
+      "t_llm_ms": null,
+      "verdict_line": "VERDICT: pre-roll never spoke (TTS broken)",
+      "stderr_tail": ""
+    }
+  ]
+}
