@@ -203,6 +203,47 @@ class DispatchPublisher:
         }
         self._enqueue(evt)
 
+    def publish_perception(
+        self,
+        *,
+        turn_index: int,
+        classifier_payload: dict[str, Any],
+    ) -> None:
+        """Fire a `perception` event carrying the SHADOW classifier output.
+
+        Cycle-2C Phase 1: classifier runs as a fire-and-forget observer
+        AFTER fsm.transition() so its output is logged + relayed to the
+        UI for inspection. The FSM is unaware. The frontend may render
+        a perception panel in Phase 4; today the event is just plumbed
+        into `perception_by_turn` state in DispatchPanel.tsx.
+
+        Event shape matches DispatchPerceptionEvent in
+        mvp/911-console-live/components/DispatchPanel.tsx — the 12 schema
+        fields are emitted FLAT alongside type/session_id/turn_index/
+        timestamp_ms (NOT nested under a `classifier` key). raw_json is
+        dropped from the payload to keep the data-track lean (it's already
+        in the worker.log via the classifier.perception structlog line).
+
+        Pairs with the most-recent turn (turn_index passed by orchestrator,
+        not derived from self._turn_index — classifier may complete after
+        the next turn arrives, so the explicit index keeps payloads
+        attributable). Topic stays `prism42.dispatch`.
+        """
+        if not self._enabled:
+            return
+        # Drop raw_json from the wire payload — it's logged separately and
+        # adds ~150-200 bytes to every event with no UI use today.
+        flat = dict(classifier_payload or {})
+        flat.pop("raw_json", None)
+        evt = {
+            "type": "perception",
+            "session_id": self._session_id,
+            "turn_index": int(turn_index),
+            "timestamp_ms": _now_ms(),
+            **flat,
+        }
+        self._enqueue(evt)
+
     async def aclose(self) -> None:
         """Cancel the worker task; drains best-effort."""
         if self._task is not None:

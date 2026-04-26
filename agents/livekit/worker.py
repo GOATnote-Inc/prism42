@@ -62,6 +62,39 @@ except Exception:  # noqa: BLE001
     DispatchPublisher = None  # type: ignore[assignment]
     def _dp_enabled() -> bool:  # type: ignore[no-redef]
         return False
+# (additive) cycle-2C Phase 1 — shadow structured classifier (Nemotron PSAP).
+# Default OFF behind PRISM42_ENABLE_SHADOW_CLASSIFIER=1. When unset the
+# helper returns None and the orchestrator's fire-and-forget block is
+# skipped — voice path byte-equivalent to today.
+try:
+    from structured_classifier import (
+        build_classifier_client as _build_classifier_client,
+        should_use_shadow_classifier as _shadow_classifier_enabled,
+    )
+except Exception:  # noqa: BLE001
+    _build_classifier_client = None  # type: ignore[assignment]
+    def _shadow_classifier_enabled() -> bool:  # type: ignore[no-redef]
+        return False
+
+
+def make_classifier_client() -> Any | None:
+    """Return an AsyncOpenAI client for the shadow classifier, or None.
+
+    Default-OFF behind PRISM42_ENABLE_SHADOW_CLASSIFIER. When the flag is
+    unset, returns None — the orchestrator skips the fire-and-forget call
+    entirely and the voice path is byte-equivalent to today. When ON,
+    construction follows the same VLLM_BASE_URL/api_key pattern as the
+    existing OpenAILLM at worker.py:695.
+    """
+    if not _shadow_classifier_enabled():
+        return None
+    if _build_classifier_client is None:
+        return None
+    try:
+        return _build_classifier_client()
+    except Exception as e:  # noqa: BLE001
+        log.warning("classifier.helper_failed", err=str(e)[:200])
+        return None
 from state import (
     SessionStore,
     write_session_summary,
@@ -853,6 +886,25 @@ async def entrypoint(ctx: JobContext) -> None:
             )
         except Exception as e:  # noqa: BLE001
             log.warning("dispatch_publisher.init_failed", err=str(e)[:200])
+
+    # (additive) cycle-2C Phase 1 — attach SHADOW structured classifier.
+    # Helper is default-OFF; returns None unless PRISM42_ENABLE_SHADOW_CLASSIFIER=1.
+    # When attached, orchestrator.on_user_turn_completed fires the classifier
+    # via asyncio.create_task() AFTER fsm.transition() so it never blocks
+    # speech. FSM behavior is byte-equivalent — classifier output is
+    # logged + relayed to the UI via dispatch_publisher.publish_perception.
+    log.info(
+        "classifier.attach_attempt",
+        session_id=session_id,
+        flag_enabled=_shadow_classifier_enabled(),
+    )
+    _classifier_client = make_classifier_client()
+    if _classifier_client is not None:
+        try:
+            orchestrator._shadow_classifier_client = _classifier_client  # type: ignore[attr-defined]
+            log.info("classifier.attached", session_id=session_id)
+        except Exception as e:  # noqa: BLE001
+            log.warning("classifier.attach_failed", err=str(e)[:200])
 
     # ---- post-turn hook: rubric grade + observability writes -------
     @session.on("agent_state_changed")  # type: ignore[arg-type]

@@ -26,6 +26,7 @@ available, so audio can start earlier in the LLM stream.
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import re
 import time
@@ -284,6 +285,77 @@ except Exception:  # noqa: BLE001
         return False
 
 
+# Cycle-2C Phase 1 — shadow Nemotron structured classifier (SHADOW MODE).
+# Default OFF; flag PRISM42_ENABLE_SHADOW_CLASSIFIER=1 to enable. When ON
+# the classifier runs as a fire-and-forget background task AFTER
+# fsm.transition() has already chosen the intent. FSM behavior is byte-
+# equivalent regardless of classifier output — Phase 1 only LOGS the
+# perception and PUBLISHES it via dispatch_publisher for the UI to render.
+# No fusion in this phase.
+try:
+    from structured_classifier import (  # type: ignore[import-not-found]
+        classify_async as _shadow_classify_async,
+        should_use_shadow_classifier,
+    )
+except Exception:  # noqa: BLE001
+    _shadow_classify_async = None  # type: ignore[assignment]
+
+    def should_use_shadow_classifier() -> bool:  # type: ignore[no-redef]
+        return False
+
+
+async def _run_shadow_classifier(
+    *,
+    client: Any,
+    utterance: str,
+    turn_index: int,
+    dispatch_publisher: Any,
+    session_id: str,
+) -> None:
+    """Cycle-2C Phase 1 — fire-and-forget shadow classifier coroutine.
+
+    Runs OUTSIDE the voice hot path. Calls structured_classifier.classify_async
+    with a 600 ms hard timeout (Munger inversion). On success, the classifier
+    emits a `classifier.perception` log line itself; we then publish a
+    `perception` event over the dispatch data-track. On failure (timeout /
+    parse / schema), classify_async returns None and logs the reason.
+
+    SHADOW MODE: this coroutine NEVER mutates the FSM. The orchestrator's
+    voice path has already chosen its intent before this task is scheduled.
+    """
+    local_log = structlog.get_logger()
+    if _shadow_classify_async is None or client is None:
+        return
+    try:
+        result = await _shadow_classify_async(client, utterance)
+    except Exception as e:  # noqa: BLE001
+        local_log.warning(
+            "classifier.exception",
+            err=str(e)[:200],
+            session_id=session_id,
+            utterance=utterance[:120],
+        )
+        return
+    if result is None:
+        # classify_async already logged the specific failure reason
+        # (timeout / json_parse_error / invalid_schema / error). No
+        # need to double-log; just exit quietly.
+        return
+    if dispatch_publisher is None:
+        return
+    try:
+        dispatch_publisher.publish_perception(
+            turn_index=turn_index,
+            classifier_payload=result.to_payload(),
+        )
+    except Exception as e:  # noqa: BLE001
+        local_log.warning(
+            "classifier.publish_failed",
+            err=str(e)[:200],
+            session_id=session_id,
+        )
+
+
 class FsmDispatcherAgent(BufferedDispatcherAgent):
     """BufferedDispatcherAgent + per-turn FSM-driven prompt rewrite.
 
@@ -361,6 +433,36 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
             except Exception as e:  # noqa: BLE001
                 local_log.warning(
                     "orchestrator.dispatch_publish_failed", err=str(e)[:200]
+                )
+
+            # ---- cycle-2C Phase 1 — SHADOW classifier observer ----
+            # The FSM has already chosen the intent above. The classifier
+            # runs as fire-and-forget so it never blocks speech. Output is
+            # logged + relayed to the UI via dispatch_publisher; the FSM
+            # is unaware. Phase 1 = observe-only. No fusion.
+            try:
+                _shadow_client = getattr(self, "_shadow_classifier_client", None)
+                if (
+                    should_use_shadow_classifier()
+                    and _shadow_classify_async is not None
+                    and _shadow_client is not None
+                ):
+                    turn_index_for_perception = (
+                        getattr(_dp, "_turn_index", 0) if _dp is not None else 0
+                    )
+                    asyncio.create_task(
+                        _run_shadow_classifier(
+                            client=_shadow_client,
+                            utterance=utterance,
+                            turn_index=turn_index_for_perception,
+                            dispatch_publisher=_dp,
+                            session_id=self._session_id,
+                        )
+                    )
+            except Exception as e:  # noqa: BLE001
+                local_log.warning(
+                    "orchestrator.shadow_classifier_dispatch_failed",
+                    err=str(e)[:200],
                 )
 
             # Cycle-2T: deterministic response gate between FSM and TTS.
