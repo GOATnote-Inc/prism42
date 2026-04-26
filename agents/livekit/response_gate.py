@@ -261,6 +261,17 @@ class ResponseGate:
         intent to the LLM path with validators).
         """
         pronouns = getattr(self.fsm, "pronouns", "they") or "they"
+        # Cycle-2D5-A: confirm_address echoes the captured address. The
+        # base template ("I have your address, help is on the way.") is
+        # rewritten in-place to "I have you at <addr>, help is on the way."
+        # when fsm.address_text is non-empty. PSAP discipline: read the
+        # address back so the caller can correct STT mishears.
+        if intent_value == "confirm_address":
+            text = render_template("confirm_address", pronouns) or ""
+            addr = (getattr(self.fsm, "address_text", None) or "").strip()
+            if addr and "your address" in text:
+                text = text.replace("your address", f"you at {addr}", 1)
+            return text or None
         return render_template(intent_value, pronouns)
 
     # ---- LLM-path constraint payload --------------------------------

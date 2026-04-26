@@ -121,17 +121,44 @@ TEMPLATES: dict[str, TemplateSpec] = {
         notes="Caller stated address without an emergency.",
     ),
     "confirm_address": TemplateSpec(
-        # 8 words. Single sentence — gate cannot read back the street
-        # (LLM-only), so we acknowledge intake and pivot.
-        text="Got your address and dispatching help to you.",
-        notes="Closes intake; dispatch latches before reassurance.",
+        # Cycle-2D5-A: 9 audited words. Default form acknowledges without
+        # echo. The gate's render_template_for() rewrites "your address"
+        # to "you at <captured-address>" when fsm.address_text is set,
+        # which extends the runtime word count by 1-4 words (still ≤14).
+        # PSAP discipline (Sarpy County, Caldwell County, NHTSA EMD,
+        # NAEMD): read the address back verbatim so the caller can
+        # correct STT mishears.
+        text="I have your address, help is on the way.",
+        notes=(
+            "Cycle-2D5-A: gate substitutes 'your address' -> "
+            "'you at {fsm.address_text}' when address_text is non-empty."
+        ),
     ),
 
-    # ----- Reassurance (1 intent, latched once per call) -------------
+    # ----- Reassurance (3 intents, latched once per call) -------------
     "deliver_reassurance": TemplateSpec(
         # 11 words. Single sentence — canonical PSAP reassurance.
+        # Fallback variant for fire/crime/unknown complaints. Trauma and
+        # medical use the fused variants below.
         text="Help is on the way and I am staying with you.",
-        notes="Once-per-call. FSM latches reassurance_done=True.",
+        notes="Fallback once-per-call reassurance. FSM latches reassurance_done=True.",
+    ),
+    # Cycle-2D5-B: complaint-specific reassurance variants. Each fuses
+    # reassurance + co-presence + first directive question into a single
+    # turn so the caller is never left in the listening role with no task.
+    # Source: cycle2D4_dispatch_research/team-research/dispatch-patterns.md.
+    "deliver_reassurance_trauma": TemplateSpec(
+        # 12 words. Reassurance + co-presence + KQ_BLEEDING_LOCATION fused.
+        # Single terminator (the question mark); commas pace the clauses.
+        text="Help is on the way, stay with me, where is the bleeding?",
+        notes="Trauma rail. Fuses reassurance with bleeding-location KQ.",
+    ),
+    "deliver_reassurance_medical": TemplateSpec(
+        # 13 words. Reassurance + co-presence + verbal task. Generic
+        # because medical KQ branches first-vs-third-party — keep the
+        # specific KQ (responsive_breathing or severity) for the next turn.
+        text="Help is on the way, stay with me, tell me what is happening.",
+        notes="Medical rail. Verbal task ('tell me') keeps caller active.",
     ),
 
     # ----- Key questions (5 intents) --------------------------------

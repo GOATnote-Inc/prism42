@@ -118,6 +118,13 @@ class Intent(str, Enum):
     CONFIRM_ADDRESS = "confirm_address"
     # Reassurance — fires AT MOST ONCE per call (latched).
     DELIVER_REASSURANCE = "deliver_reassurance"
+    # Cycle-2D5-B: complaint-specific reassurance variants. Fuse
+    # reassurance + first key question into a single turn so the caller
+    # is never left in the listening role with no task. Per public PSAP
+    # research (StatPearls NBK470543, AHA T-CPR, NHS Pathways): "help is
+    # on the way" must couple to a directive, not stand alone.
+    DELIVER_REASSURANCE_TRAUMA = "deliver_reassurance_trauma"
+    DELIVER_REASSURANCE_MEDICAL = "deliver_reassurance_medical"
     # Key questions — phrased to the complaint and to who is affected.
     KQ_RESPONSIVE_BREATHING = "kq_responsive_breathing"  # third-party medical
     KQ_SEVERITY = "kq_severity"                          # first-party medical
@@ -159,6 +166,20 @@ class Intent(str, Enum):
 _RE_HAS_DIGIT = re.compile(r"\d")
 _RE_STREET = re.compile(
     r"\b\d+\s+\w+|\b\w+\s+(?:st|street|ave|avenue|rd|road|blvd|boulevard|ln|lane|"
+    r"dr|drive|ct|court|way|hwy|highway|pkwy|parkway)\b",
+    re.IGNORECASE,
+)
+# Cycle-2D5-A: address-echo capture. Greedier than _RE_STREET — captures
+# digit-or-cardinal prefix + name + street suffix as a single span so the
+# echo template can read back the full address ("100 ocean avenue", not
+# "100 ocean" or "ocean avenue"). Only used for the echo string; address
+# detection still uses _RE_STREET / _RE_HAS_DIGIT for has_address.
+_RE_ADDRESS_ECHO = re.compile(
+    r"\b\d+\s+[a-z]+(?:\s+[a-z]+)?\s+"
+    r"(?:st|street|ave|avenue|rd|road|blvd|boulevard|ln|lane|"
+    r"dr|drive|ct|court|way|hwy|highway|pkwy|parkway)\b"
+    r"|\b[a-z]+(?:\s+[a-z]+)?\s+"
+    r"(?:st|street|ave|avenue|rd|road|blvd|boulevard|ln|lane|"
     r"dr|drive|ct|court|way|hwy|highway|pkwy|parkway)\b",
     re.IGNORECASE,
 )
@@ -267,6 +288,11 @@ class Features:
     """Structured features extracted from one caller utterance."""
 
     has_address: bool = False
+    # Cycle-2D5-A: captured address span (un-normalized; preserves the
+    # caller's spoken cardinals like "twelve" so the echo reads back what
+    # the caller said, not "12"). None when the utterance has no clean
+    # street-suffix or numeric-prefix span.
+    address_text: str | None = None
     has_emergency: bool = False
     is_first_person: bool = False
     is_third_party: bool = False
@@ -390,8 +416,16 @@ def classify(utterance: str) -> Features:
     # latches address_known on turn 1 even when STT mis-hears the
     # street suffix. UI / transcript still sees the original utterance.
     t = _normalize_spelled_cardinals(utterance.strip())
+    # Cycle-2D5-A: capture address span from the ORIGINAL utterance so the
+    # echo preserves cardinal-words ("twelve riverside drive", not
+    # "12 riverside drive"). Only set when the regex finds a clean span;
+    # digit-only matches (no street suffix) leave address_text=None and
+    # the gate falls back to the no-echo template.
+    addr_match = _RE_ADDRESS_ECHO.search(utterance.strip())
+    address_text = addr_match.group(0).strip() if addr_match else None
     return Features(
         has_address=bool(_RE_STREET.search(t)) or bool(_RE_HAS_DIGIT.search(t)),
+        address_text=address_text,
         has_emergency=bool(
             _RE_NOT_BREATHING.search(t)
             or _RE_CHOKING.search(t)
@@ -457,6 +491,11 @@ class DispatcherFSM:
     verify_step: VerifyStep = VerifyStep.Q_SURFACE
     # Latches.
     address_known: bool = False
+    # Cycle-2D5-A: captured address text — latched once on first capture
+    # so the confirm_address template can echo it back to the caller.
+    # None until the caller speaks an address with a clean street-suffix
+    # or numeric-prefix span (digit-only fallback leaves this None).
+    address_text: str | None = None
     emergency_known: bool = False
     reassurance_done: bool = False
     surface_confirmed: bool = False
@@ -562,6 +601,10 @@ class DispatcherFSM:
         # Latch address + emergency observations.
         if f.has_address:
             self.address_known = True
+        # Cycle-2D5-A: latch the address echo string on first clean capture.
+        # Once latched, subsequent address-shaped utterances do NOT overwrite.
+        if f.address_text and not self.address_text:
+            self.address_text = f.address_text
         if f.has_emergency:
             self.emergency_known = True
             # Cycle-2D2 (Team RCA fix 1A): trauma is sticky once latched.
@@ -672,10 +715,25 @@ class DispatcherFSM:
         if q is not None:
             # Don't latch reassurance yet — caller's question takes priority.
             return self._record(q, t0)
-        # Deliver reassurance EXACTLY ONCE, then latch.
+        # Cycle-2D5-B: complaint-specific reassurance variants. Reassurance
+        # alone leaves the caller in the listening role ("ok, but what do
+        # I do?"). Public PSAP research (StatPearls NBK470543, AHA T-CPR)
+        # requires reassurance + co-presence + first directive in a
+        # single turn. We pick the variant by complaint so the fused
+        # template asks the right next question. Cardiac short-circuit
+        # bypasses this path entirely (jumps to CRITICAL_VERIFY at line
+        # ~610), so DELIVER_REASSURANCE_CARDIAC is unreachable and not
+        # added here. Fire/crime/unknown fall back to the legacy
+        # standalone DELIVER_REASSURANCE.
+        if self.complaint == "trauma":
+            intent = Intent.DELIVER_REASSURANCE_TRAUMA
+        elif self.complaint == "medical":
+            intent = Intent.DELIVER_REASSURANCE_MEDICAL
+        else:
+            intent = Intent.DELIVER_REASSURANCE
         self.reassurance_done = True
         self.state = State.REASSURANCE_DELIVERED
-        return self._record(Intent.DELIVER_REASSURANCE, t0)
+        return self._record(intent, t0)
 
     def _intent_in_after_reassurance(self, f: Features, t0: float) -> Intent:
         # If caller asked a question, answer it; do NOT re-emit reassurance.
