@@ -1,0 +1,28 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+38a39,48
+> # Cycle-2k (2026-04-26): inline natural-language pace-tag prefix.
+> # Fish S2-Pro accepts free-form `[tag]` directives inside the text
+> # (vendor/fish-speech/README.md:111-115 — "15,000+ unique tags supported").
+> # When PRISM42_FISH_PACE_TAG is non-empty, the adapter prepends the tag
+> # string + space to every utterance before sending to Fish. Empty (default)
+> # = no-op; the request body's text field is byte-for-byte identical to
+> # the cycle-2j baseline. Bench-evaluated tag candidates per K1 §"Ranked
+> # fix candidates" item 1: "[urgent dispatcher pace]", "[fast clear]",
+> # "[news anchor pace]", "[brisk professional]", "[911 dispatcher voice]".
+> DEFAULT_PACE_TAG = os.environ.get("PRISM42_FISH_PACE_TAG", "").strip()
+183a194,198
+>         # Cycle-2k: read pace-tag at request time so a systemd drop-in
+>         # change + worker restart applies without re-import. Empty
+>         # string = no prefix (preserves cycle-2j baseline byte-for-byte).
+>         _pace_tag = os.environ.get("PRISM42_FISH_PACE_TAG", "").strip()
+>         text_with_tag = f"{_pace_tag} {self._text}" if _pace_tag else self._text
+185c200
+<             "text": self._text,
+---
+>             "text": text_with_tag,
+=== ORCHESTRATOR DIFF ===
+415a416,419
+> - Use periods between thoughts. AVOID COMMAS in dispatcher replies — the
+>   TTS engine renders commas as audible micro-pauses, which makes the
+>   voice sound slow and stilted on a 911 call. Prefer "What is your
+>   location" over "What is, your location". One thought per period.
