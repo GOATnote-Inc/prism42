@@ -85,17 +85,16 @@ log = structlog.get_logger()
 # S36); fillers are dispatcher-side acknowledgements, not directives at
 # the caller's emotional state.
 _FILLERS_PLAIN: tuple[str, ...] = (
-    "Okay, stay with me.",
-    "Got it, one moment.",
     "I hear you.",
-    "Alright, hold on.",
-    "Okay.",
+    "I'm right here.",
+    "Tell me what's happening.",
+    "I'm with you.",
 )
 _FILLERS_TAGGED: tuple[str, ...] = (
-    "[soft] Stay with me.",
-    "[soft] One moment.",
     "[soft] I'm here.",
+    "[soft] I hear you.",
     "[soft] Tell me when you're ready.",
+    "[soft] One moment.",
 )
 _PROSODY_TAGS_ENABLED: bool = (
     os.environ.get("PRISM42_ENABLE_TTS_PROSODY_TAGS", "0") == "1"
