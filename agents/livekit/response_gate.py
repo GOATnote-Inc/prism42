@@ -287,8 +287,12 @@ class ResponseGate:
         # rewritten in-place to "I have you at <addr>, help is on the way."
         # when fsm.address_text is non-empty. PSAP discipline: read the
         # address back so the caller can correct STT mishears.
-        if intent_value == "confirm_address":
-            text = render_template("confirm_address", pronouns) or ""
+        # Cycle-2D14: same substitution applied to answer_heard_address
+        # so a caller asking "did you hear my address?" gets the
+        # captured address echoed back ("Yes, I have you at <addr>, and
+        # units are on the way.") rather than the generic acknowledgment.
+        if intent_value in ("confirm_address", "answer_heard_address"):
+            text = render_template(intent_value, pronouns) or ""
             addr = (getattr(self.fsm, "address_text", None) or "").strip()
             if addr and "your address" in text:
                 text = text.replace("your address", f"you at {addr}", 1)

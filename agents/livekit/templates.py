@@ -257,6 +257,12 @@ TEMPLATES: dict[str, TemplateSpec] = {
     # "where are you sending them?" — re-confirm the address was captured
     # and units are en route. Only fires when address_known is already
     # True (FSM never routes here in INTAKE).
+    # Cycle-2D14: when the caller asks "did you hear my address?", echo
+    # the captured address back instead of the generic acknowledgment.
+    # Same render-path substitution as confirm_address — the gate
+    # rewrites "your address" -> "you at <fsm.address_text>" when
+    # address_text is non-empty. Matches PSAP discipline (read back
+    # verbatim) under all address-confirm intents, not just the first.
     "answer_heard_address": TemplateSpec(
         # 11 words. Single sentence. Reassures caller dispatch is real.
         text="Yes, I have your address and units are on the way.",
