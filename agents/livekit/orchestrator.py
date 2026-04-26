@@ -369,6 +369,19 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
             # Update the agent's instructions so the next LLM call sees
             # the FSM-derived per-turn prompt.
             await self.update_instructions(prompt)
+            # (additive) cycle-2R Team A — emit turn event for dispatcher UI.
+            try:
+                _dp = getattr(self, "_dispatch_publisher", None)
+                if _dp is not None:
+                    _dp.publish_turn(
+                        caller_utterance=utterance,
+                        fsm=self._fsm,
+                        latency_ms={},  # latency populated by reply event
+                    )
+            except Exception as e:  # noqa: BLE001
+                local_log.warning(
+                    "orchestrator.dispatch_publish_failed", err=str(e)[:200]
+                )
             dt_ms = int((time.monotonic() - t0) * 1000)
             local_log.info(
                 "orchestrator.fsm_turn_ms",

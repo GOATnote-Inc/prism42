@@ -107,7 +107,16 @@ export interface DispatchReplyEvent {
   tts_total_ms: number;
 }
 
-export type DispatchEvent = DispatchTurnEvent | DispatchReplyEvent;
+export interface DispatchCallerPartialEvent {
+  type: "caller_partial";
+  session_id: string;
+  turn_index: number;
+  timestamp_ms: number;
+  text: string;
+  is_final: boolean;
+}
+
+export type DispatchEvent = DispatchTurnEvent | DispatchReplyEvent | DispatchCallerPartialEvent;
 
 // ─────────────────────────────────────────────────────────────────────
 // Reducer.
@@ -134,11 +143,16 @@ interface DispatchState {
   address: string | null;
   /** Complaint summary string, surfaced from FSM.complaint. */
   complaint: string;
+  /** Cycle-2U: live partial caller transcript shown above the transcript
+   * list. Cleared when the next `turn` event lands (its caller_utterance
+   * becomes the canonical line). */
+  partial_caller_line: string | null;
 }
 
 type Action =
   | { kind: "turn"; ev: DispatchTurnEvent }
   | { kind: "reply"; ev: DispatchReplyEvent }
+  | { kind: "caller_partial"; ev: DispatchCallerPartialEvent }
   | { kind: "reset" };
 
 const INITIAL_STATE: DispatchState = {
@@ -151,6 +165,7 @@ const INITIAL_STATE: DispatchState = {
   call_started_at: null,
   address: null,
   complaint: "ASSESSING",
+  partial_caller_line: null,
 };
 
 function reducer(state: DispatchState, action: Action): DispatchState {
@@ -196,6 +211,8 @@ function reducer(state: DispatchState, action: Action): DispatchState {
         call_started_at: state.call_started_at ?? Date.now(),
         address: nextAddress,
         complaint: complaintFromFSM(ev.fsm),
+        // Cycle-2U: clear the partial slot — turn.caller_utterance is canonical now.
+        partial_caller_line: null,
       };
     }
     case "reply": {
@@ -220,6 +237,15 @@ function reducer(state: DispatchState, action: Action): DispatchState {
               tts_total: ev.tts_total_ms,
             }
           : { stt: 0, llm_ttft: 0, tts_ttfb: ev.tts_ttfb_ms, tts_total: ev.tts_total_ms },
+      };
+    }
+    case "caller_partial": {
+      // Partials live in a transient slot, not the transcript array.
+      // The next `turn` event clears the slot since `turn.caller_utterance`
+      // becomes the canonical caller line for that turn_index.
+      return {
+        ...state,
+        partial_caller_line: action.ev.is_final ? null : action.ev.text,
       };
     }
     default:
@@ -338,7 +364,7 @@ export function DispatchSubscription({
     try {
       const text = new TextDecoder().decode(msg.payload);
       const parsed = JSON.parse(text) as DispatchEvent;
-      if (parsed.type === "turn" || parsed.type === "reply") {
+      if (parsed.type === "turn" || parsed.type === "reply" || parsed.type === "caller_partial") {
         onEvent(parsed);
       }
     } catch {
@@ -543,7 +569,7 @@ function LatchedFacts({ facts }: { facts: string[] }) {
   );
 }
 
-function Transcript({ rows }: { rows: TranscriptRow[] }) {
+function Transcript({ rows, partial }: { rows: TranscriptRow[]; partial?: string | null }) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Auto-scroll only if user is already near the bottom. Lets a viewer
@@ -553,7 +579,7 @@ function Transcript({ rows }: { rows: TranscriptRow[] }) {
     if (!c) return;
     const nearBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 80;
     if (nearBottom) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [rows.length]);
+  }, [rows.length, partial]);
   return (
     <div className="b3-cad-trx-wrap">
       <div className="b3-cad-trx-hd">
@@ -563,7 +589,7 @@ function Transcript({ rows }: { rows: TranscriptRow[] }) {
         </span>
       </div>
       <div className="b3-cad-trx-body" ref={containerRef}>
-        {rows.length === 0 && (
+        {rows.length === 0 && !partial && (
           <div className="b3-cad-trx-empty">
             Console initialized. Waiting for the first caller utterance.
           </div>
@@ -571,6 +597,13 @@ function Transcript({ rows }: { rows: TranscriptRow[] }) {
         {rows.map((r, i) => (
           <TranscriptRowView key={i} row={r} />
         ))}
+        {partial && (
+          <div className="b3-cad-caller-partial">
+            <span className="b3-cad-caller-partial-role">CALLER</span>
+            <span className="b3-cad-caller-partial-text">{partial}</span>
+            <span className="b3-cad-caller-partial-pulse">speaking…</span>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
     </div>
@@ -768,6 +801,7 @@ export function DispatchPanel({
       const ev = events[idx++];
       if (ev.type === "turn") dispatch({ kind: "turn", ev });
       else if (ev.type === "reply") dispatch({ kind: "reply", ev });
+      else if (ev.type === "caller_partial") dispatch({ kind: "caller_partial", ev });
     }, FIXTURE_REPLAY_INTERVAL_MS);
     return () => clearInterval(handle);
   }, [forceFixture]);
@@ -780,6 +814,7 @@ export function DispatchPanel({
     lastExternalRef.current = externalEvent;
     if (externalEvent.type === "turn") dispatch({ kind: "turn", ev: externalEvent });
     else if (externalEvent.type === "reply") dispatch({ kind: "reply", ev: externalEvent });
+    else if (externalEvent.type === "caller_partial") dispatch({ kind: "caller_partial", ev: externalEvent });
   }, [externalEvent]);
 
   const cardiac = state.current_fsm?.is_cardiac_arrest === true;
@@ -803,7 +838,7 @@ export function DispatchPanel({
         </div>
         {/* RIGHT pane — transcript */}
         <div className="b3-cad-right">
-          <Transcript rows={state.transcript} />
+          <Transcript rows={state.transcript} partial={state.partial_caller_line} />
         </div>
       </div>
       <LatencyStrip latency={state.latency} />
@@ -1122,6 +1157,31 @@ const B3_CAD_STYLES = `
 .b3-cad-trx-empty {
   font-size: 11px; color: var(--b3-text-3);
   padding: 16px 4px; line-height: 1.5;
+}
+.b3-cad-caller-partial {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--b3-r-sm);
+  border: 1px dashed rgba(96, 165, 250, 0.3);
+  background: rgba(96, 165, 250, 0.03);
+  margin-right: 18%;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--b3-text-2);
+  opacity: 0.85;
+  animation: b3-cad-pulse 1.6s ease-in-out infinite;
+}
+.b3-cad-caller-partial-role {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  color: rgba(96, 165, 250, 0.85);
+}
+.b3-cad-caller-partial-text { flex: 1; }
+.b3-cad-caller-partial-pulse {
+  font-size: 9px; color: var(--b3-text-3); letter-spacing: 0.05em;
+}
+@keyframes b3-cad-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.95; }
 }
 .b3-cad-trx-row {
   display: grid; gap: 4px;
