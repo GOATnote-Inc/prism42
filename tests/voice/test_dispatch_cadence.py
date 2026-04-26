@@ -410,6 +410,113 @@ def test_pre_arrival_defaults_to_pressure_bleed_for_trauma():
     assert intent == Intent.INSTRUCT_PRESSURE_BLEED
 
 
+# ------------------------------------------------------------------
+# Cycle-2D10 — PRE_ARRIVAL anti-repeat + sudden-collapse cardiac cue
+# ------------------------------------------------------------------
+
+
+def test_pre_arrival_anti_repeat_routes_to_closeout():
+    """After 2 emits of the same INSTRUCT_*, the FSM routes to CLOSEOUT
+    so the caller gets continuous coaching instead of identical re-emits.
+
+    Repro from user attestation 2026-04-26 14:55: dispatcher emitted
+    'Press hard on the wound with a clean cloth now.' twice in a row
+    after the cycle-2D9 force-advance. Cycle-2D10 stops at 2 and
+    transitions to 'Stay on the line until they get there.'
+    """
+    fsm = DispatcherFSM()
+    fsm.transition("100 main st")
+    fsm.transition("my friend was shot, blood everywhere")
+    fsm.transition("uh okay")
+    # Force the trauma KQ → PRE_ARRIVAL transition.
+    fsm.transition("blood is gushing")
+    fsm.transition("still bleeding")
+    i1 = fsm.transition("please help")  # 1st pressure-bleed emit
+    assert i1 == Intent.INSTRUCT_PRESSURE_BLEED
+    assert fsm._instruction_emits == 1
+
+    i2 = fsm.transition("he keeps bleeding")  # 2nd
+    assert i2 == Intent.INSTRUCT_PRESSURE_BLEED
+    assert fsm._instruction_emits == 2
+
+    i3 = fsm.transition("still bleeding")  # 3rd → CLOSEOUT
+    assert i3 == Intent.CLOSEOUT, (
+        f"After 2 same-instruction emits FSM must route to CLOSEOUT. "
+        f"Got intent={i3}"
+    )
+
+
+def test_cardiac_short_circuit_on_sudden_collapse():
+    """Caller describes chest pain history + sudden fall — classic
+    cardiac event. Cycle-2D10 extends positive_arrest_cue regex with
+    'fell down' / 'collapsed' / 'passed out' / 'fainted' / 'unconscious'
+    third-person patterns.
+
+    Repro from user attestation 2026-04-26 14:55: caller said 'They had
+    chest pain earlier today...the next thing I know, they fell down'
+    and the FSM stayed in trauma KQ instead of jumping to CRITICAL_VERIFY.
+    """
+    fsm = DispatcherFSM()
+    fsm.transition("one hundred ocean avenue")
+    fsm.transition("they are not doing well, can you send an ambulance")
+    intent = fsm.transition(
+        "they had chest pain earlier today, they were saying it hurt a lot, "
+        "and then they fell down"
+    )
+    assert fsm.is_cardiac_arrest is True
+    assert fsm.state == State.CRITICAL_VERIFY
+    assert intent in (Intent.VERIFY_SURFACE, Intent.VERIFY_BREATHING,
+                      Intent.INSTRUCT_CPR_REPOSITIONING)
+
+
+def test_collapse_cue_variants():
+    """Variants the cycle-2D10 regex must catch (3rd person only)."""
+    cardiac_cases = [
+        "she fell down",
+        "they collapsed in the kitchen",
+        "he passed out a minute ago",
+        "she fainted",
+        "they went down on the floor",
+        "he dropped suddenly",
+        # 3rd-person subject + fell variants
+        "they fell over",
+        "they fell to the ground",
+        # Standalone unconscious (any subject)
+        "she's unconscious",
+        "they are unconscious",
+    ]
+    import re
+    pattern = re.compile(
+        r"\b(?:stopped breathing|not breathing|"
+        r"isn'?t breathing|no pulse|no heartbeat|"
+        r"unresponsive|won'?t wake up|just gasping|"
+        r"don'?t think (?:he|she|they|the patient)"
+        r"(?:'?s| is| are)? breath\w*|"
+        r"doesn'?t (?:seem|look|sound) (?:like )?"
+        r"(?:he|she|they)(?:'?s| is)? breath\w*|"
+        r"breathing at all|"
+        r"(?:he|she|they|the patient) (?:fell|collapsed|"
+        r"passed out|fainted|went down|dropped)|"
+        r"unconscious)\b",
+        re.IGNORECASE,
+    )
+    for utterance in cardiac_cases:
+        m = pattern.search(utterance)
+        assert m, f"Expected match for {utterance!r}, got None"
+
+    # Negative: 1st-person should NOT match (caller can't be in arrest).
+    non_cardiac = [
+        "I fell down the stairs",
+        "I passed out yesterday",
+        "I fainted last week",
+    ]
+    for utterance in non_cardiac:
+        m = pattern.search(utterance)
+        # 1st-person "I" is never a 3rd-person subject — these MUST NOT
+        # trigger cardiac short-circuit.
+        assert not m, f"Should NOT match {utterance!r}, got {m.group(0)!r}"
+
+
 def test_e2e_user_repro_address_echoed_and_no_dead_air():
     """End-to-end: caller's screenshot scenario.
 

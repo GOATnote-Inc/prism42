@@ -554,6 +554,11 @@ class DispatcherFSM:
     # (PSAP discipline + AHA T-CPR <150s gate). After 2 emits, advance
     # to PRE_ARRIVAL.
     _kq_emits: int = 0
+    # Cycle-2D10: same anti-repeat shape for pre-arrival instructions.
+    # After 2 emits of the same INSTRUCT_*, the instruction has been
+    # delivered. Stay-on-the-line (CLOSEOUT) takes over so the caller
+    # gets continuous coaching instead of identical re-emits.
+    _instruction_emits: int = 0
 
     # ---- main API -----------------------------------------------------
 
@@ -680,6 +685,11 @@ class DispatcherFSM:
         # CRITICAL_VERIFY. The new patterns are anchored to a third-
         # person subject so they remain "positive" cues (no first-person
         # ambiguity that motivated the original ambiguous/positive split).
+        # Cycle-2D10: also catch sudden-collapse cues. Caller said
+        # "they had chest pain earlier today...the next thing I know,
+        # they fell down" — classic cardiac event presentation. Sudden
+        # collapse + chest pain is a positive arrest cue per AHA T-CPR
+        # NO-NO-GO algorithm (recognition < 90s; fewer questions, faster).
         positive_arrest_cue = bool(
             re.search(
                 r"\b(?:stopped breathing|not breathing|"
@@ -689,7 +699,12 @@ class DispatcherFSM:
                 r"(?:'?s| is| are)? breath\w*|"
                 r"doesn'?t (?:seem|look|sound) (?:like )?"
                 r"(?:he|she|they)(?:'?s| is)? breath\w*|"
-                r"breathing at all)\b",
+                r"breathing at all|"
+                # Cycle-2D10: sudden collapse cues (3rd-person only;
+                # 1st-person fainting is NOT an arrest indicator).
+                r"(?:he|she|they|the patient) (?:fell|collapsed|"
+                r"passed out|fainted|went down|dropped)|"
+                r"unconscious)\b",
                 utterance, re.IGNORECASE,
             )
         )
@@ -835,22 +850,43 @@ class DispatcherFSM:
         q = self._direct_question_intent(f)
         if q is not None:
             return self._record(q, t0)
+        # Cycle-2D10: anti-repeat for instructions. After 2 emits of the
+        # same INSTRUCT_*, route to CLOSEOUT ("Stay on the line until
+        # they get there.") so the caller gets continuous coaching
+        # rather than identical re-emits. PSAP "compress more, talk
+        # less" principle (Torres, AEDR Journal): once instruction is
+        # delivered, talking less > talking same.
+        if self._instruction_emits >= 2 and self.last_intent in (
+            Intent.INSTRUCT_PRESSURE_BLEED,
+            Intent.INSTRUCT_CHOKING,
+            Intent.INSTRUCT_SEIZURE,
+        ):
+            log.info("fsm.pre_arrival_loop_to_closeout",
+                     last_intent=getattr(self.last_intent, "value", None),
+                     instruction_emits=self._instruction_emits)
+            return self._record(Intent.CLOSEOUT, t0)
+
+        # Pick the appropriate instruction.
         if f.choking:
-            return self._record(Intent.INSTRUCT_CHOKING, t0)
-        if f.bleeding:
-            return self._record(Intent.INSTRUCT_PRESSURE_BLEED, t0)
-        if f.seizure:
-            return self._record(Intent.INSTRUCT_SEIZURE, t0)
-        # Cycle-2D9: when the FSM force-advances from a trauma KQ-loop
-        # the current-turn classifier may not have re-fired f.bleeding
-        # (caller said something off-topic or panicked). Fall back to
-        # the trauma rail's most-likely pre-arrival action: direct
-        # pressure on the wound. StatPearls + AHA hands-only guidance:
-        # direct pressure first, elevation second, tourniquet only if
-        # available. Safe default for trauma complaint.
-        if self.complaint == "trauma":
-            return self._record(Intent.INSTRUCT_PRESSURE_BLEED, t0)
-        return self._record(Intent.CLOSEOUT, t0)
+            instr = Intent.INSTRUCT_CHOKING
+        elif f.bleeding:
+            instr = Intent.INSTRUCT_PRESSURE_BLEED
+        elif f.seizure:
+            instr = Intent.INSTRUCT_SEIZURE
+        elif self.complaint == "trauma":
+            # Cycle-2D9: when force-advanced from KQ-loop without a
+            # current-turn feature, default to direct pressure for the
+            # trauma rail (StatPearls + AHA hands-only).
+            instr = Intent.INSTRUCT_PRESSURE_BLEED
+        else:
+            return self._record(Intent.CLOSEOUT, t0)
+
+        # Cycle-2D10: increment instruction counter when re-emitting.
+        if self.last_intent == instr:
+            self._instruction_emits += 1
+        else:
+            self._instruction_emits = 1
+        return self._record(instr, t0)
 
     def _intent_in_verify(self, f: Features, t0: float) -> Intent:
         """MPDS-9 sub-FSM: verify before instructing CPR.
