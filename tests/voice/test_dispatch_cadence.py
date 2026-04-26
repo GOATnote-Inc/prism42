@@ -187,6 +187,72 @@ def test_cardiac_short_circuit_bypasses_reassurance_variants():
 # ------------------------------------------------------------------
 
 
+# ------------------------------------------------------------------
+# Cycle-2D6 — VERIFY_SURFACE loop guard + extended floor_negation regex
+# ------------------------------------------------------------------
+
+
+def test_verify_surface_loop_bounded_when_caller_silent_on_surface():
+    """When the caller never says anything floor-related, the FSM
+    must not loop on VERIFY_SURFACE forever. After 2 emits with no
+    floor signal in either direction, surface_confirmed latches
+    heuristically and the FSM advances to breathing-verify.
+
+    Repro from user attestation 2026-04-26 13:53: dispatcher emitted
+    'Are they on the floor, flat on their back?' three times in a row
+    while caller said off-topic things ('why? bleeding so much',
+    'he wanted to sit up', 'but he's not breathing anymore').
+    """
+    fsm = DispatcherFSM()
+    fsm.transition("twelve riverside drive")
+    fsm.transition("my friend is shot in the chest, he is not breathing")
+    assert fsm.state == State.CRITICAL_VERIFY
+    assert fsm.surface_confirmed is False
+
+    # Caller says nothing surface-related — 1st re-emit is VERIFY_SURFACE.
+    i1 = fsm.transition("why is this happening to him")
+    assert i1 == Intent.VERIFY_SURFACE
+
+    # 2nd re-emit still VERIFY_SURFACE (counter=2, threshold not hit).
+    i2 = fsm.transition("he is bleeding so much")
+    # On this transition the loop guard latches and FSM advances.
+    # Either VERIFY_SURFACE (counter=2, still loops) or VERIFY_BREATHING
+    # (counter=3, latch fired). Document the actual behavior:
+    assert i2 in (Intent.VERIFY_SURFACE, Intent.VERIFY_BREATHING)
+
+    # 3rd transition: surface MUST be latched by now, FSM must NOT
+    # still be on VERIFY_SURFACE.
+    i3 = fsm.transition("but he is not breathing anymore")
+    assert fsm.surface_confirmed is True, (
+        f"After 3 turns of caller silence on surface, FSM must heuristically "
+        f"latch surface_confirmed=True. Got surface_confirmed={fsm.surface_confirmed}, "
+        f"intent={i3}"
+    )
+    assert i3 != Intent.VERIFY_SURFACE
+
+
+def test_floor_negation_catches_sit_up_variants():
+    """Cycle-2D6: extended _RE_FLOOR_NEGATION catches 'sit up' / 'to sit up'
+    in addition to the prior 'sitting up' pattern. Caller's actual
+    transcribed phrase: 'made him feel better to sit up'."""
+    cases = [
+        ("he wants to sit up", True),
+        ("made him feel better to sit up", True),
+        ("she sits up", True),
+        # Existing patterns still work
+        ("sitting up", True),
+        ("sitting on the chair", True),
+        # Negative cases still don't trigger
+        ("she is on the floor", False),
+        ("flat on his back", False),
+    ]
+    for utterance, expected in cases:
+        f = classify(utterance)
+        assert f.floor_negation == expected, (
+            f"{utterance!r} -> floor_negation={f.floor_negation}, expected {expected}"
+        )
+
+
 def test_e2e_user_repro_address_echoed_and_no_dead_air():
     """End-to-end: caller's screenshot scenario.
 

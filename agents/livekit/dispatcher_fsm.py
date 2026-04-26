@@ -207,7 +207,11 @@ _RE_FLOOR_FLAT = re.compile(
 # 2026-04-26 by Brandon Dent, MD per CLAUDE.md §10.
 _RE_FLOOR_NEGATION = re.compile(
     r"\b(?:in (?:a |the )?(?:chair|recliner|car seat|bed|couch|sofa|wheelchair)|"
-    r"sitting (?:up|on|in)|seated|standing|upright|slumped|"
+    # Cycle-2D6: "sit up" / "to sit" / "wants to sit" — caller's screenshot
+    # said "made him feel better to sit up" which the prior 'sitting up'-only
+    # pattern missed. Catches the shorter verb form too.
+    r"sitting (?:up|on|in)|to sit (?:up|on|down)|sit(?:s|ting)? up|"
+    r"seated|standing|upright|slumped|"
     r"on the (?:couch|sofa|bed)|in (?:his|her|their) (?:chair|bed)|"
     r"not (?:on the floor|flat|laying down)|"
     r"can'?t (?:move|get) (?:him|her|them))\b",
@@ -516,6 +520,13 @@ class DispatcherFSM:
     # emits — used to latch surface_confirmed heuristically after 2
     # repositions if caller still hasn't moved patient to the floor.
     _reposition_emits: int = 0
+    # Cycle-2D6: count of consecutive VERIFY_SURFACE emits without any
+    # floor-signal (neither floor_flat nor floor_negation) from the
+    # caller. After N emits the FSM latches surface_confirmed
+    # heuristically and advances to breathing — otherwise the FSM
+    # loops on "Are they on the floor, flat on their back?" forever
+    # when the caller cannot or will not directly answer.
+    _verify_surface_emits: int = 0
 
     # ---- main API -----------------------------------------------------
 
@@ -812,8 +823,26 @@ class DispatcherFSM:
             else:
                 return self._record(Intent.INSTRUCT_CPR_REPOSITIONING, t0)
         if not self.surface_confirmed:
-            self.verify_step = VerifyStep.Q_SURFACE
-            return self._record(Intent.VERIFY_SURFACE, t0)
+            # Cycle-2D6: bound the VERIFY_SURFACE re-emit loop. When the
+            # caller cannot or will not answer the surface question
+            # (silent, panicking, off-topic), looping the same question
+            # is worse than advancing — every second matters in cardiac
+            # arrest. After 3 emits with no floor signal in either
+            # direction, latch surface_confirmed heuristically and
+            # proceed to breathing-verify. Counter only increments when
+            # caller's utterance had NO floor information; floor_flat
+            # already latches True above, floor_negation routes to
+            # REPOSITION (separate counter).
+            self._verify_surface_emits = getattr(
+                self, "_verify_surface_emits", 0
+            ) + 1
+            if self._verify_surface_emits >= 3:
+                self.surface_confirmed = True
+                log.info("fsm.surface_latch_after_verify_loop",
+                         verify_surface_emits=self._verify_surface_emits)
+            else:
+                self.verify_step = VerifyStep.Q_SURFACE
+                return self._record(Intent.VERIFY_SURFACE, t0)
         if not self.breathing_assessed:
             self.verify_step = VerifyStep.Q_BREATHING
             return self._record(Intent.VERIFY_BREATHING, t0)
