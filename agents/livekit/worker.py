@@ -55,6 +55,13 @@ from fish_speech_tts import FishSpeechOptions, FishSpeechTTS
 from grader import grade_turn_with_shim_fallback
 from orchestrator import make_orchestrator
 from parakeet_stt import ParakeetOptions, ParakeetSTT
+# (additive) cycle-2R Team A — dispatcher data-track publisher.
+try:
+    from dispatch_publisher import DispatchPublisher, is_enabled as _dp_enabled
+except Exception:  # noqa: BLE001
+    DispatchPublisher = None  # type: ignore[assignment]
+    def _dp_enabled() -> bool:  # type: ignore[no-redef]
+        return False
 from state import (
     SessionStore,
     write_session_summary,
@@ -828,6 +835,13 @@ async def entrypoint(ctx: JobContext) -> None:
     )
 
     orchestrator = make_orchestrator(session_id)
+    # (additive) cycle-2R Team A — wire dispatch publisher (no-op when flag OFF).
+    if DispatchPublisher is not None and _dp_enabled():
+        try:
+            _dp = DispatchPublisher(ctx.room, session_id)
+            orchestrator._dispatch_publisher = _dp  # type: ignore[attr-defined]
+        except Exception as e:  # noqa: BLE001
+            log.warning("dispatch_publisher.init_failed", err=str(e)[:200])
 
     # ---- post-turn hook: rubric grade + observability writes -------
     @session.on("agent_state_changed")  # type: ignore[arg-type]
@@ -932,6 +946,18 @@ async def entrypoint(ctx: JobContext) -> None:
                     fsm.record_dispatcher_reply(text)
         except Exception as e:  # noqa: BLE001
             log.warning("on_item.fsm_record_failed", err=str(e)[:200])
+        # (additive) cycle-2R Team A — emit reply event for dispatcher UI.
+        try:
+            _dp = getattr(orchestrator, "_dispatch_publisher", None)
+            if _dp is not None:
+                _bucket_now = _timing_bucket(session_id)["current"]
+                _dp.publish_reply(
+                    text=getattr(item, "text_content", "") or "",
+                    tts_ttfb_ms=int(_bucket_now.get("tts_ms", 0) or 0),
+                    tts_total_ms=int(_bucket_now.get("tts_ms", 0) or 0),
+                )
+        except Exception as e:  # noqa: BLE001
+            log.warning("on_item.dispatch_publish_failed", err=str(e)[:200])
         try:
             # Mark end of turn and finalize timings BEFORE publishing.
             bucket = _timing_bucket(session_id)
@@ -1121,6 +1147,13 @@ async def entrypoint(ctx: JobContext) -> None:
                     asyncio.create_task(
                         _post_turn_to_bus(session_id, "user", text)
                     )
+                # (additive) cycle-2U — caller-partial → dispatch data-track.
+                try:
+                    _dp = getattr(orchestrator, "_dispatch_publisher", None)
+                    if _dp is not None and text:
+                        _dp.publish_caller_partial(text=text, is_final=is_final)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("on_user_transcribed.dispatch_publish_failed", err=str(e)[:200])
                 # If we missed the VAD speaking→listening transition,
                 # approximate user_speech_end by subtracting transcript_delay.
                 if cur.get("t_user_speech_end") is None:

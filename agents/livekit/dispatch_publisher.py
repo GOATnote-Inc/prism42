@@ -175,6 +175,26 @@ class DispatchPublisher:
         }
         self._enqueue(evt)
 
+    def publish_caller_partial(
+        self,
+        *,
+        text: str,
+        is_final: bool,
+    ) -> None:
+        """Fire a `caller_partial` event for streaming caller-side STT.
+        Lives within the current turn — does NOT increment turn_index."""
+        if not self._enabled:
+            return
+        evt = {
+            "type": "caller_partial",
+            "session_id": self._session_id,
+            "turn_index": self._turn_index,
+            "timestamp_ms": _now_ms(),
+            "text": text or "",
+            "is_final": bool(is_final),
+        }
+        self._enqueue(evt)
+
     async def aclose(self) -> None:
         """Cancel the worker task; drains best-effort."""
         if self._task is not None:
