@@ -1,6 +1,6 @@
 {
   "fixture_id": "cardiac-arrest-demo",
-  "description": "12-turn cardiac-arrest call. Exercises every FSM state including the critical-verify sub-FSM. Replay interval is consumed by the fixture player (default 3500ms between events).",
+  "description": "12-turn cardiac-arrest call. Exercises every FSM state including the critical-verify sub-FSM. Cycle-2C Phase-4 adds interleaved `perception` events that mirror the structured-classifier output (findings/voice/cycle2C_structured_classifier/team-c/schema.json). Replay interval is consumed by the fixture player (default 3500ms between events).",
   "session_id": "fx-cardiac-arrest-demo",
   "events": [
     {
@@ -23,6 +23,25 @@
       ],
       "recent_replies": [],
       "latency_ms": {"stt": 280, "llm_ttft": 410, "tts_ttfb": 260}
+    },
+    {
+      "type": "perception",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 1,
+      "timestamp_ms": 250,
+      "intent": "verify",
+      "acuity": "P1",
+      "address_candidate": {"raw_text": null, "normalized": null, "has_digit": false},
+      "awake": null,
+      "breathing": false,
+      "surface": "unknown",
+      "caller_question": false,
+      "caller_role": "third_party",
+      "complaint_category": "medical",
+      "negation_signal": false,
+      "direct_question_kind": "none",
+      "confidence": 0.92,
+      "latency_ms": 268
     },
     {
       "type": "reply",
@@ -53,6 +72,29 @@
       ],
       "recent_replies": ["I'm with you. What's your address?"],
       "latency_ms": {"stt": 295, "llm_ttft": 380, "tts_ttfb": 240}
+    },
+    {
+      "type": "perception",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 2,
+      "timestamp_ms": 4750,
+      "intent": "verify",
+      "acuity": "P1",
+      "address_candidate": {
+        "raw_text": "425 Mill Street",
+        "normalized": "425 Mill Street",
+        "has_digit": true
+      },
+      "awake": null,
+      "breathing": null,
+      "surface": "floor",
+      "caller_question": false,
+      "caller_role": "third_party",
+      "complaint_category": "medical",
+      "negation_signal": false,
+      "direct_question_kind": "none",
+      "confidence": 0.94,
+      "latency_ms": 251
     },
     {
       "type": "reply",
@@ -86,6 +128,25 @@
         "Help is on the way. Is he breathing normally or only gasping?"
       ],
       "latency_ms": {"stt": 310, "llm_ttft": 405, "tts_ttfb": 255}
+    },
+    {
+      "type": "perception",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 3,
+      "timestamp_ms": 9450,
+      "intent": "verify",
+      "acuity": "P1",
+      "address_candidate": {"raw_text": null, "normalized": null, "has_digit": false},
+      "awake": null,
+      "breathing": false,
+      "surface": "floor",
+      "caller_question": false,
+      "caller_role": "third_party",
+      "complaint_category": "medical",
+      "negation_signal": false,
+      "direct_question_kind": "none",
+      "confidence": 0.93,
+      "latency_ms": 274
     },
     {
       "type": "reply",
@@ -122,6 +183,25 @@
       "latency_ms": {"stt": 270, "llm_ttft": 395, "tts_ttfb": 245}
     },
     {
+      "type": "perception",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 4,
+      "timestamp_ms": 14250,
+      "intent": "answer",
+      "acuity": "P1",
+      "address_candidate": {"raw_text": null, "normalized": null, "has_digit": false},
+      "awake": null,
+      "breathing": null,
+      "surface": "floor",
+      "caller_question": true,
+      "caller_role": "third_party",
+      "complaint_category": "medical",
+      "negation_signal": false,
+      "direct_question_kind": "do_not_move",
+      "confidence": 0.91,
+      "latency_ms": 263
+    },
+    {
       "type": "reply",
       "session_id": "fx-cardiac-arrest-demo",
       "turn_index": 4,
@@ -135,10 +215,10 @@
       "session_id": "fx-cardiac-arrest-demo",
       "turn_index": 5,
       "timestamp_ms": 18500,
-      "caller_utterance": "how long until they get here",
+      "caller_utterance": "wait he's in the chair not the floor I moved him earlier",
       "fsm": {
         "state": "critical_cpr",
-        "intent": "answer_how_long",
+        "intent": "instruct_cpr_compressions",
         "verify_step": "done",
         "pronouns": "he/him",
         "reassurance_done": true,
@@ -153,26 +233,45 @@
         "Start chest compressions. Center of his chest, hard and fast, two per second.",
         "Don't move him. Keep him still and keep going."
       ],
-      "latency_ms": {"stt": 265, "llm_ttft": 380, "tts_ttfb": 235}
+      "latency_ms": {"stt": 285, "llm_ttft": 415, "tts_ttfb": 248}
+    },
+    {
+      "type": "perception",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 5,
+      "timestamp_ms": 18750,
+      "intent": "verify",
+      "acuity": "P1",
+      "address_candidate": {"raw_text": null, "normalized": null, "has_digit": false},
+      "awake": null,
+      "breathing": null,
+      "surface": "chair",
+      "caller_question": false,
+      "caller_role": "third_party",
+      "complaint_category": "medical",
+      "negation_signal": true,
+      "direct_question_kind": "none",
+      "confidence": 0.87,
+      "latency_ms": 285
     },
     {
       "type": "reply",
       "session_id": "fx-cardiac-arrest-demo",
       "turn_index": 5,
       "timestamp_ms": 19400,
-      "text": "As fast as they can. Stay on the line.",
-      "tts_ttfb_ms": 235,
-      "tts_total_ms": 990
+      "text": "Get him onto the floor on his back. I'll wait. Tell me when you've done it.",
+      "tts_ttfb_ms": 248,
+      "tts_total_ms": 1610
     },
     {
       "type": "turn",
       "session_id": "fx-cardiac-arrest-demo",
       "turn_index": 6,
       "timestamp_ms": 23000,
-      "caller_utterance": "I'm doing the compressions ok",
+      "caller_utterance": "uh okay",
       "fsm": {
         "state": "critical_cpr",
-        "intent": "instruct_cpr_compressions",
+        "intent": "reprompt_caller",
         "verify_step": "done",
         "pronouns": "he/him",
         "reassurance_done": true,
@@ -185,18 +284,37 @@
       "recent_replies": [
         "Start chest compressions. Center of his chest, hard and fast, two per second.",
         "Don't move him. Keep him still and keep going.",
-        "As fast as they can. Stay on the line."
+        "Get him onto the floor on his back. I'll wait. Tell me when you've done it."
       ],
-      "latency_ms": {"stt": 285, "llm_ttft": 410, "tts_ttfb": 250}
+      "latency_ms": {"stt": 245, "llm_ttft": 360, "tts_ttfb": 235}
+    },
+    {
+      "type": "perception",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 6,
+      "timestamp_ms": 23250,
+      "intent": "reprompt",
+      "acuity": "unknown",
+      "address_candidate": {"raw_text": null, "normalized": null, "has_digit": false},
+      "awake": null,
+      "breathing": null,
+      "surface": "unknown",
+      "caller_question": false,
+      "caller_role": "unknown",
+      "complaint_category": "unknown",
+      "negation_signal": false,
+      "direct_question_kind": "none",
+      "confidence": 0.18,
+      "latency_ms": 234
     },
     {
       "type": "reply",
       "session_id": "fx-cardiac-arrest-demo",
       "turn_index": 6,
       "timestamp_ms": 23900,
-      "text": "Good. Keep going at the same pace until paramedics take over.",
-      "tts_ttfb_ms": 250,
-      "tts_total_ms": 1310
+      "text": "Stay with me. Is he on the floor on his back yet?",
+      "tts_ttfb_ms": 235,
+      "tts_total_ms": 1190
     }
   ]
 }
