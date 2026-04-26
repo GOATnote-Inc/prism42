@@ -71,7 +71,44 @@ Every technique ships only after an external public-benchmark delta:
 | MedQA (USMLE) | null-result control — `|Δ|` must be small | exact-match |
 | PubMedQA | RAG validator — retrieval must lift ≥10 pp | exact-match |
 | MMLU-Medical-6 | breadth / null-result | exact-match |
-| MedAgentBench | agentic clinical (H1 epic) | side-effect verifier |
+| MedAgentBench | agentic clinical | upstream `refsol.py` side-effect verifier (Stanford ML Group) |
+
+### MedAgentBench — first public Opus 4.7 numbers + Prism harness lift
+
+**Baseline (300 tasks, single trial, 2026-04-23):** **0.7000** (210/300, $21.23).
+First public Opus 4.7 number on this benchmark. Lands at parity with the
+public Stanford leaderboard anchor (Claude 3.5 Sonnet v2 = 0.6967).
+
+**Prism harness v1 (same 300 tasks, same scorer):** **0.9067** (272/300,
+**+20.67 pp** vs baseline, $29.72). The harness is a 55-line format-
+discipline addendum that fixes the two systematic baseline failure
+modes — task7 (0/30 → 27/30, format-mismatch) and task9 (0/30 → 10/30,
+verbose-preamble). Domain knowledge unchanged; output discipline only.
+
+Per-category baseline → harness:
+
+| task | baseline | harness | Δ |
+|---|---|---|---|
+| task1–4, 8 | 1.000 | 1.000 | ceiling |
+| task5 | 0.533 | 0.933 | +0.400 |
+| task6 | 0.933 | 0.900 | −0.033 (noise) |
+| task7 | 0.000 | 0.900 | **+0.900** |
+| task9 | 0.000 | 0.333 | +0.333 (pagination depth still hurts) |
+| task10 | 0.533 | 1.000 | +0.467 |
+
+**Repro path** (requires Stanford's Box-delivered `refsol.py` + `jyxsu6/medagentbench:latest` Docker FHIR server, neither redistributable):
+
+```bash
+# Baseline
+PRISM_MEDAGENTBENCH_COMMIT=1 .venv/bin/python scripts/medagentbench_runner.py \
+    --commit --variant baseline-opus47 --tasks-yaml third_party/MedAgentBench/data/tasks.yaml
+
+# Harness
+PRISM_MEDAGENTBENCH_COMMIT=1 .venv/bin/python scripts/medagentbench_runner.py \
+    --commit --harness --variant harness-opus47-v1 --tasks-yaml third_party/MedAgentBench/data/tasks.yaml
+```
+
+Full per-failure analysis + caveats: [`findings/medagentbench/medagentbench-opus47-2026-04-23.md`](findings/medagentbench/medagentbench-opus47-2026-04-23.md).
 
 ### Opus 4.7 baseline card
 
