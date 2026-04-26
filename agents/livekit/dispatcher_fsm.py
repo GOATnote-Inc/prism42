@@ -295,12 +295,23 @@ _RE_BARE_NO_SURFACE = re.compile(
     re.IGNORECASE,
 )
 
-# Cycle-2R3 (Team R3 B1-A): caller asking whether dispatcher heard the address
-# or where help is being sent. Routes to ANSWER_HEARD_ADDRESS template.
+# Cycle-2R3 (Team R3 B1-A) + Cycle-2D16: caller asking whether dispatcher
+# heard the address or DEMANDING address confirmation. Routes to
+# ANSWER_HEARD_ADDRESS. 2D16 added the demand patterns: caller said
+# "I'm not gonna answer any more questions until you confirm my address
+# and send an ambulance" — this is a face-threat / trust-loss signal
+# that the dispatcher must answer before re-asking the verify question.
 _RE_DID_YOU_HEAR_Q = re.compile(
     r"\bdid (?:you|ya) (?:hear|get|catch)\b|"
     r"\bdo you (?:know|have) (?:where|the address|my address)\b|"
-    r"\bwhere are you sending\b|\bdid (?:you|that) go through\b",
+    r"\bwhere are you sending\b|\bdid (?:you|that) go through\b|"
+    # Cycle-2D16 demand-for-confirmation patterns:
+    r"\bconfirm (?:my |the )?address\b|"
+    r"\b(?:tell|say) me (?:you have|you got|the address)\b|"
+    r"\bwhat (?:address|place) (?:do you have|did you get)\b|"
+    r"\bare you (?:hearing|listening|getting)\b|"
+    r"\b(?:not gonna|won'?t) answer\b|"
+    r"\bsend (?:an |the )?ambulance\b",
     re.IGNORECASE,
 )
 # Cycle-2R3 (Team R3 B2-A): backchannel detector — short acknowledgements
