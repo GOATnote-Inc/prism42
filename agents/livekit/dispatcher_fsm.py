@@ -165,7 +165,14 @@ _RE_STREET = re.compile(
 _RE_NOT_BREATHING = re.compile(
     r"\b(?:stopped breathing|not breathing|no(?:t)? breath(?:ing)?|"
     r"isn't breathing|can'?t breathe|no pulse|no heartbeat|"
-    r"unresponsive|won'?t wake up|won'?t respond|not responding)\b",
+    r"unresponsive|won'?t wake up|won'?t respond|not responding|"
+    # Cycle-2D3: caller phrases like "I don't think he's breathing",
+    # "I don't think she's breathing at all anymore", "doesn't seem
+    # like he's breathing" — the literal-adjacency "not breathing"
+    # rule misses these natural-language variants.
+    r"don'?t think (?:he|she|they|the patient)(?:'s| is| are)? breath\w*|"
+    r"doesn'?t (?:seem|look|sound) (?:like )?(?:he|she|they)(?:'s| is)? breath\w*|"
+    r"breathing at all)\b",
     re.IGNORECASE,
 )
 _RE_FLOOR_FLAT = re.compile(
@@ -509,6 +516,33 @@ class DispatcherFSM:
             and not f.floor_flat
         ):
             f.floor_negation = True
+
+        # Cycle-2D3: breathing-verify "no" / "not at all" handler.
+        # Caller has been asked "Are they breathing normally, or only
+        # gasping?" If they answer with "not breathing at all" / "no" /
+        # "negative" / "nothing" → the answer to MPDS-9 V2 is "absent"
+        # which IS a confirmed cardiac arrest indicator. Latch
+        # breathing_assessed=True and let the next intent advance to
+        # INSTRUCT_CPR_BEGIN. Without this, the FSM repeats VERIFY_BREATHING
+        # because not_breathing alone never set breathing_assessed
+        # (the gap was: breathing_assessed only fired on positive cues
+        # gasping/breathing_normal).
+        if (
+            self.last_intent == Intent.VERIFY_BREATHING
+            and self.state == State.CRITICAL_VERIFY
+            and not self.breathing_assessed
+            and (
+                f.not_breathing
+                or f.gasping
+                or f.breathing_normal
+                or _RE_BARE_NO_SURFACE.match(utterance)  # "no" / "nothing" — same regex shape
+            )
+        ):
+            self.breathing_assessed = True
+            log.info("fsm.breathing_assessed_mid_verify",
+                     not_breathing=f.not_breathing,
+                     gasping=f.gasping,
+                     breathing_normal=f.breathing_normal)
 
         # Pronoun commit (only on explicit signal).
         if self.pronouns == "unknown":
