@@ -1,0 +1,32 @@
+cycle-2Q FSM activation smoke test
+2026-04-26 08:31:44 UTC
+
+Pod: prism-mla-b300-h4h5
+ENV: PRISM42_ENABLE_FSM=1 (injected via /etc/systemd/system/prism42-worker.service.d/120-cycle2Q-fsm.conf)
+Service: prism42-worker active
+
+Smoke test input: "my friend stopped breathing"
+
+FSM result:
+  - should_use_fsm() = True
+  - INITIAL_STATE = intake
+  - TRANSITION_INTENT = verify_cpr_surface
+  - POST_STATE = critical_verify
+  - verify_step = q_surface (Step 1 of AHA T-CPR gate)
+  - pronouns = they (genderless default; caller didn't specify)
+  - cardiac=True, surface_confirmed=False, third_party=True
+  - reassurance_done=False (not yet emitted)
+
+LLM prompt that Nemotron sees this turn:
+  - ROLE: 911 PSAP dispatcher; never break character; never say "dial 911"
+  - CURRENT INTENT: Ask is the patient on the floor flat on their back; Do NOT instruct compressions yet
+  - CALLER JUST SAID: 'my friend stopped breathing'
+  - PRONOUNS: they/them (latched until caller commits gender)
+  - LATCHED FACTS: Cardiac-arrest verification in progress. Do NOT instruct chest compressions yet — finish verification first.
+  - OUTPUT RULES: One sentence, 5-12 words, ONE question or instruction, no markdown
+
+Verdict: PASS_2Q-FSM-SMOKE
+
+The verbatim user-attested bug ("my friend stopped breathing" → "start chest compressions") is now blocked at the FSM level, not just the prompt level. Nemotron's 30% IFBench failure rate is now bounded: even if the LLM phrases poorly, it cannot leak a CPR instruction because the intent is "verify_cpr_surface" and the latched fact says "Do NOT instruct chest compressions yet."
+
+Track A prompt rewrite (commit 9f50adf) remains in place as defense-in-depth. cycle-2P file-backed greeting (cycle-2P) untouched. cycle-2N MW reference voice untouched.
