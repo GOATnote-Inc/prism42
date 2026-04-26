@@ -836,10 +836,21 @@ async def entrypoint(ctx: JobContext) -> None:
 
     orchestrator = make_orchestrator(session_id)
     # (additive) cycle-2R Team A — wire dispatch publisher (no-op when flag OFF).
+    # cycle-2T2 — log init-attempt at INFO so blank-panel diagnosis can
+    # confirm init is being invoked (vs flag off / module import failed).
+    log.info(
+        "dispatch_publisher.attach_attempt",
+        session_id=session_id,
+        flag_enabled=_dp_enabled(),
+        module_loaded=DispatchPublisher is not None,
+    )
     if DispatchPublisher is not None and _dp_enabled():
         try:
             _dp = DispatchPublisher(ctx.room, session_id)
             orchestrator._dispatch_publisher = _dp  # type: ignore[attr-defined]
+            log.info(
+                "dispatch_publisher.attached", session_id=session_id
+            )
         except Exception as e:  # noqa: BLE001
             log.warning("dispatch_publisher.init_failed", err=str(e)[:200])
 
@@ -1134,6 +1145,24 @@ async def entrypoint(ctx: JobContext) -> None:
                 )
                 cur["early_llm_logged"] = True
 
+            # (additive) cycle-2T2 — emit caller_partial to the dispatch
+            # data-track for BOTH interim and final transcripts so the UI
+            # transcript pane shows the live "speaking..." pulse during
+            # the caller's utterance, then promotes to a canonical
+            # transcript row on the next `turn` event. Previously this
+            # was gated under `if is_final:` which only emitted at the
+            # tail of each utterance — fine for transcript correctness
+            # but no live-pulse signal. Lifting this above the is_final
+            # branch is safe because publish_caller_partial does NOT
+            # increment turn_index and the reducer treats interim+final
+            # symmetrically.
+            try:
+                _dp = getattr(orchestrator, "_dispatch_publisher", None)
+                if _dp is not None and text:
+                    _dp.publish_caller_partial(text=text, is_final=is_final)
+            except Exception as e:  # noqa: BLE001
+                log.warning("on_user_transcribed.dispatch_publish_failed", err=str(e)[:200])
+
             if is_final:
                 now = time.monotonic()
                 if cur.get("t_stt_end") is None:
@@ -1147,13 +1176,6 @@ async def entrypoint(ctx: JobContext) -> None:
                     asyncio.create_task(
                         _post_turn_to_bus(session_id, "user", text)
                     )
-                # (additive) cycle-2U — caller-partial → dispatch data-track.
-                try:
-                    _dp = getattr(orchestrator, "_dispatch_publisher", None)
-                    if _dp is not None and text:
-                        _dp.publish_caller_partial(text=text, is_final=is_final)
-                except Exception as e:  # noqa: BLE001
-                    log.warning("on_user_transcribed.dispatch_publish_failed", err=str(e)[:200])
                 # If we missed the VAD speaking→listening transition,
                 # approximate user_speech_end by subtracting transcript_delay.
                 if cur.get("t_user_speech_end") is None:
