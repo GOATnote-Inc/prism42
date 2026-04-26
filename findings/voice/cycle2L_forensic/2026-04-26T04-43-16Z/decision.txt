@@ -1,0 +1,1 @@
+PICK_B (P1 wpm=210.3 vs A=161.5, lift=48.8)

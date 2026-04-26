@@ -1,0 +1,73 @@
+{
+  "condition": "B",
+  "reference_id": "psap-fast",
+  "pace_tag": "",
+  "comma_to_period": false,
+  "phrases": [
+    {
+      "text_sent": "Nine one one, where is your emergency?",
+      "text_orig": "Nine one one, where is your emergency?",
+      "ttfb_ms": 53.29543800326064,
+      "total_ms": 1748.7940639839508,
+      "audio_bytes": 176172,
+      "duration_s": 1.9974149659863945,
+      "wpm_proxy": 210.27177985150877,
+      "wav_path": "/tmp/cycle2L_B/p1.wav",
+      "wav_bytes": 176216,
+      "success": true,
+      "index": 1
+    },
+    {
+      "text_sent": "What's your location?",
+      "text_orig": "What's your location?",
+      "ttfb_ms": 2.440470998408273,
+      "total_ms": 1028.5133899888024,
+      "audio_bytes": 86060,
+      "duration_s": 0.9757369614512472,
+      "wpm_proxy": 184.47594701371136,
+      "wav_path": "/tmp/cycle2L_B/p2.wav",
+      "wav_bytes": 86104,
+      "success": true,
+      "index": 2
+    },
+    {
+      "text_sent": "Are they breathing?",
+      "text_orig": "Are they breathing?",
+      "ttfb_ms": 2.625467022880912,
+      "total_ms": 847.2248410107568,
+      "audio_bytes": 61484,
+      "duration_s": 0.6970975056689342,
+      "wpm_proxy": 258.2135189642834,
+      "wav_path": "/tmp/cycle2L_B/p3.wav",
+      "wav_bytes": 61528,
+      "success": true,
+      "index": 3
+    },
+    {
+      "text_sent": "Stay with me.",
+      "text_orig": "Stay with me.",
+      "ttfb_ms": 2.6837150217033923,
+      "total_ms": 837.5113720248919,
+      "audio_bytes": 61484,
+      "duration_s": 0.6970975056689342,
+      "wpm_proxy": 258.2135189642834,
+      "wav_path": "/tmp/cycle2L_B/p4.wav",
+      "wav_bytes": 61528,
+      "success": true,
+      "index": 4
+    },
+    {
+      "text_sent": "Help is on the way.",
+      "text_orig": "Help is on the way.",
+      "ttfb_ms": 3.3582510077394545,
+      "total_ms": 1013.7935719976667,
+      "audio_bytes": 86060,
+      "duration_s": 0.9757369614512472,
+      "wpm_proxy": 307.45991168951895,
+      "wav_path": "/tmp/cycle2L_B/p5.wav",
+      "wav_bytes": 86104,
+      "success": true,
+      "index": 5
+    }
+  ]
+}
