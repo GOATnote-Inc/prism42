@@ -1,0 +1,56 @@
+Nvidia Encoder is supported.
+Nvidia Decoder is supported.
+=== STAGE A: generate caller audio for 'There is a fire on the second floor. We are trapped.' ===
+[gen] synthesizing caller audio: 'There is a fire on the second floor. We are trapped.'
+[gen] got 299,052 bytes (3.39s of audio at 44100Hz)
+[gen] resampled to 48000Hz, duration 3.39s
+
+=== STAGE B: mint session + token via https://prism42-console.vercel.app ===
+[mint] session_id=85b7dc17-3907-2d74-1fcb-fe255b713cd2 url=wss://ai-therapy-v3svfd9o.livekit.cloud
+
+=== STAGE C: connect + listen ===
+[stage C] connected @ +0.69s
+[evt] participant_connected: identity='agent-AJ_TQjdxkD3KFrb'
+[stage C] AGENT JOINED @ +1.35s (agent-AJ_TQjdxkD3KFrb)
+[evt] track_subscribed kind=1 from=agent-AJ_TQjdxkD3KFrb
+[stage C] AUDIO TRACK SUBSCRIBED @ +1.67s
+
+=== STAGE D: wait for pre-roll (0.5s) ===
+[stage D] pre-roll audio: 0 non-silent frames, peak 2
+
+=== STAGE E: publish caller audio (3.4s) ===
+[stage E] track published @ +2.20s
+[stage E] publish ended @ +5.85s
+
+=== STAGE F: wait up to 30.0s for agent reply ===
+[stage F] filler-skip-window: 2.5s after pub-end
+[stage F] + 0.50s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 1.00s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 1.50s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 2.00s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 2.50s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 3.00s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 3.50s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 4.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] AGENT REPLY DETECTED (raw) @ +10.36s (4.51s after caller end), peak 19057
+[stage F] listening 1.0s more to confirm sustained speech ...
+
+======================================================================
+RESULT
+======================================================================
+agent_joined          : YES
+audio_track_subscribed: YES
+preroll_speech_frames : 0 (peak 2)
+reply_speech_amp_max  : 20943
+reply_latency_after_pubend: +4.51s
+filler_skip_window_s  : 2.5
+useful_reply_amp_max  : 20943
+first_useful_audio_after_speech_ms: NEVER
+first_audio_after_speech_ms: 4506
+useful_audio_skipped_filler=False raw_to_useful_delta_ms=-1
+total_speech_frames   : 110
+global_peak_amplitude : 20943
+first_segment_min_ms  : 200.0
+tts_total_ms          : 5499
+useful_audio_duration_ms: 1120
+VERDICT: PASS — full turn round-trip works

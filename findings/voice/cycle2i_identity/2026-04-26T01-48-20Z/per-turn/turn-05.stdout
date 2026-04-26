@@ -1,0 +1,107 @@
+Nvidia Encoder is supported.
+Nvidia Decoder is supported.
+=== STAGE A: generate caller audio for 'I just got hit by a car at the intersection of fifth and main.' ===
+[gen] synthesizing caller audio: 'I just got hit by a car at the intersection of fifth and main.'
+[gen] got 303,148 bytes (3.44s of audio at 44100Hz)
+[gen] resampled to 48000Hz, duration 3.44s
+
+=== STAGE B: mint session + token via https://prism42-console.vercel.app ===
+[mint] session_id=45d49275-49b1-cb34-d1e6-610a9f5c8ddf url=wss://ai-therapy-v3svfd9o.livekit.cloud
+
+=== STAGE C: connect + listen ===
+[stage C] connected @ +0.67s
+[evt] participant_connected: identity='agent-AJ_jXy2qtuzT32T'
+[stage C] AGENT JOINED @ +7.16s (agent-AJ_jXy2qtuzT32T)
+[evt] track_subscribed kind=1 from=agent-AJ_jXy2qtuzT32T
+[stage C] AUDIO TRACK SUBSCRIBED @ +7.47s
+
+=== STAGE D: wait for pre-roll (0.5s) ===
+[stage D] pre-roll audio: 32 non-silent frames, peak 15397
+
+=== STAGE E: publish caller audio (3.4s) ===
+[stage E] track published @ +8.00s
+[stage E] publish ended @ +11.77s
+
+=== STAGE F: wait up to 30.0s for agent reply ===
+[stage F] filler-skip-window: 2.5s after pub-end
+[stage F] + 0.50s after pub-end | reply_peak=1 useful_peak=0 (0 = silence)
+[stage F] + 1.00s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 1.50s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 2.00s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 2.50s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 3.00s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 3.51s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 4.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 4.51s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 5.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 5.51s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 6.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 6.51s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 7.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 7.51s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 8.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 8.51s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 9.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 9.52s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +10.02s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +10.52s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +11.02s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +11.52s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +12.02s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +12.52s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +13.02s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +13.52s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +14.02s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +14.52s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +15.02s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +15.52s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +16.02s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +16.52s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +17.03s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +17.53s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +18.03s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +18.53s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +19.03s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +19.53s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +20.03s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +20.53s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +21.03s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +21.53s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +22.03s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +22.53s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +23.03s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +23.54s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +24.04s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +24.54s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +25.04s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +25.54s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +26.04s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +26.54s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +27.04s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +27.54s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +28.04s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +28.54s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +29.04s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +29.54s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] +30.05s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[evt] disconnected reason=1
+
+======================================================================
+RESULT
+======================================================================
+agent_joined          : YES
+audio_track_subscribed: YES
+preroll_speech_frames : 32 (peak 15397)
+reply_speech_amp_max  : 2
+reply_latency_after_pubend: NEVER
+filler_skip_window_s  : 2.5
+useful_reply_amp_max  : 2
+first_useful_audio_after_speech_ms: NEVER
+first_audio_after_speech_ms: NEVER
+useful_audio_skipped_filler=False raw_to_useful_delta_ms=-1
+total_speech_frames   : 285
+global_peak_amplitude : 17168
+first_segment_min_ms  : 200.0
+tts_total_ms          : -1
+useful_audio_duration_ms: -1
+VERDICT: pre-roll worked but agent NEVER replied to caller utterance (orchestrator/STT/specialist round-trip is the next bottleneck)

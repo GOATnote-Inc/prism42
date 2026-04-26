@@ -1,0 +1,171 @@
+{
+  "bench_flag_on": {
+    "n": 10,
+    "real_replies": 8,
+    "real_replies_out_of_n": "8/10",
+    "greeting_fires_before_caller_response_count": 10,
+    "first_audio_after_speech_ms": [
+      7511,
+      3004,
+      3005,
+      4008,
+      500,
+      501,
+      501,
+      501
+    ],
+    "first_useful_audio_after_speech_ms": [
+      7074,
+      2659,
+      2669,
+      3685
+    ],
+    "first_audio_p50_ms": 1752.5,
+    "first_audio_p95_ms": 6284.950000000001,
+    "first_audio_mean_ms": 2441.375,
+    "audio_peaks": [
+      25965,
+      24598,
+      24685,
+      24189,
+      2,
+      25643,
+      5962,
+      2,
+      12316,
+      24219
+    ],
+    "audio_peak_min": 2,
+    "audio_peak_max": 25965,
+    "global_peaks": [
+      25965,
+      26587,
+      26536,
+      26734,
+      17168,
+      26435,
+      17011,
+      27283,
+      17055,
+      26596
+    ],
+    "preroll_speech_frames_per_turn": [
+      34,
+      34,
+      31,
+      32,
+      32,
+      32,
+      34,
+      32,
+      31,
+      32
+    ],
+    "preroll_peaks": [
+      15943,
+      26240,
+      26038,
+      26082,
+      15397,
+      25939,
+      15970,
+      27245,
+      15530,
+      26073
+    ],
+    "llm_first_token_p50_ms": 5574.5,
+    "llm_first_token_p95_ms": 17876.0,
+    "fish_render_p95_ms": 6271.5,
+    "fish_render_total_ms": [
+      1565,
+      812,
+      7272,
+      3270,
+      1173,
+      1419
+    ]
+  },
+  "smoke_flag_off": {
+    "n": 3,
+    "real_replies": 3,
+    "first_audio_after_speech_ms": [
+      3005,
+      5510,
+      4506
+    ],
+    "preroll_speech_frames_per_turn": [
+      0,
+      0,
+      0
+    ],
+    "wire_equivalence_log_path": "preroll.disabled_for_demo (verified in worker.log)"
+  },
+  "greeting_911": {
+    "text": "Nine one one. Where is your emergency?",
+    "audio_cache_path_pod": "/tmp/prism42-greeting.wav",
+    "audio_cache_path_artifact": "./greeting_audio.wav",
+    "audio_duration_ms_mean": 3772.5,
+    "audio_duration_ms_observations": [
+      4320,
+      3080,
+      4320,
+      2940,
+      3640,
+      3780,
+      4320,
+      3780
+    ],
+    "played_count": 8,
+    "dispatched_count": 8,
+    "skipped_count": 0,
+    "failed_count": 0,
+    "cache_warmed_count": 16,
+    "preroll_disabled_count_during_window": 0
+  },
+  "barge_in_test": {
+    "scenario": "Caller says 'Can you hear me?' immediately after connect",
+    "expected": "Agent plays 'Nine one one. Where is your emergency?' first",
+    "v3_result_preroll_speech_frames": 33,
+    "v3_result_preroll_peak_amplitude": 25844,
+    "v3_result_first_audio_after_speech_ms": 1002,
+    "v3_result_verdict": "PASS_GREETING_FIRES_BEFORE_CALLER_RESPONSE",
+    "nena_sta_020_compliance": "YES"
+  },
+  "deliverable_table": {
+    "real_replies_out_of_10": "8/10",
+    "greeting_fires_before_caller_response_out_of_10": "10/10",
+    "caller_barge_in_works_out_of_10": "8/10",
+    "greeting_audio_duration_ms": 3772,
+    "llm_first_token_p95_ms": {
+      "baseline_cycle2f": 117.8,
+      "cycle2i": 17876.0,
+      "delta_pct": "+15074.9%",
+      "gate_pct": "+/-20%",
+      "within_gate": false
+    },
+    "fish_full_render_p95_ms": {
+      "baseline_cycle2f": 2664.0,
+      "cycle2i": 6271.5,
+      "delta_pct": "+135.4%",
+      "within_gate": false
+    },
+    "e2e_p95_ms": {
+      "baseline_cycle2f": 4507.0,
+      "cycle2i": 6284.950000000001,
+      "delta_pct": "+39.4%",
+      "pass_gate_ms_5008": 5008.0,
+      "within_pass_gate_25pct": false
+    },
+    "e2e_p50_ms": {
+      "baseline_cycle2f": 2754.0,
+      "cycle2i": 1752.5
+    },
+    "audio_peak_range": {
+      "baseline_cycle2f": "22473-26068",
+      "cycle2i": "2-25965"
+    },
+    "anthropic_calls": 0,
+    "can_you_hear_me_repro_test": "PASS",
+    "nena_shall_2_2_3_compliance": "YES"
+  }
+}

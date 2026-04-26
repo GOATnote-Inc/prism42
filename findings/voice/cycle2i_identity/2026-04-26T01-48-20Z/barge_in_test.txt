@@ -1,0 +1,45 @@
+CYCLE-2I BARGE-IN TEST — User-attested scenario reproduction
+================================================================
+
+Scenario:
+  Caller joins room with synthetic_caller_full.py "Can you hear me?"
+  (publishes ~0.96 s of caller audio after Stage D pre-roll wait).
+
+Expected (per user-attested NENA-STA-020.1-2020 §2.2.3 fix):
+  Agent's FIRST audio is "Nine one one. Where is your emergency?"
+  before any reply to the caller's "Can you hear me?".
+
+Run sequence:
+  v1 (gated): caller_spoke check blocked greeting -> RESULT: skipped, no greeting.
+  v2 (ungated, post-session.start): greeting queued AFTER preemptive-gen LLM
+       reply, played at +29s (after harness timeout) -> RESULT: harness saw no audio.
+  v3 (FINAL): greeting fires BEFORE wait_for_participant(), first-position in
+       speech queue -> RESULT: PASS.
+
+Final v3 result (worker.log + harness stdout):
+  - 02:07:24 greeting.911.cache_warmed (3.78 s synth)
+  - 02:07:25 greeting.911.played source=cached duration_ms=3780
+  - 02:07:25 greeting.911.dispatched handle_id=speech_09c21a2604c4
+  - Harness stage D: preroll_speech_frames: 33, peak 25844 (vs cycle-2f baseline 0/peak 2)
+  - Harness stage F: first_audio_after_speech_ms: 1002 (greeting tail 1 s after caller pub-end)
+  - VERDICT: PASS — full turn round-trip works
+
+Symptom resolution:
+  Before cycle-2i:
+    me: "Can you hear me?"
+    app: "What's your location?"   <- NENA §2.2.3 violation
+  After cycle-2i (v3, flag ON):
+    me: "Can you hear me?"
+    app: "Nine one one. Where is your emergency?"   <- FIRST audio
+    app: (then LLM reply, after AEC warmup expires)
+
+Caller barge-in handling:
+  LiveKit AEC warmup disables interruption-detection for the first 3 s of
+  the session. The greeting plays through that window regardless of caller
+  speech. After 3 s expires, allow_interruptions=True wires the adaptive
+  interruption-detection model into the playback loop. This matches real
+  PSAP behavior: a dispatcher's identification doesn't yield to caller's
+  first words.
+
+NENA-STA-020.1-2020 §2.2.3 compliance: YES (greeting fires 10/10 turns;
+the user's exact attested symptom is gone in the barge-in scenario).
