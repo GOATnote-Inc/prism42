@@ -127,6 +127,14 @@ class DispatchPublisher:
         self._queue: asyncio.Queue[bytes] | None = None
         self._task: asyncio.Task[None] | None = None
         self._turn_index = 0
+        # cycle-2T2 — log init at INFO so a single grep on the worker log
+        # confirms whether DispatchPublisher was ever attached to a room.
+        log.info(
+            "dispatch_publisher.init",
+            session_id=session_id,
+            enabled=self._enabled,
+            topic=TOPIC,
+        )
 
     # ---- public API --------------------------------------------------
 
@@ -241,6 +249,10 @@ class DispatchPublisher:
 
     async def _worker(self) -> None:
         assert self._queue is not None
+        # cycle-2T2 — sample-log the first 3 publishes per session so a tail
+        # of /tmp/prism42-logs/worker.log proves the data-channel is hot
+        # without flooding (~3-5 events/turn x N turns).
+        n = 0
         while True:
             try:
                 payload = await self._queue.get()
@@ -249,8 +261,21 @@ class DispatchPublisher:
             try:
                 lp = getattr(self._room, "local_participant", None)
                 if lp is None:
+                    log.warning(
+                        "dispatch_publisher.no_local_participant",
+                        session_id=self._session_id,
+                    )
                     continue
                 await lp.publish_data(payload=payload, reliable=True, topic=TOPIC)
+                n += 1
+                if n <= 3:
+                    log.info(
+                        "dispatch_publisher.published",
+                        session_id=self._session_id,
+                        topic=TOPIC,
+                        bytes=len(payload),
+                        seq=n,
+                    )
             except Exception as e:  # noqa: BLE001
                 # Failures here MUST NOT propagate — voice path is upstream.
                 log.warning(

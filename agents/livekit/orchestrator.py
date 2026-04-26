@@ -37,6 +37,22 @@ from livekit import rtc
 from livekit.agents import Agent
 from livekit.agents.voice.agent import ModelSettings  # type: ignore[attr-defined]
 
+# Cycle-2L: StopResponse is the LiveKit Agents 1.5.x canonical hammer for
+# "I already answered this turn deterministically — do NOT run the LLM."
+# When raised inside on_user_turn_completed, agent_activity.py:1973 catches
+# it and returns from the user-input handler, which also cancels any
+# preemptive-generation in flight. Without this, the gate's session.say()
+# template AND the LLM-driven reply both fire — caller hears the gate
+# template followed by the FAST_DISPATCHER_SYSTEM_PROMPT-driven LLM reply
+# (which says "Nine one one, what is the address of your emergency?" on
+# every turn because the LLM has no FSM state and re-applies "First turn
+# verbatim"). Default-OFF guarded — only raised when the gate's flag is
+# enabled AND the gate elected to emit a template successfully.
+try:
+    from livekit.agents.llm import StopResponse  # type: ignore[import-not-found]
+except Exception:  # noqa: BLE001
+    StopResponse = None  # type: ignore[assignment]
+
 log = structlog.get_logger()
 
 
@@ -312,12 +328,40 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
     ) -> None:
         local_log = structlog.get_logger()
         t0 = time.monotonic()
+        # Cycle-2L: when the gate emits a template, we set this flag so the
+        # outer try/except (which exists to keep the FSM from wedging the
+        # voice path) does NOT swallow the StopResponse we want LiveKit to
+        # see. Without this, raise-StopResponse-then-broad-except yields a
+        # 'orchestrator.fsm_turn_failed' log line and the LLM still runs.
+        gate_emitted_template = False
         try:
             utterance = (getattr(new_message, "text_content", None) or "").strip()
             if not utterance:
                 # Empty turn — nothing to advance. Keep prior instructions.
                 return
             intent = self._fsm.transition(utterance)
+
+            # (additive) cycle-2T2 Team T2 fix — publish `turn` event BEFORE
+            # the gate-decision branch so template-only turns ALSO emit a
+            # turn event. Previously this lived under the LLM-fallthrough
+            # path (line ~372), which the gate's `return` at line 365
+            # short-circuited 100% of the time once cycle-2T was on. Result:
+            # dispatcher-UI transcript pane stayed blank because no `turn`
+            # events ever reached the browser. The publish is best-effort
+            # and never blocks the voice path. (See findings/voice/
+            # cycle2T2_transcript_debug/team-t2/diagnosis.md.)
+            try:
+                _dp = getattr(self, "_dispatch_publisher", None)
+                if _dp is not None:
+                    _dp.publish_turn(
+                        caller_utterance=utterance,
+                        fsm=self._fsm,
+                        latency_ms={},  # latency populated by reply event
+                    )
+            except Exception as e:  # noqa: BLE001
+                local_log.warning(
+                    "orchestrator.dispatch_publish_failed", err=str(e)[:200]
+                )
 
             # Cycle-2T: deterministic response gate between FSM and TTS.
             # When the gate elects a template, we emit directly to TTS via
@@ -353,6 +397,25 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
                             session_id=self._session_id,
                         )
                     else:
+                        # (additive) cycle-2T2 — emit `reply` event for the
+                        # template-only path. `conversation_item_added` does
+                        # NOT fire for session.say() with the default
+                        # add_to_chat_ctx behavior on session.say (which is
+                        # the path templates take), so without this hook the
+                        # frontend never sees the dispatcher reply text for
+                        # 20/21 cycle-2T intents.
+                        try:
+                            if _dp is not None:
+                                _dp.publish_reply(
+                                    text=decision.final_text,
+                                    tts_ttfb_ms=0,
+                                    tts_total_ms=0,
+                                )
+                        except Exception as e:  # noqa: BLE001
+                            local_log.warning(
+                                "orchestrator.gate_dispatch_publish_failed",
+                                err=str(e)[:200],
+                            )
                         dt_ms = int((time.monotonic() - t0) * 1000)
                         local_log.info(
                             "orchestrator.gate_template_ms",
@@ -362,26 +425,28 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
                             cpr_blocked=decision.cpr_blocked,
                             fallback_intent=decision.fallback_intent,
                         )
-                        return  # short-circuit: no LLM call this turn
+                        # Cycle-2L: mark for StopResponse re-raise OUTSIDE
+                        # the broad `except Exception` below. Returning here
+                        # is NOT enough — LiveKit's preemptive_generation
+                        # path has already kicked off an LLM stream by the
+                        # time on_user_turn_completed runs (see
+                        # agent_activity.py:1898). Only StopResponse cancels
+                        # that in-flight stream. Default-OFF guarded: only
+                        # set when PRISM42_ENABLE_RESPONSE_GATE=1 (because
+                        # `self._response_gate` is None otherwise) AND the
+                        # gate elected a template successfully (final_text
+                        # populated, session.say did not raise).
+                        gate_emitted_template = True
+                        return  # break out of try; StopResponse raised below
 
             # Fall-through: LLM path. Cycle-2Q FSM-rewritten prompt.
             prompt = self._fsm.next_prompt(utterance, intent)
             # Update the agent's instructions so the next LLM call sees
             # the FSM-derived per-turn prompt.
             await self.update_instructions(prompt)
-            # (additive) cycle-2R Team A — emit turn event for dispatcher UI.
-            try:
-                _dp = getattr(self, "_dispatch_publisher", None)
-                if _dp is not None:
-                    _dp.publish_turn(
-                        caller_utterance=utterance,
-                        fsm=self._fsm,
-                        latency_ms={},  # latency populated by reply event
-                    )
-            except Exception as e:  # noqa: BLE001
-                local_log.warning(
-                    "orchestrator.dispatch_publish_failed", err=str(e)[:200]
-                )
+            # NOTE: turn event already published above (cycle-2T2 fix).
+            # The LLM-fallthrough path's `reply` event still fires from
+            # worker.py:_on_item via conversation_item_added.
             dt_ms = int((time.monotonic() - t0) * 1000)
             local_log.info(
                 "orchestrator.fsm_turn_ms",
@@ -400,6 +465,22 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
                 err=str(e)[:200],
                 session_id=self._session_id,
             )
+
+        # Cycle-2L: raise StopResponse OUTSIDE the broad except so LiveKit
+        # cancels the preemptive-generation LLM stream. agent_activity.py
+        # line 1973 catches this and returns from _handle_user_input,
+        # which is what we want — the gate template is the ONLY reply for
+        # this turn. Without this, the user hears the gate template AND a
+        # second reply from the LLM (which re-asks "Nine one one, what is
+        # the address of your emergency?" because FAST_DISPATCHER_SYSTEM_PROMPT
+        # tells it to do that "verbatim" on first turn — but the LLM has
+        # no FSM state and treats every preemptive-generation kickoff as
+        # a fresh turn). Keep the guard tight: ONLY raise when
+        # gate_emitted_template is True, which itself requires the
+        # cycle-2T env-flag to be set AND the gate to have successfully
+        # emitted a template.
+        if gate_emitted_template and StopResponse is not None:
+            raise StopResponse()
 
 
 FAST_DISPATCHER_SYSTEM_PROMPT = """\
