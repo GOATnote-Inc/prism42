@@ -904,6 +904,18 @@ async def entrypoint(ctx: JobContext) -> None:
         # metrics. Gate on role.
         if getattr(item, "role", None) != "assistant":
             return
+        # Cycle-2Q: feed the realized dispatcher utterance into the
+        # FSM's anti-repetition rolling buffer. No-op when the FSM is
+        # disabled (orchestrator returned a vanilla Agent without a
+        # `.fsm` attr). Best-effort — never block the latency path.
+        try:
+            fsm = getattr(orchestrator, "fsm", None)
+            if fsm is not None:
+                text = getattr(item, "text_content", None)
+                if text:
+                    fsm.record_dispatcher_reply(text)
+        except Exception as e:  # noqa: BLE001
+            log.warning("on_item.fsm_record_failed", err=str(e)[:200])
         try:
             # Mark end of turn and finalize timings BEFORE publishing.
             bucket = _timing_bucket(session_id)

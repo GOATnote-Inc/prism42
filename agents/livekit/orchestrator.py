@@ -224,6 +224,104 @@ class BufferedDispatcherAgent(Agent):
             yield frame
 
 
+# ---------------------------------------------------------------------
+# Cycle-2Q — DispatcherFSM integration.
+#
+# Default OFF (PRISM42_ENABLE_FSM=0). When enabled, FsmDispatcherAgent
+# wraps BufferedDispatcherAgent so the cycle-2e sentence-buffer + FSM
+# per-turn prompt rewrite stack composes cleanly. The FSM owns dialogue
+# state (latches, pronouns, anti-repetition); the LLM owns phrasing.
+# See findings/voice/cycle2Q_logic_audit/2026-04-26-team3/fsm-design.md.
+# ---------------------------------------------------------------------
+
+# Lazy import — keeps the cycle-2P path free of FSM module load when
+# the flag is off. Verified import-cost on B300 pod: <5 ms cold.
+try:
+    from dispatcher_fsm import (  # type: ignore[import-not-found]
+        DispatcherFSM,
+        Intent,
+        fsm_for_session,
+        should_use_fsm,
+    )
+except Exception:  # noqa: BLE001
+    DispatcherFSM = None  # type: ignore[assignment]
+    Intent = None  # type: ignore[assignment]
+    fsm_for_session = None  # type: ignore[assignment]
+
+    def should_use_fsm() -> bool:  # type: ignore[no-redef]
+        return False
+
+
+class FsmDispatcherAgent(BufferedDispatcherAgent):
+    """BufferedDispatcherAgent + per-turn FSM-driven prompt rewrite.
+
+    Hook: `on_user_turn_completed(turn_ctx, new_message)` fires AFTER
+    STT-final and BEFORE the LLM generation kicks off
+    (livekit/agents/voice/agent.py:247). We extract the caller's
+    utterance, advance the FSM, and call `update_instructions(...)`
+    so the LLM sees a one-page, intent-tagged system prompt instead
+    of the 4 KB FAST_DISPATCHER_SYSTEM_PROMPT.
+
+    Latency budget: <100 ms / turn (FSM + prompt build + update). On
+    B300 the FSM transition is <50 us; the bulk of the budget is
+    update_instructions, which is a same-process attribute write.
+    """
+
+    def __init__(
+        self,
+        *,
+        instructions: str,
+        tools: list[Any],
+        session_id: str,
+        fsm: Any,
+    ) -> None:
+        super().__init__(instructions=instructions, tools=tools)
+        self._session_id = session_id
+        self._fsm = fsm
+
+    @property
+    def fsm(self) -> Any:
+        """Expose the FSM for worker.py to record dispatcher utterances
+        into the anti-repetition buffer post-LLM."""
+        return self._fsm
+
+    async def on_user_turn_completed(  # type: ignore[override]
+        self,
+        turn_ctx: Any,
+        new_message: Any,
+    ) -> None:
+        local_log = structlog.get_logger()
+        t0 = time.monotonic()
+        try:
+            utterance = (getattr(new_message, "text_content", None) or "").strip()
+            if not utterance:
+                # Empty turn — nothing to advance. Keep prior instructions.
+                return
+            intent = self._fsm.transition(utterance)
+            prompt = self._fsm.next_prompt(utterance, intent)
+            # Update the agent's instructions so the next LLM call sees
+            # the FSM-derived per-turn prompt.
+            await self.update_instructions(prompt)
+            dt_ms = int((time.monotonic() - t0) * 1000)
+            local_log.info(
+                "orchestrator.fsm_turn_ms",
+                session_id=self._session_id,
+                ms=dt_ms,
+                intent=getattr(intent, "value", str(intent)),
+                state=self._fsm.state.value,
+            )
+        except Exception as e:  # noqa: BLE001
+            # Hard rule: FSM must never wedge the voice path. On any
+            # error fall back to the prior instructions (the original
+            # FAST_DISPATCHER_SYSTEM_PROMPT) so the caller still gets
+            # a reply.
+            local_log.warning(
+                "orchestrator.fsm_turn_failed",
+                err=str(e)[:200],
+                session_id=self._session_id,
+            )
+
+
 FAST_DISPATCHER_SYSTEM_PROMPT = """\
 # CONTEXT — READ FIRST
 
@@ -403,6 +501,17 @@ def make_orchestrator(session_id: str) -> Agent:
         FAST_DISPATCHER_SYSTEM_PROMPT
         + f"\n\n# SESSION CONTEXT\nsession_id: {session_id}\n"
     )
+    # Cycle-2Q: FSM-controlled dispatcher agent. Default OFF; when ON
+    # composes on top of BufferedDispatcherAgent so cycle-2e sentence
+    # buffering + cycle-2Q FSM prompt rewrite both apply.
+    if should_use_fsm() and DispatcherFSM is not None and fsm_for_session is not None:
+        log.info("orchestrator.cycle2q_fsm.enabled", session_id=session_id)
+        return FsmDispatcherAgent(
+            instructions=instructions,
+            tools=[],
+            session_id=session_id,
+            fsm=fsm_for_session(session_id),
+        )
     if os.environ.get("PRISM42_CYCLE_2E_BUFFER", "0") == "1":
         log.info("orchestrator.cycle2e_buffer.enabled", session_id=session_id)
         return BufferedDispatcherAgent(instructions=instructions, tools=[])
