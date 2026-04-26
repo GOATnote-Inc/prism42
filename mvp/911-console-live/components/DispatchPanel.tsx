@@ -116,7 +116,88 @@ export interface DispatchCallerPartialEvent {
   is_final: boolean;
 }
 
-export type DispatchEvent = DispatchTurnEvent | DispatchReplyEvent | DispatchCallerPartialEvent;
+// ─────────────────────────────────────────────────────────────────────
+// Cycle-2C Phase-4: Nemotron perception (structured-classifier output).
+//
+// Mirrors `findings/voice/cycle2C_structured_classifier/team-c/schema.json`.
+// Phase-1 (parallel work in agents/livekit/dispatch_publisher.py) emits
+// one `perception` event per caller utterance under the same
+// `prism42.dispatch` data-track topic, paired by turn_index with the
+// `turn` event.
+//
+// Default: when no perception events ever arrive (Phase-1 not yet
+// deployed), the perception sub-panel shows a muted placeholder.
+// ─────────────────────────────────────────────────────────────────────
+
+export type PerceptionIntent =
+  | "intake"
+  | "key_question"
+  | "verify"
+  | "instruct"
+  | "answer"
+  | "reprompt";
+
+export type PerceptionAcuity = "P1" | "P2" | "P3" | "P4" | "P5" | "unknown";
+
+export type PerceptionSurface =
+  | "floor"
+  | "chair"
+  | "bed"
+  | "couch"
+  | "vehicle"
+  | "standing"
+  | "unknown";
+
+export type PerceptionCallerRole = "first_party" | "third_party" | "unknown";
+
+export type PerceptionComplaintCategory =
+  | "medical"
+  | "trauma"
+  | "fire"
+  | "crime"
+  | "unknown";
+
+export type PerceptionDirectQuestionKind =
+  | "none"
+  | "do_not_move"
+  | "how_long"
+  | "outcome"
+  | "did_you_hear"
+  | "where_sending";
+
+export interface PerceptionAddressCandidate {
+  raw_text: string | null;
+  normalized: string | null;
+  has_digit: boolean;
+}
+
+export interface DispatchPerceptionEvent {
+  type: "perception";
+  session_id: string;
+  turn_index: number;
+  timestamp_ms: number;
+  // The 12 schema fields, in schema order.
+  intent: PerceptionIntent;
+  acuity: PerceptionAcuity;
+  address_candidate: PerceptionAddressCandidate;
+  awake: boolean | null;
+  breathing: boolean | null;
+  surface: PerceptionSurface;
+  caller_question: boolean;
+  caller_role: PerceptionCallerRole;
+  complaint_category: PerceptionComplaintCategory;
+  negation_signal: boolean;
+  direct_question_kind: PerceptionDirectQuestionKind;
+  confidence: number;
+  // Optional telemetry — present once Phase-1 wires the worker side.
+  latency_ms?: number;
+}
+
+export type DispatchEvent =
+  | DispatchTurnEvent
+  | DispatchReplyEvent
+  | DispatchCallerPartialEvent
+  | DispatchPerceptionEvent;
 
 // ─────────────────────────────────────────────────────────────────────
 // Reducer.
@@ -147,12 +228,20 @@ interface DispatchState {
    * list. Cleared when the next `turn` event lands (its caller_utterance
    * becomes the canonical line). */
   partial_caller_line: string | null;
+  /** Cycle-2C Phase-4: structured-classifier output keyed by turn_index.
+   * Sparse — Phase-1 is expected to emit one `perception` event per turn
+   * but the panel renders gracefully if a turn lacks one. */
+  perception_by_turn: Record<number, DispatchPerceptionEvent>;
+  /** Cycle-2C Phase-4: monotonic counter for ever_seen_perception. Drives
+   * the "Awaiting Phase-1 deploy" placeholder vs the live panel. */
+  perception_count: number;
 }
 
 type Action =
   | { kind: "turn"; ev: DispatchTurnEvent }
   | { kind: "reply"; ev: DispatchReplyEvent }
   | { kind: "caller_partial"; ev: DispatchCallerPartialEvent }
+  | { kind: "perception"; ev: DispatchPerceptionEvent }
   | { kind: "reset" };
 
 const INITIAL_STATE: DispatchState = {
@@ -166,6 +255,8 @@ const INITIAL_STATE: DispatchState = {
   address: null,
   complaint: "ASSESSING",
   partial_caller_line: null,
+  perception_by_turn: {},
+  perception_count: 0,
 };
 
 function reducer(state: DispatchState, action: Action): DispatchState {
@@ -246,6 +337,20 @@ function reducer(state: DispatchState, action: Action): DispatchState {
       return {
         ...state,
         partial_caller_line: action.ev.is_final ? null : action.ev.text,
+      };
+    }
+    case "perception": {
+      // Cycle-2C Phase-4: store keyed by turn_index. The PerceptionPanel
+      // renders the latest entry whose turn_index matches the active
+      // FSM turn so the viewer sees what Nemotron perceived for the
+      // SAME turn the FSM acted on. Dropping a duplicate turn_index is
+      // safe — we accept the latest, which matches the "latest snapshot
+      // wins" semantics the worker already uses for FSM state.
+      const ev = action.ev;
+      return {
+        ...state,
+        perception_by_turn: { ...state.perception_by_turn, [ev.turn_index]: ev },
+        perception_count: state.perception_count + 1,
       };
     }
     default:
@@ -364,7 +469,12 @@ export function DispatchSubscription({
     try {
       const text = new TextDecoder().decode(msg.payload);
       const parsed = JSON.parse(text) as DispatchEvent;
-      if (parsed.type === "turn" || parsed.type === "reply" || parsed.type === "caller_partial") {
+      if (
+        parsed.type === "turn" ||
+        parsed.type === "reply" ||
+        parsed.type === "caller_partial" ||
+        parsed.type === "perception"
+      ) {
         onEvent(parsed);
       }
     } catch {
@@ -396,10 +506,15 @@ function useFixtureMode(dispatch: React.Dispatch<Action>) {
       const ev = events[idx++];
       if (ev.type === "turn") dispatch({ kind: "turn", ev });
       else if (ev.type === "reply") dispatch({ kind: "reply", ev });
+      else if (ev.type === "caller_partial") dispatch({ kind: "caller_partial", ev });
+      else if (ev.type === "perception") dispatch({ kind: "perception", ev });
       // First few events fire faster so the viewer sees the FSM hop into
       // CARDIAC + verify quickly; later events space out so the dispatcher
       // discipline (one-time reassurance, CPR coaching) reads cleanly.
-      const interval = idx <= 2 ? 1100 : FIXTURE_REPLAY_INTERVAL_MS;
+      // Perception events fire on a sub-tick so they appear paired with
+      // their turn (Phase-1 emits them ~10-50ms after the turn event).
+      const isPerception = ev.type === "perception";
+      const interval = isPerception ? 250 : (idx <= 2 ? 1100 : FIXTURE_REPLAY_INTERVAL_MS);
       setTimeout(tick, interval);
     }
     // Kick off after a short delay so the static panel chrome paints first.
@@ -751,6 +866,364 @@ function LatPill({ label, ms, budget }: { label: string; ms: number; budget: num
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Cycle-2C Phase-4: NEMOTRON PERCEPTION sub-panel.
+//
+// Renders the live structured-classifier output keyed by the active
+// turn_index. Compares the classifier's broad-intent category against
+// the FSM's 21-value intent and emits an agreement / mismatch / n-a
+// badge so beta testers can see Nemotron's perception drift turn by
+// turn.
+// ─────────────────────────────────────────────────────────────────────
+
+const PERCEPTION_INTENT_LABEL: Record<PerceptionIntent, string> = {
+  intake: "Intake",
+  key_question: "Key question",
+  verify: "Verify",
+  instruct: "Instruct",
+  answer: "Answer",
+  reprompt: "Re-prompt",
+};
+
+const PERCEPTION_ACUITY_LABEL: Record<PerceptionAcuity, string> = {
+  P1: "P1 · Imminent",
+  P2: "P2 · Serious",
+  P3: "P3 · Urgent",
+  P4: "P4 · Non-urgent",
+  P5: "P5 · Referral",
+  unknown: "—",
+};
+
+const PERCEPTION_SURFACE_LABEL: Record<PerceptionSurface, string> = {
+  floor: "FLOOR · CPR-ready",
+  chair: "CHAIR · reposition needed",
+  bed: "BED · reposition needed",
+  couch: "COUCH · reposition needed",
+  vehicle: "VEHICLE · reposition needed",
+  standing: "STANDING · reposition needed",
+  unknown: "—",
+};
+
+const PERCEPTION_ROLE_LABEL: Record<PerceptionCallerRole, string> = {
+  first_party: "first-party (the patient)",
+  third_party: "third-party (reporting on someone)",
+  unknown: "—",
+};
+
+const PERCEPTION_COMPLAINT_LABEL: Record<PerceptionComplaintCategory, string> = {
+  medical: "MEDICAL",
+  trauma: "TRAUMA",
+  fire: "FIRE",
+  crime: "CRIME",
+  unknown: "—",
+};
+
+const PERCEPTION_QKIND_LABEL: Record<PerceptionDirectQuestionKind, string> = {
+  none: "—",
+  do_not_move: "do_not_move",
+  how_long: "how_long",
+  outcome: "outcome",
+  did_you_hear: "did_you_hear",
+  where_sending: "where_sending",
+};
+
+// Confidence threshold gates per system-prompt-spec.md §3 / schema.json.
+//   >= 0.7 -> high (green)
+//   [0.4, 0.7) -> mid (yellow)
+//   < 0.4 -> low (red); panel marks agreement check as "n/a"
+const CONF_HIGH = 0.7;
+const CONF_LOW = 0.4;
+
+// Map every 21-value FSMIntent to its broad-category equivalent. Mirrors
+// the prose in system-prompt-spec.md §3 and the FSM phase grouping in
+// dispatcher_fsm.py. The match is broad-bucket → broad-bucket; we never
+// try to match the exact 21-value intent.
+const FSM_INTENT_TO_BROAD: Record<FSMIntent, PerceptionIntent> = {
+  // Intake — asking the caller for the seed facts.
+  request_location_and_emergency: "intake",
+  request_location: "intake",
+  request_emergency: "intake",
+  confirm_address: "intake",
+  // Reassurance is a transitional FSM intent; it sits between intake and
+  // key questions. The classifier emits "intake" for everything that
+  // re-asks for caller-state, so deliver_reassurance buckets to intake.
+  deliver_reassurance: "intake",
+  // Key questions.
+  kq_responsive_breathing: "key_question",
+  kq_severity: "key_question",
+  kq_bleeding_location: "key_question",
+  kq_fire_evacuation: "key_question",
+  kq_safe_location: "key_question",
+  // Verify — the critical-verify sub-FSM.
+  verify_cpr_surface: "verify",
+  verify_cpr_breathing: "verify",
+  // Instruct — pre-arrival CPR / pressure / clear-area / back-blows.
+  instruct_cpr_compressions: "instruct",
+  instruct_choking_back_blows: "instruct",
+  instruct_pressure_bleed: "instruct",
+  instruct_seizure_clear_area: "instruct",
+  // Answer — direct-question intents.
+  answer_do_not_move: "answer",
+  answer_how_long: "answer",
+  answer_outcome_uncertain: "answer",
+  // Re-prompt — backchannel / no-signal.
+  reprompt_caller: "reprompt",
+  // Closeout maps back to "answer" (we're confirming intent to stay on
+  // the line); not a perfect fit but the closest broad bucket.
+  closeout: "answer",
+};
+
+export function fsmIntentToBroad(intent: FSMIntent | undefined | null): PerceptionIntent | null {
+  if (!intent) return null;
+  return FSM_INTENT_TO_BROAD[intent] ?? null;
+}
+
+export type PerceptionAgreement = "agreement" | "mismatch" | "n_a" | "no_fsm";
+
+export function computeAgreement(
+  perception: DispatchPerceptionEvent | null | undefined,
+  fsm: DispatchFSM | null | undefined,
+): PerceptionAgreement {
+  if (!perception) return "no_fsm";
+  if (perception.confidence < CONF_LOW) return "n_a";
+  if (!fsm) return "no_fsm";
+  const broad = fsmIntentToBroad(fsm.intent);
+  if (!broad) return "no_fsm";
+  return broad === perception.intent ? "agreement" : "mismatch";
+}
+
+function confidenceTier(conf: number): "high" | "mid" | "low" {
+  if (conf >= CONF_HIGH) return "high";
+  if (conf >= CONF_LOW) return "mid";
+  return "low";
+}
+
+function PerceptionPanel({
+  perception,
+  fsm,
+  perceptionEverSeen,
+}: {
+  perception: DispatchPerceptionEvent | null;
+  fsm: DispatchFSM | null;
+  perceptionEverSeen: boolean;
+}) {
+  // Hide gracefully when no perception data has ever arrived (Phase-1
+  // not yet deployed). The panel shrinks to a single placeholder line
+  // so the existing 9 affordances retain their layout. The placeholder
+  // tag tells beta testers what they're waiting on.
+  if (!perceptionEverSeen) {
+    return (
+      <div className="b3-cad-perc b3-cad-perc-await">
+        <div className="b3-cad-perc-hd">
+          <span className="b3-cad-perc-hd-t">NEMOTRON · PERCEPTION</span>
+          <span className="b3-cad-perc-hd-await">awaiting Phase-1 deploy</span>
+        </div>
+      </div>
+    );
+  }
+  // Perception has been seen before but the active turn lacks one.
+  // Render the chrome so the panel doesn't pop in/out, body shows dim
+  // hint.
+  if (!perception) {
+    return (
+      <div className="b3-cad-perc">
+        <div className="b3-cad-perc-hd">
+          <span className="b3-cad-perc-hd-t">NEMOTRON · PERCEPTION</span>
+          <span className="b3-cad-perc-hd-meta">no perception for this turn</span>
+        </div>
+      </div>
+    );
+  }
+
+  const tier = confidenceTier(perception.confidence);
+  const tierClass =
+    tier === "high" ? "b3-cad-perc-conf-high" : tier === "mid" ? "b3-cad-perc-conf-mid" : "b3-cad-perc-conf-low";
+  const agreement = computeAgreement(perception, fsm);
+
+  const acuityClass = `b3-cad-perc-acuity-${perception.acuity.toLowerCase()}`;
+
+  return (
+    <div className="b3-cad-perc">
+      <div className="b3-cad-perc-hd">
+        <span className="b3-cad-perc-hd-t">NEMOTRON · PERCEPTION</span>
+        <span className="b3-cad-perc-hd-turn">turn {perception.turn_index}</span>
+        <span className={`b3-cad-perc-conf ${tierClass}`} title="Classifier overall confidence (schema.json)">
+          conf · {perception.confidence.toFixed(2)}
+        </span>
+        <PerceptionAgreementBadge agreement={agreement} fsmIntent={fsm?.intent ?? null} broad={perception.intent} />
+      </div>
+      <div className="b3-cad-perc-body">
+        <PerceptionRow label="Intent" mono={perception.intent}>
+          {PERCEPTION_INTENT_LABEL[perception.intent]}
+        </PerceptionRow>
+        <PerceptionRow label="Acuity" mono={perception.acuity}>
+          <span className={`b3-cad-perc-acuity ${acuityClass}`}>
+            {PERCEPTION_ACUITY_LABEL[perception.acuity]}
+          </span>
+        </PerceptionRow>
+        <PerceptionRow label="Surface" mono={perception.surface}>
+          {PERCEPTION_SURFACE_LABEL[perception.surface]}
+        </PerceptionRow>
+        <PerceptionRow label="Role" mono={perception.caller_role}>
+          {PERCEPTION_ROLE_LABEL[perception.caller_role]}
+        </PerceptionRow>
+        <PerceptionRow label="Complaint" mono={perception.complaint_category}>
+          {PERCEPTION_COMPLAINT_LABEL[perception.complaint_category]}
+        </PerceptionRow>
+        <PerceptionRow label="Caller Q" mono={String(perception.caller_question)}>
+          <span
+            className={
+              perception.caller_question
+                ? "b3-cad-perc-bool b3-cad-perc-bool-true"
+                : "b3-cad-perc-bool b3-cad-perc-bool-false"
+            }
+          >
+            {perception.caller_question ? "YES" : "no"}
+          </span>
+          {perception.caller_question && perception.direct_question_kind !== "none" && (
+            <span className="b3-cad-perc-qkind">
+              {PERCEPTION_QKIND_LABEL[perception.direct_question_kind]}
+            </span>
+          )}
+        </PerceptionRow>
+        <PerceptionRow label="Negation" mono={String(perception.negation_signal)}>
+          {perception.negation_signal ? (
+            <span className="b3-cad-perc-bool b3-cad-perc-bool-neg">CONTRADICTS prior Q</span>
+          ) : (
+            <span className="b3-cad-perc-bool b3-cad-perc-bool-false">no</span>
+          )}
+        </PerceptionRow>
+        <PerceptionRow label="Awake" mono={String(perception.awake)}>
+          <TriStateBadge value={perception.awake} trueLabel="responsive" falseLabel="unresponsive" />
+        </PerceptionRow>
+        <PerceptionRow label="Breathing" mono={String(perception.breathing)}>
+          <TriStateBadge value={perception.breathing} trueLabel="normal" falseLabel="not / agonal" />
+        </PerceptionRow>
+        <PerceptionAddressRow addr={perception.address_candidate} />
+      </div>
+      <div className="b3-cad-perc-foot">
+        <span className="b3-cad-perc-foot-label">latency</span>
+        <span className="b3-cad-perc-foot-num">
+          {typeof perception.latency_ms === "number" ? `${perception.latency_ms}ms` : "—"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PerceptionRow({
+  label,
+  mono,
+  children,
+}: {
+  label: string;
+  mono?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="b3-cad-perc-row">
+      <div className="b3-cad-perc-row-label">{label}</div>
+      <div className="b3-cad-perc-row-val">{children}</div>
+      {mono !== undefined && <div className="b3-cad-perc-row-mono">{mono}</div>}
+    </div>
+  );
+}
+
+function TriStateBadge({
+  value,
+  trueLabel,
+  falseLabel,
+}: {
+  value: boolean | null;
+  trueLabel: string;
+  falseLabel: string;
+}) {
+  if (value === null) {
+    return <span className="b3-cad-perc-bool b3-cad-perc-bool-null">caller did not say</span>;
+  }
+  if (value) {
+    return <span className="b3-cad-perc-bool b3-cad-perc-bool-true">{trueLabel}</span>;
+  }
+  return <span className="b3-cad-perc-bool b3-cad-perc-bool-neg">{falseLabel}</span>;
+}
+
+function PerceptionAddressRow({ addr }: { addr: PerceptionAddressCandidate }) {
+  const empty = addr.raw_text === null && addr.normalized === null;
+  return (
+    <div className="b3-cad-perc-row b3-cad-perc-row-addr">
+      <div className="b3-cad-perc-row-label">Address</div>
+      {empty ? (
+        <div className="b3-cad-perc-addr-empty">no address heard this turn</div>
+      ) : (
+        <div className="b3-cad-perc-addr">
+          <div className="b3-cad-perc-addr-line">
+            <span className="b3-cad-perc-addr-tag">raw</span>
+            <span className="b3-cad-perc-addr-val">{addr.raw_text ?? "—"}</span>
+          </div>
+          <div className="b3-cad-perc-addr-line">
+            <span className="b3-cad-perc-addr-tag">norm</span>
+            <span className="b3-cad-perc-addr-val">{addr.normalized ?? "—"}</span>
+          </div>
+          <div className="b3-cad-perc-addr-line">
+            <span className="b3-cad-perc-addr-tag">digit</span>
+            <span
+              className={
+                addr.has_digit
+                  ? "b3-cad-perc-bool b3-cad-perc-bool-true"
+                  : "b3-cad-perc-bool b3-cad-perc-bool-null"
+              }
+            >
+              {addr.has_digit ? "YES" : "no"}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PerceptionAgreementBadge({
+  agreement,
+  fsmIntent,
+  broad,
+}: {
+  agreement: PerceptionAgreement;
+  fsmIntent: FSMIntent | null;
+  broad: PerceptionIntent;
+}) {
+  if (agreement === "agreement") {
+    return (
+      <span
+        className="b3-cad-perc-agree b3-cad-perc-agree-ok"
+        title={`Classifier ${broad} matches FSM ${fsmIntent ?? "intent"}`}
+      >
+        AGREEMENT
+      </span>
+    );
+  }
+  if (agreement === "mismatch") {
+    return (
+      <span
+        className="b3-cad-perc-agree b3-cad-perc-agree-bad"
+        title={`Classifier said ${broad}; FSM picked ${fsmIntent ?? "intent"} (different broad bucket)`}
+      >
+        MISMATCH
+      </span>
+    );
+  }
+  if (agreement === "n_a") {
+    return (
+      <span
+        className="b3-cad-perc-agree b3-cad-perc-agree-na"
+        title="Classifier confidence < 0.4 — FSM features ignored this turn"
+      >
+        n/a · low conf
+      </span>
+    );
+  }
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // useElapsed — formats hh:mm:ss since the call_started_at timestamp.
 // ─────────────────────────────────────────────────────────────────────
 
@@ -802,6 +1275,7 @@ export function DispatchPanel({
       if (ev.type === "turn") dispatch({ kind: "turn", ev });
       else if (ev.type === "reply") dispatch({ kind: "reply", ev });
       else if (ev.type === "caller_partial") dispatch({ kind: "caller_partial", ev });
+      else if (ev.type === "perception") dispatch({ kind: "perception", ev });
     }, FIXTURE_REPLAY_INTERVAL_MS);
     return () => clearInterval(handle);
   }, [forceFixture]);
@@ -815,6 +1289,7 @@ export function DispatchPanel({
     if (externalEvent.type === "turn") dispatch({ kind: "turn", ev: externalEvent });
     else if (externalEvent.type === "reply") dispatch({ kind: "reply", ev: externalEvent });
     else if (externalEvent.type === "caller_partial") dispatch({ kind: "caller_partial", ev: externalEvent });
+    else if (externalEvent.type === "perception") dispatch({ kind: "perception", ev: externalEvent });
   }, [externalEvent]);
 
   const cardiac = state.current_fsm?.is_cardiac_arrest === true;
@@ -836,9 +1311,14 @@ export function DispatchPanel({
           <LatchedFacts facts={state.latched_facts} />
           <PreArrivalQueue fsm={state.current_fsm} />
         </div>
-        {/* RIGHT pane — transcript */}
+        {/* RIGHT pane — transcript + Nemotron perception sub-panel */}
         <div className="b3-cad-right">
           <Transcript rows={state.transcript} partial={state.partial_caller_line} />
+          <PerceptionPanel
+            perception={state.perception_by_turn[state.current_turn_index] ?? null}
+            fsm={state.current_fsm}
+            perceptionEverSeen={state.perception_count > 0}
+          />
         </div>
       </div>
       <LatencyStrip latency={state.latency} />
@@ -926,7 +1406,7 @@ const B3_CAD_STYLES = `
   min-height: 0;
   align-content: start;
 }
-.b3-cad-right { display: grid; grid-template-rows: 1fr; min-height: 0; }
+.b3-cad-right { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 10px; min-height: 0; }
 
 .b3-cad-dim { color: var(--b3-text-3); }
 
@@ -1247,6 +1727,179 @@ const B3_CAD_STYLES = `
 .b3-cad-lat-budget {
   margin-left: auto; font-size: 9px; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--b3-text-3);
+}
+
+/* === NEMOTRON PERCEPTION (cycle-2C Phase-4) === */
+.b3-cad-perc {
+  background: var(--b3-panel);
+  border: 1px solid var(--b3-border);
+  border-radius: var(--b3-r-md);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 6px;
+  min-height: 0;
+}
+.b3-cad-perc-await {
+  grid-template-rows: auto;
+  border-style: dashed;
+  border-color: var(--b3-border-2);
+  opacity: 0.7;
+}
+.b3-cad-perc-hd {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--b3-border);
+  flex-wrap: wrap;
+}
+.b3-cad-perc-await .b3-cad-perc-hd { border-bottom: none; }
+.b3-cad-perc-hd-t {
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--b3-text-2); font-weight: 600;
+}
+.b3-cad-perc-hd-turn {
+  font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--b3-text-3); font-variant-numeric: tabular-nums;
+}
+.b3-cad-perc-hd-meta { font-size: 9px; color: var(--b3-text-3); margin-left: auto; font-style: italic; }
+.b3-cad-perc-hd-await { font-size: 9px; color: var(--b3-text-3); margin-left: auto; font-style: italic; letter-spacing: 0.06em; }
+.b3-cad-perc-conf {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; letter-spacing: 0.04em;
+  padding: 2px 7px; border-radius: 2px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  border: 1px solid var(--b3-border-2);
+  margin-left: auto;
+}
+.b3-cad-perc-conf-high { color: var(--b3-green); border-color: rgba(74, 222, 128, 0.4); background: rgba(74, 222, 128, 0.06); }
+.b3-cad-perc-conf-mid  { color: var(--b3-amber); border-color: rgba(255, 184, 77, 0.4); background: rgba(255, 184, 77, 0.06); }
+.b3-cad-perc-conf-low  { color: var(--b3-red);   border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.06); }
+
+.b3-cad-perc-agree {
+  font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 2px; font-weight: 600;
+  border: 1px solid var(--b3-border-2);
+}
+.b3-cad-perc-agree-ok  { color: var(--b3-green);  background: rgba(74, 222, 128, 0.06); border-color: rgba(74, 222, 128, 0.4); }
+.b3-cad-perc-agree-bad { color: var(--b3-orange); background: rgba(249, 115, 22, 0.06); border-color: rgba(249, 115, 22, 0.4); }
+.b3-cad-perc-agree-na  { color: var(--b3-text-3); background: transparent; border-color: var(--b3-border-2); font-weight: 500; text-transform: lowercase; letter-spacing: 0.04em; }
+
+.b3-cad-perc-body {
+  padding: 8px 12px;
+  display: grid; gap: 4px;
+  min-width: 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.b3-cad-perc-row {
+  display: grid;
+  grid-template-columns: 78px 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(31, 31, 34, 0.5);
+}
+.b3-cad-perc-row:last-child { border-bottom: none; }
+.b3-cad-perc-row-label {
+  font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--b3-text-3);
+}
+.b3-cad-perc-row-val {
+  font-family: var(--b3-sans);
+  font-size: 12px; color: var(--b3-text);
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  min-width: 0;
+}
+.b3-cad-perc-row-mono {
+  font-family: var(--b3-mono);
+  font-size: 9px;
+  color: var(--b3-text-4);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.b3-cad-perc-bool {
+  display: inline-flex; align-items: center;
+  font-size: 10px; letter-spacing: 0.04em;
+  padding: 1px 6px; border-radius: 2px;
+  font-weight: 500; text-transform: lowercase;
+  border: 1px solid var(--b3-border-2);
+}
+.b3-cad-perc-bool-true  { color: var(--b3-green);  border-color: rgba(74, 222, 128, 0.4); background: rgba(74, 222, 128, 0.06); }
+.b3-cad-perc-bool-false { color: var(--b3-text-3); border-color: var(--b3-border-2); background: transparent; }
+.b3-cad-perc-bool-neg   { color: var(--b3-orange); border-color: rgba(249, 115, 22, 0.4); background: rgba(249, 115, 22, 0.06); text-transform: none; letter-spacing: 0.06em; font-weight: 600; }
+.b3-cad-perc-bool-null  { color: var(--b3-text-3); border-color: var(--b3-border-2); background: transparent; font-style: italic; }
+
+.b3-cad-perc-qkind {
+  font-family: var(--b3-mono);
+  font-size: 9px;
+  color: var(--b3-amber);
+  background: rgba(255, 184, 77, 0.08);
+  border: 1px solid rgba(255, 184, 77, 0.3);
+  padding: 1px 5px; border-radius: 2px;
+  letter-spacing: 0.04em;
+}
+
+.b3-cad-perc-acuity {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 1px 7px; border-radius: 2px;
+  border: 1px solid var(--b3-border-2);
+}
+.b3-cad-perc-acuity-p1      { color: var(--b3-hot);    border-color: var(--b3-hot-border); background: var(--b3-hot-bg); }
+.b3-cad-perc-acuity-p2      { color: var(--b3-orange); border-color: rgba(249, 115, 22, 0.4); background: rgba(249, 115, 22, 0.06); }
+.b3-cad-perc-acuity-p3      { color: var(--b3-yellow); border-color: rgba(250, 204, 21, 0.4); background: rgba(250, 204, 21, 0.06); }
+.b3-cad-perc-acuity-p4      { color: var(--b3-green);  border-color: rgba(74, 222, 128, 0.4); background: rgba(74, 222, 128, 0.06); }
+.b3-cad-perc-acuity-p5      { color: var(--b3-blue);   border-color: rgba(96, 165, 250, 0.4); background: rgba(96, 165, 250, 0.06); }
+.b3-cad-perc-acuity-unknown { color: var(--b3-text-3); border-color: var(--b3-border-2); background: transparent; }
+
+.b3-cad-perc-row-addr { grid-template-columns: 78px 1fr; }
+.b3-cad-perc-row-addr .b3-cad-perc-row-label { align-self: start; padding-top: 4px; }
+.b3-cad-perc-addr-empty {
+  font-size: 11px;
+  color: var(--b3-text-3);
+  font-style: italic;
+}
+.b3-cad-perc-addr {
+  display: grid; gap: 2px;
+  padding: 4px 6px;
+  background: rgba(31, 31, 34, 0.4);
+  border-radius: var(--b3-r-sm);
+  border: 1px solid var(--b3-border);
+}
+.b3-cad-perc-addr-line {
+  display: grid; grid-template-columns: 38px 1fr;
+  gap: 6px; align-items: center;
+  font-size: 11px;
+}
+.b3-cad-perc-addr-tag {
+  font-family: var(--b3-mono);
+  font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--b3-text-3);
+}
+.b3-cad-perc-addr-val {
+  font-family: var(--b3-mono);
+  font-size: 11px;
+  color: var(--b3-text);
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.b3-cad-perc-foot {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--b3-border);
+  font-family: var(--b3-mono);
+}
+.b3-cad-perc-foot-label {
+  font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--b3-text-3);
+}
+.b3-cad-perc-foot-num {
+  font-size: 11px; color: var(--b3-text);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
 }
 
 /* Scrollbar consistent with the parent .b3-console scope. */
