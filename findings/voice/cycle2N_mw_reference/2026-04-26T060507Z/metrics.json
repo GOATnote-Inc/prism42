@@ -1,0 +1,82 @@
+{
+  "condition": "MW",
+  "ref_audio_path": "/opt/prism42/voice-refs/mw_sample.wav",
+  "ref_text": "Bleeding, choking, or trouble breathing? Help is being sent while I ask these questions. Listen carefully and follow my instructions. Are you safe where you are? Do you see smoke, fear?",
+  "phrases": {
+    "p1": {
+      "text": "Nine one one, where is your emergency?",
+      "ok": true,
+      "status": 200,
+      "ttfb_ms": 1,
+      "total_ms": 2442,
+      "sr": 44100,
+      "nch": 1,
+      "bps": 16,
+      "duration_s": 3.158,
+      "peak": 28006,
+      "rms": 3254.3,
+      "wav_bytes": 278616,
+      "audio_bytes": 278572
+    },
+    "p2": {
+      "text": "What's your location?",
+      "ok": true,
+      "status": 200,
+      "ttfb_ms": 1,
+      "total_ms": 1167,
+      "sr": 44100,
+      "nch": 1,
+      "bps": 16,
+      "duration_s": 1.208,
+      "peak": 28006,
+      "rms": 2273.4,
+      "wav_bytes": 106584,
+      "audio_bytes": 106540
+    },
+    "p3": {
+      "text": "Are they breathing?",
+      "ok": true,
+      "status": 200,
+      "ttfb_ms": 1,
+      "total_ms": 992,
+      "sr": 44100,
+      "nch": 1,
+      "bps": 16,
+      "duration_s": 0.929,
+      "peak": 28006,
+      "rms": 3271.9,
+      "wav_bytes": 82008,
+      "audio_bytes": 81964
+    },
+    "p4": {
+      "text": "Stay with me.",
+      "ok": true,
+      "status": 200,
+      "ttfb_ms": 1,
+      "total_ms": 1050,
+      "sr": 44100,
+      "nch": 1,
+      "bps": 16,
+      "duration_s": 1.022,
+      "peak": 28006,
+      "rms": 3235.7,
+      "wav_bytes": 90200,
+      "audio_bytes": 90156
+    },
+    "p5": {
+      "text": "Help is on the way.",
+      "ok": true,
+      "status": 200,
+      "ttfb_ms": 1,
+      "total_ms": 1156,
+      "sr": 44100,
+      "nch": 1,
+      "bps": 16,
+      "duration_s": 1.208,
+      "peak": 28006,
+      "rms": 3635.8,
+      "wav_bytes": 106584,
+      "audio_bytes": 106540
+    }
+  }
+}

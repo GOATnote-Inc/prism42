@@ -1,0 +1,42 @@
+REJECT_MW
+
+MW reference (35-50s window, f0_std=38.3 M-V, ~23.5 L1-projected) measures cleanly
+at the reference level — it passes the steadiness pre-condition L1 was looking for.
+But the output side does NOT inherit that steadiness in a way that beats psap-fast:
+
+  MW            1/5 PASS_loose (39/128)   mean f0_std 35.7   mean f0_range 202.3
+  psap-fast     2/5 PASS_loose             mean f0_std 28.6   mean f0_range 132.8
+  cycle-2M M2   1/5 PASS_loose             mean f0_std 46.8   mean f0_range 288.4
+
+psap-fast remains the binding lever. Keep default psap-fast active (drop-in 80
+NOT installed, FISH_SPEECH_REFERENCE_ID=psap from .env stays canonical, env var
+PRISM42_FISH_REFERENCE_AUDIO unset). MW WAV stays at /opt/prism42/voice-refs/mw_sample.wav
+as inert data for future re-runs.
+
+The 100-cycle2N drop-in was NEVER installed — bench was direct Fish HTTP synth
+mirroring cycle-2j harness pattern, no worker-side env var path exercised. So
+nothing to revert at the systemd level.
+
+L1 1:1 inheritance hypothesis: PARTIAL.
+  reference f0_std = 38.3
+  output mean f0_std = 35.7
+  ratio = 0.93 (output is 93% of reference)
+  Output IS slightly steadier than reference — VQ-token compression smooths
+  ~7% of the f0 variance. But this is not enough to push 4/5 phrases below 39 Hz
+  loose gate when the reference itself is at 38.3.
+
+Implication: For MW-style references to pass 4/5 PASS_loose, the reference itself
+needs f0_std at most ~30 Hz (M-V tracker) — the same threshold L1 hypothesized.
+The MW sample's steadiest 15s window (35-50s) is at 38.3, which is the cleanest
+the recording offers. A different recording (or more of the same recording where
+prosody is even flatter) would be needed.
+
+Next moves on the table:
+  1. Try re-trim of MW to a narrower steady-state window (e.g., 8-10s of a single
+     question with no rising intonation). Current candidates already swept; 35-50
+     was the steadiest 15s available.
+  2. Acknowledge that psap-fast (3/5 in cycle-2L's looser audit, 2/5 here under
+     M-V tracker) is the binding ceiling on Fish-S2-Pro for the PSAP corpus
+     and ship that as production while looking for a steadier-prosody source.
+  3. User listening review — the f0 metric may not perfectly correlate with
+     perceived "professional dispatcher tone." Listening checklist provided.
