@@ -252,6 +252,22 @@ except Exception:  # noqa: BLE001
         return False
 
 
+# Cycle-2T — deterministic response gate between FSM and Fish TTS.
+# Default OFF; flag PRISM42_ENABLE_RESPONSE_GATE=1 to enable. When
+# disabled the gate module is imported but never invoked, so the
+# cycle-2Q FSM-only path is byte-equivalent.
+try:
+    from response_gate import (  # type: ignore[import-not-found]
+        gate_for_fsm,
+        should_use_response_gate,
+    )
+except Exception:  # noqa: BLE001
+    gate_for_fsm = None  # type: ignore[assignment]
+
+    def should_use_response_gate() -> bool:  # type: ignore[no-redef]
+        return False
+
+
 class FsmDispatcherAgent(BufferedDispatcherAgent):
     """BufferedDispatcherAgent + per-turn FSM-driven prompt rewrite.
 
@@ -278,6 +294,10 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
         super().__init__(instructions=instructions, tools=tools)
         self._session_id = session_id
         self._fsm = fsm
+        # Cycle-2T: deterministic response gate. None when flag off.
+        self._response_gate = (
+            gate_for_fsm(fsm) if (gate_for_fsm and should_use_response_gate()) else None
+        )
 
     @property
     def fsm(self) -> Any:
@@ -298,6 +318,53 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
                 # Empty turn — nothing to advance. Keep prior instructions.
                 return
             intent = self._fsm.transition(utterance)
+
+            # Cycle-2T: deterministic response gate between FSM and TTS.
+            # When the gate elects a template, we emit directly to TTS via
+            # session.say() and SHORT-CIRCUIT the LLM call — voice path is
+            # bounded by code, not LLM constraint-following. When the gate
+            # elects the LLM path, we fall through to the cycle-2Q
+            # update_instructions branch below.
+            if self._response_gate is not None:
+                decision = self._response_gate.gate_decision(
+                    getattr(intent, "value", str(intent)),
+                    caller_utterance=utterance,
+                )
+                if decision.used_template and decision.final_text:
+                    # Record into the FSM's anti-repetition buffer so the
+                    # gate's own validators (and any future LLM turn) see
+                    # what we just spoke.
+                    try:
+                        self._fsm.record_dispatcher_reply(decision.final_text)
+                    except Exception:  # noqa: BLE001
+                        pass
+                    try:
+                        self.session.say(
+                            decision.final_text,
+                            allow_interruptions=True,
+                        )
+                    except Exception as say_err:  # noqa: BLE001
+                        # If session.say fails (e.g. session not yet
+                        # active), fall through to the LLM path below
+                        # rather than dropping the turn.
+                        local_log.warning(
+                            "response_gate.say_failed",
+                            err=str(say_err)[:200],
+                            session_id=self._session_id,
+                        )
+                    else:
+                        dt_ms = int((time.monotonic() - t0) * 1000)
+                        local_log.info(
+                            "orchestrator.gate_template_ms",
+                            session_id=self._session_id,
+                            ms=dt_ms,
+                            intent=getattr(intent, "value", str(intent)),
+                            cpr_blocked=decision.cpr_blocked,
+                            fallback_intent=decision.fallback_intent,
+                        )
+                        return  # short-circuit: no LLM call this turn
+
+            # Fall-through: LLM path. Cycle-2Q FSM-rewritten prompt.
             prompt = self._fsm.next_prompt(utterance, intent)
             # Update the agent's instructions so the next LLM call sees
             # the FSM-derived per-turn prompt.
