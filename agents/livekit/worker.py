@@ -1375,7 +1375,12 @@ async def entrypoint(ctx: JobContext) -> None:
             try:
                 fsm = getattr(orchestrator, "fsm", None)
                 phase = getattr(getattr(fsm, "state", None), "value", "")
-                if phase in ("intake", "address_confirmed"):
+                # Cycle-2Q2 (Team Q): also suppress filler in CRITICAL_VERIFY
+                # and KEY_QUESTIONS — these are 100% template-served per the
+                # response_gate's _SAFETY_TEMPLATE_ONLY set, so the
+                # filler-fills-the-Fish-gap rationale does not apply.
+                if phase in ("intake", "address_confirmed",
+                             "critical_verify", "key_questions"):
                     log.info(
                         "filler.suppressed_intake",
                         session_id=session_id,
