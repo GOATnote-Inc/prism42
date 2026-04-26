@@ -1,0 +1,81 @@
+diff --git a/agents/livekit/worker.py b/agents/livekit/worker.py
+index ebc49c0..2324fd3 100644
+--- a/agents/livekit/worker.py
++++ b/agents/livekit/worker.py
+@@ -161,7 +161,7 @@ EARLY_LLM_CHARS: int = int(os.environ.get("PRISM42_EARLY_LLM_CHARS", "12"))
+ ENABLE_911_GREETING: bool = (
+     os.environ.get("PRISM42_ENABLE_911_GREETING", "0") == "1"
+ )
+-GREETING_TEXT: str = "Nine one one. Where is your emergency?"
++GREETING_TEXT: str = "Nine one one, what is the address of your emergency?"
+ GREETING_AUDIO_PATH: str = os.environ.get(
+     "PRISM42_GREETING_AUDIO_PATH", "/tmp/prism42-greeting.wav"
+ )
+@@ -218,6 +218,67 @@ def _warm_greeting_cache_blocking(fish_url: str) -> bool:
+     back to NOT firing the greeting rather than hanging the session).
+     """
+     global _GREETING_PCM_BYTES, _GREETING_AUDIO_DURATION_MS, _GREETING_WARM_FAILED
++    # Cycle-2P (2026-04-26): if PRISM42_GREETING_AUDIO_FILE points at an
++    # existing WAV, load it from disk and skip Fish synthesis entirely.
++    # This guarantees the cached greeting is the curated MW reference clip
++    # (assets/MWintro.mp3 → mw_intro_greeting.wav) byte-for-byte, with
++    # zero Fish render variance. Falls through to the existing Fish-synth
++    # path (cycle-2N Q4-B references_payload) when the env is unset or
++    # the file is missing — preserves backward compatibility.
++    _greeting_file = os.environ.get("PRISM42_GREETING_AUDIO_FILE", "").strip()
++    if _greeting_file:
++        if os.path.exists(_greeting_file):
++            try:
++                with open(_greeting_file, "rb") as f:
++                    wav_bytes = f.read()
++                pcm_bytes = _strip_wav_header(wav_bytes)
++                bytes_per_frame = (
++                    _GREETING_SAMPLE_RATE * _GREETING_FRAME_MS // 1000
++                ) * 2 * _GREETING_CHANNELS
++                rem = len(pcm_bytes) % bytes_per_frame
++                if rem:
++                    pcm_bytes = pcm_bytes + b"\x00" * (bytes_per_frame - rem)
++                with _GREETING_CACHE_LOCK:
++                    _GREETING_PCM_BYTES = pcm_bytes
++                    _GREETING_AUDIO_DURATION_MS = int(
++                        len(pcm_bytes) / 2 / _GREETING_SAMPLE_RATE * 1000
++                    )
++                    _GREETING_WARM_FAILED = False
++                # Mirror archive write so /tmp/prism42-greeting.wav reflects
++                # the active cache source (downstream tools probe this path).
++                try:
++                    with open(GREETING_AUDIO_PATH, "wb") as f:
++                        f.write(wav_bytes)
++                except OSError as e:
++                    log.warning(
++                        "greeting.911.archive_write_failed",
++                        path=GREETING_AUDIO_PATH,
++                        err=str(e)[:200],
++                    )
++                log.info(
++                    "greeting.911.cache_loaded_from_file",
++                    source_path=_greeting_file,
++                    text=GREETING_TEXT,
++                    wav_bytes=len(wav_bytes),
++                    pcm_bytes=len(pcm_bytes),
++                    duration_ms=_GREETING_AUDIO_DURATION_MS,
++                    archive_path=GREETING_AUDIO_PATH,
++                    sample_rate=_GREETING_SAMPLE_RATE,
++                )
++                return True
++            except OSError as e:
++                log.warning(
++                    "greeting.911.cache_file_load_failed",
++                    path=_greeting_file,
++                    error=str(e)[:200],
++                )
++                # fall through to Fish synth path
++        else:
++            log.warning(
++                "greeting.911.cache_file_missing",
++                path=_greeting_file,
++            )
++            # fall through to Fish synth path
+     # Cycle-2N Q4-B fix (2026-04-26): the greeting was bypassing the
+     # FishSpeechTTS adapter's references_payload logic and rendering in
+     # Fish's untrained stock voice. Mirror the cycle-2j adapter pattern

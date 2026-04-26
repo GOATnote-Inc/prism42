@@ -1,0 +1,106 @@
+{
+  "cycle": "2P",
+  "utc": "2026-04-26T07:37:17Z",
+  "decision": "PASS_2P",
+  "intent": "Skip Fish synthesis for greeting; play /Users/kiteboard/prism42/assets/MWintro.mp3 directly via env-flagged file-load branch in _warm_greeting_cache_blocking. Update GREETING_TEXT to match new audio.",
+  "audio_conversion": {
+    "source_mp3": "/Users/kiteboard/prism42/assets/MWintro.mp3",
+    "source_format": "MPEG ADTS layer III v1 128kbps 44.1kHz mono",
+    "tool": "afconvert -d LEI16@44100 -c 1 -f WAVE",
+    "output_wav": "/tmp/mw_intro_greeting.wav",
+    "output_format": "WAVE PCM_S16_LE 44.1kHz mono (matches Fish output format)",
+    "output_bytes": 262144,
+    "output_md5": "dddb0012d1bcd9b90970ee30560d294e",
+    "duration_seconds": 2.926,
+    "frames": 129024,
+    "rate_choice_rationale": "44.1 kHz matches existing _GREETING_SAMPLE_RATE=44_100 module constant; LiveKit mixer resamples to WebRTC negotiated rate so frame-build matches cache shape exactly; switching to 48kHz would require module constant change. afconvert added a FLLR filler chunk (24 bytes) before data; _strip_wav_header scans for 'data' token via find() so this is handled correctly."
+  },
+  "deployment": {
+    "pod": "prism-mla-b300-h4h5",
+    "wav_pod_path": "/opt/prism42/voice-refs/mw_intro_greeting.wav",
+    "wav_pod_md5": "dddb0012d1bcd9b90970ee30560d294e",
+    "wav_pod_owner": "root:root 644",
+    "worker_backup": "/opt/prism42/agents/livekit/worker.py.pre-cycle2P (65497 bytes)",
+    "worker_patched": "/opt/prism42/agents/livekit/worker.py (shadeform:shadeform 644)",
+    "drop_in": "/etc/systemd/system/prism42-worker.service.d/110-cycle2P-greeting-file.conf",
+    "drop_in_content": "[Service]\nEnvironment=\"PRISM42_GREETING_AUDIO_FILE=/opt/prism42/voice-refs/mw_intro_greeting.wav\"",
+    "all_drop_ins_post_deploy": [
+      "10-vllm-model.conf",
+      "20-vllm-max-tokens.conf",
+      "50-cycle2i-greeting.conf",
+      "70-cycle2k-pacetag.conf",
+      "100-cycle2N-mwref.conf",
+      "110-cycle2P-greeting-file.conf"
+    ],
+    "actions_taken": [
+      "afconvert MP3 -> WAV (44.1kHz mono S16LE)",
+      "scp WAV -> pod /opt/prism42/voice-refs/mw_intro_greeting.wav",
+      "sudo cp worker.py worker.py.pre-cycle2P (backup)",
+      "Edit local worker.py: GREETING_TEXT update (line 164)",
+      "Edit local worker.py: insert PRISM42_GREETING_AUDIO_FILE branch in _warm_greeting_cache_blocking (lines 221-282)",
+      "scp patched worker.py -> pod",
+      "sudo tee /etc/systemd/system/prism42-worker.service.d/110-cycle2P-greeting-file.conf",
+      "sudo systemctl daemon-reload && restart prism42-worker",
+      "Verify file-load path standalone (cycle2P-test artifact)",
+      "Verify missing-file fallback path (logs cache_file_missing warning + falls through to Fish synth)",
+      "Update /tmp/prism42-greeting.wav to match new source"
+    ]
+  },
+  "verification": {
+    "syntax_check": "python3 ast.parse OK",
+    "unit_test_file_load": {
+      "ok": true,
+      "wav_bytes": 262144,
+      "pcm_bytes": 259308,
+      "duration_ms": 2940,
+      "frames_at_20ms": 147,
+      "log_line_emitted": "greeting.911.cache_loaded_from_file"
+    },
+    "unit_test_missing_file_fallback": {
+      "warning_emitted": "greeting.911.cache_file_missing",
+      "fall_through_to_fish": true,
+      "fish_synth_succeeded_with_new_text": true,
+      "preserves_cycle2N_q4b": true
+    },
+    "live_state": {
+      "worker_active": true,
+      "main_pid_post_restart": 471619,
+      "env_PRISM42_GREETING_AUDIO_FILE_exposed_to_pid": "/opt/prism42/voice-refs/mw_intro_greeting.wav",
+      "env_PRISM42_FISH_REFERENCE_AUDIO_preserved": "/opt/prism42/voice-refs/mw_sample.wav",
+      "env_PRISM42_FISH_REFERENCE_TEXT_preserved": true,
+      "env_FISH_SPEECH_REFERENCE_ID_preserved": "(empty as before)",
+      "watchdog_status": "GREEN (worker active, no errors in post-restart journal)",
+      "tmp_greeting_wav_md5_matches_source": "dddb0012d1bcd9b90970ee30560d294e"
+    }
+  },
+  "before_after": {
+    "GREETING_TEXT_pre": "Nine one one. Where is your emergency?",
+    "GREETING_TEXT_post": "Nine one one, what is the address of your emergency?",
+    "greeting_cache_source_pre": "Fish synth (cycle-2N Q4-B references_payload via mw_sample.wav)",
+    "greeting_cache_source_post": "MWintro.mp3 file (loaded directly, Fish synth bypassed)",
+    "greeting_cache_mtime_pre": "2026-04-26 07:26:45 +0000",
+    "greeting_cache_mtime_post": "2026-04-26 07:39:50 +0000",
+    "greeting_cache_bytes_pre": 315436,
+    "greeting_cache_bytes_post": 262144,
+    "PRISM42_GREETING_AUDIO_FILE_pre": "unset",
+    "PRISM42_GREETING_AUDIO_FILE_post": "/opt/prism42/voice-refs/mw_intro_greeting.wav",
+    "worker_active_pre": "yes (PID 468115)",
+    "worker_active_post": "yes (PID 471619)"
+  },
+  "patch_summary": {
+    "file": "agents/livekit/worker.py",
+    "lines_changed": "+62 -1 (1 string change at line 164, 62-line file-load branch added at lines 221-282)",
+    "preserves_fish_synth_fallback": true,
+    "default_behavior_unchanged_when_env_unset": true,
+    "diff_path": "patch.applied.diff"
+  },
+  "rollback_instructions": [
+    "ssh prism-mla-b300-h4h5",
+    "sudo rm /etc/systemd/system/prism42-worker.service.d/110-cycle2P-greeting-file.conf",
+    "sudo cp /opt/prism42/agents/livekit/worker.py.pre-cycle2P /opt/prism42/agents/livekit/worker.py",
+    "sudo chown shadeform:shadeform /opt/prism42/agents/livekit/worker.py",
+    "sudo systemctl daemon-reload",
+    "sudo systemctl restart prism42-worker",
+    "Time-to-recover: ~30s"
+  ]
+}
