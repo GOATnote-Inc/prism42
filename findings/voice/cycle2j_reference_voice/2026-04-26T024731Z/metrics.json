@@ -1,0 +1,263 @@
+{
+  "ts_utc": "2026-04-26T024915Z",
+  "metrics_per_condition": {
+    "baseline": {
+      "p1": {
+        "phrase": "Nine one one, where is your emergency?",
+        "ttfb_ms": 6,
+        "total_ms": 2720,
+        "audio_bytes": 315436,
+        "wav_path": "/tmp/cycle2j_out/audio/baseline/p1.wav",
+        "samples": 157718,
+        "duration_s": 3.576,
+        "peak": 28006,
+        "rms": 2207.9,
+        "all_zeros": false,
+        "success": true
+      },
+      "p2": {
+        "phrase": "What's your location?",
+        "ttfb_ms": 5,
+        "total_ms": 1352,
+        "audio_bytes": 131116,
+        "wav_path": "/tmp/cycle2j_out/audio/baseline/p2.wav",
+        "samples": 65558,
+        "duration_s": 1.487,
+        "peak": 31088,
+        "rms": 9902.5,
+        "all_zeros": false,
+        "success": true
+      },
+      "p3": {
+        "phrase": "Are they breathing?",
+        "ttfb_ms": 5,
+        "total_ms": 1006,
+        "audio_bytes": 86060,
+        "wav_path": "/tmp/cycle2j_out/audio/baseline/p3.wav",
+        "samples": 43030,
+        "duration_s": 0.976,
+        "peak": 28006,
+        "rms": 3343.3,
+        "all_zeros": false,
+        "success": true
+      },
+      "p4": {
+        "phrase": "Stay with me.",
+        "ttfb_ms": 5,
+        "total_ms": 1121,
+        "audio_bytes": 102444,
+        "wav_path": "/tmp/cycle2j_out/audio/baseline/p4.wav",
+        "samples": 51222,
+        "duration_s": 1.161,
+        "peak": 28006,
+        "rms": 1453.8,
+        "all_zeros": false,
+        "success": true
+      },
+      "p5": {
+        "phrase": "Help is on the way.",
+        "ttfb_ms": 5,
+        "total_ms": 1236,
+        "audio_bytes": 118828,
+        "wav_path": "/tmp/cycle2j_out/audio/baseline/p5.wav",
+        "samples": 59414,
+        "duration_s": 1.347,
+        "peak": 30832,
+        "rms": 8384.5,
+        "all_zeros": false,
+        "success": true
+      }
+    },
+    "wav1": {
+      "p1": {
+        "phrase": "Nine one one, where is your emergency?",
+        "ttfb_ms": 6,
+        "total_ms": 2583,
+        "audio_bytes": 290860,
+        "wav_path": "/tmp/cycle2j_out/audio/wav1/p1.wav",
+        "samples": 145430,
+        "duration_s": 3.298,
+        "peak": 28006,
+        "rms": 2373.6,
+        "all_zeros": false,
+        "success": true
+      },
+      "p2": {
+        "phrase": "What's your location?",
+        "ttfb_ms": 6,
+        "total_ms": 1077,
+        "audio_bytes": 90156,
+        "wav_path": "/tmp/cycle2j_out/audio/wav1/p2.wav",
+        "samples": 45078,
+        "duration_s": 1.022,
+        "peak": 28006,
+        "rms": 3207.8,
+        "all_zeros": false,
+        "success": true
+      },
+      "p3": {
+        "phrase": "Are they breathing?",
+        "ttfb_ms": 5,
+        "total_ms": 911,
+        "audio_bytes": 69676,
+        "wav_path": "/tmp/cycle2j_out/audio/wav1/p3.wav",
+        "samples": 34838,
+        "duration_s": 0.79,
+        "peak": 28006,
+        "rms": 1556.4,
+        "all_zeros": false,
+        "success": true
+      },
+      "p4": {
+        "phrase": "Stay with me.",
+        "ttfb_ms": 6,
+        "total_ms": 1041,
+        "audio_bytes": 86060,
+        "wav_path": "/tmp/cycle2j_out/audio/wav1/p4.wav",
+        "samples": 43030,
+        "duration_s": 0.976,
+        "peak": 28006,
+        "rms": 1727.6,
+        "all_zeros": false,
+        "success": true
+      },
+      "p5": {
+        "phrase": "Help is on the way.",
+        "ttfb_ms": 5,
+        "total_ms": 1162,
+        "audio_bytes": 102444,
+        "wav_path": "/tmp/cycle2j_out/audio/wav1/p5.wav",
+        "samples": 51222,
+        "duration_s": 1.161,
+        "peak": 28006,
+        "rms": 1817.9,
+        "all_zeros": false,
+        "success": true
+      }
+    },
+    "wav2": {
+      "p1": {
+        "phrase": "Nine one one, where is your emergency?",
+        "ttfb_ms": 6,
+        "total_ms": 2772,
+        "audio_bytes": 315436,
+        "wav_path": "/tmp/cycle2j_out/audio/wav2/p1.wav",
+        "samples": 157718,
+        "duration_s": 3.576,
+        "peak": 28006,
+        "rms": 2278.8,
+        "all_zeros": false,
+        "success": true
+      },
+      "p2": {
+        "phrase": "What's your location?",
+        "ttfb_ms": 5,
+        "total_ms": 1195,
+        "audio_bytes": 106540,
+        "wav_path": "/tmp/cycle2j_out/audio/wav2/p2.wav",
+        "samples": 53270,
+        "duration_s": 1.208,
+        "peak": 28006,
+        "rms": 2719.5,
+        "all_zeros": false,
+        "success": true
+      },
+      "p3": {
+        "phrase": "Are they breathing?",
+        "ttfb_ms": 5,
+        "total_ms": 1035,
+        "audio_bytes": 86060,
+        "wav_path": "/tmp/cycle2j_out/audio/wav2/p3.wav",
+        "samples": 43030,
+        "duration_s": 0.976,
+        "peak": 28006,
+        "rms": 1617.3,
+        "all_zeros": false,
+        "success": true
+      },
+      "p4": {
+        "phrase": "Stay with me.",
+        "ttfb_ms": 6,
+        "total_ms": 1068,
+        "audio_bytes": 90156,
+        "wav_path": "/tmp/cycle2j_out/audio/wav2/p4.wav",
+        "samples": 45078,
+        "duration_s": 1.022,
+        "peak": 28006,
+        "rms": 1653.4,
+        "all_zeros": false,
+        "success": true
+      },
+      "p5": {
+        "phrase": "Help is on the way.",
+        "ttfb_ms": 6,
+        "total_ms": 1250,
+        "audio_bytes": 114732,
+        "wav_path": "/tmp/cycle2j_out/audio/wav2/p5.wav",
+        "samples": 57366,
+        "duration_s": 1.301,
+        "peak": 28006,
+        "rms": 1605.9,
+        "all_zeros": false,
+        "success": true
+      }
+    }
+  },
+  "aggregate": {
+    "baseline": {
+      "success_count": 5,
+      "ttfb_p50": 5,
+      "ttfb_p95": 5,
+      "total_p50": 1236,
+      "total_p95": 1352,
+      "peak_min": 28006,
+      "peak_max": 31088
+    },
+    "wav1": {
+      "success_count": 5,
+      "ttfb_p50": 6,
+      "ttfb_p95": 6,
+      "total_p50": 1077,
+      "total_p95": 1162,
+      "peak_min": 28006,
+      "peak_max": 28006,
+      "ttfb_p95_regression_pct": 20.0,
+      "total_p95_regression_pct": -14.1
+    },
+    "wav2": {
+      "success_count": 5,
+      "ttfb_p50": 6,
+      "ttfb_p95": 6,
+      "total_p50": 1195,
+      "total_p95": 1250,
+      "peak_min": 28006,
+      "peak_max": 28006,
+      "ttfb_p95_regression_pct": 20.0,
+      "total_p95_regression_pct": -7.5
+    }
+  },
+  "phrases": [
+    [
+      "p1",
+      "Nine one one, where is your emergency?"
+    ],
+    [
+      "p2",
+      "What's your location?"
+    ],
+    [
+      "p3",
+      "Are they breathing?"
+    ],
+    [
+      "p4",
+      "Stay with me."
+    ],
+    [
+      "p5",
+      "Help is on the way."
+    ]
+  ],
+  "wav1_transcript": "Day after day as he bent his steps homeward, returning from some new effort to procure employment, Kit raised his eyes to the window of the little room he had so much commended to the child, and hoped to see some indication of her presence.",
+  "wav2_transcript": "His own earnest wish, coupled with the assurance he had received from Quilp, filled him with the belief that she would yet arrive to claim the humble shelter he had offered, and from the death of each day's hope another hope sprung up to live to-morrow."
+}
