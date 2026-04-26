@@ -142,6 +142,33 @@ criteria are green.
 
 ---
 
+## R7 — Breathing-verify question + non-arrest answer handling
+
+**Problem.** User-flagged 2026-04-26 16:05: the binary template "Are
+they breathing normally, or only gasping?" doesn't accommodate
+several real caller answers — "I don't know," "wheezing," "asthma,"
+"struggling," "shallow." The FSM has no quality category for
+*labored-but-alive* (between 'normal' and 'agonal'). Result: caller
+loops on VERIFY_BREATHING until the cycle-2D6 force-advance fires.
+
+**Approach.**
+1. New `breathing_quality='labored'` value. Patient is alive but
+   distressed. Routes to KEY_QUESTIONS (not CRITICAL_CPR).
+2. Extend the answer-detector regex for "wheez\w+", "asthma", "labored",
+   "shallow", "struggling", "I don't know" → 'labored' or 'unknown'.
+3. Consider rewording VERIFY_BREATHING template with structured
+   observation per Missel et al. 2023 ("Look at their chest — is it
+   rising and falling?"). Open-ended, catches more answer shapes.
+
+**Trigger.** Live attestation surfaces a wheezing / asthma / "I don't
+know" loop. (No live signal yet beyond user's hypothesis.)
+
+**Effort.** ~half day. Requires physician sign-off (CLAUDE.md §10) on
+both the new breathing_quality value semantics AND any template
+re-wording.
+
+---
+
 ## R6 — Hedged-answer escalation (Missel et al. "look-listen-feel")
 
 **Problem.** Per cycle-2D4 research (Missel et al. 2023, *Prehospital
