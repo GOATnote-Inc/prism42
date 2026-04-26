@@ -1,0 +1,378 @@
+--- /tmp/worker.py.pod-cycle2f-current	2026-04-25 18:53:54
++++ /Users/kiteboard/prism42/agents/livekit/worker.py	2026-04-25 19:06:51
+@@ -26,11 +26,14 @@
+ import json
+ import os
+ import random
++import threading
+ import time
+-from typing import Any
++from typing import Any, AsyncIterator
+ 
+ import httpx
++import ormsgpack
+ import structlog
++from livekit import rtc
+ from livekit.agents import (
+     AgentSession,
+     JobContext,
+@@ -131,6 +134,213 @@
+ 
+ 
+ # ---------------------------------------------------------------------
++# Cycle-2i: NENA-STA-020.1-2020 §2.2.3 identity greeting.
++#
++# Restores PSAP-compliant identification: every 9-1-1 line must be
++# answered with the phrase "9-1-1" before any other audio. Cycle-2a
++# disabled the live preroll session.say() to drop +850 ms of TTS
++# scheduling latency on the first turn. That tradeoff dropped identity
++# below the standard — the user attested:
++#   me: "Can you hear me?"  →  app: "What's your location?"
++#
++# Fix: pre-synthesize the canonical greeting ONCE per worker process,
++# cache the resulting AudioFrames, and play them via session.say(
++# text=..., audio=cached_iter) on session start. This bypasses the
++# Fish synth round-trip on the hot path — first-byte latency is the
++# WebRTC publish latency (~50-100 ms), not the 2-3 s render budget.
++#
++# Spelled-out form ("Nine one one") chosen over digit form ("9-1-1")
++# because Fish renders digits less reliably for TTS naturalness; the
++# spelled form is the verbatim NENA-recommended PSAP phrasing.
++#
++# Default OFF in code (PRISM42_ENABLE_911_GREETING=0) to preserve
++# wire-equivalence smoke baselines. Enabled via systemd drop-in
++# 50-cycle2i-greeting.conf for production use.
++# ---------------------------------------------------------------------
++
++ENABLE_911_GREETING: bool = (
++    os.environ.get("PRISM42_ENABLE_911_GREETING", "0") == "1"
++)
++GREETING_TEXT: str = "Nine one one. Where is your emergency?"
++GREETING_AUDIO_PATH: str = os.environ.get(
++    "PRISM42_GREETING_AUDIO_PATH", "/tmp/prism42-greeting.wav"
++)
++# Fish S2-Pro native rate (44.1 kHz mono PCM16). LiveKit's mixer handles
++# resampling to the WebRTC negotiated rate, so we frame-build at Fish's
++# native rate to keep the cache exactly equal to the wire bytes.
++_GREETING_SAMPLE_RATE: int = 44_100
++_GREETING_CHANNELS: int = 1
++# 20-ms frames (882 samples per frame at 44.1 kHz mono) are the
++# AudioFrame chunk size that LiveKit's audio output expects for its
++# 50-Hz frame loop. Short enough that the caller's barge-in detection
++# can interrupt within ~40 ms.
++_GREETING_FRAME_MS: int = 20
++
++# Module-level cache. Populated once per worker process by
++# `_warm_greeting_cache_blocking()`. Subsequent calls return the cached
++# bytes instantly. The lock guards the critical section so concurrent
++# first-session entries don't double-synthesize.
++_GREETING_PCM_BYTES: bytes | None = None
++_GREETING_AUDIO_DURATION_MS: int = 0
++_GREETING_CACHE_LOCK = threading.Lock()
++_GREETING_WARM_FAILED: bool = False
++
++
++def _strip_wav_header(wav_bytes: bytes) -> bytes:
++    """Strip the RIFF header from a Fish WAV blob to get raw PCM16.
++
++    Fish's /v1/tts streaming=True format=wav path emits a real RIFF WAV
++    (RIFF/WAVE/fmt /data chunks). For session.say(audio=...) we need
++    raw 16-bit PCM samples that we can wrap in rtc.AudioFrame, so the
++    header bytes must come off — otherwise LiveKit treats them as PCM
++    samples and the caller hears a 0.5 ms tick of garbage at frame 0.
++    """
++    if len(wav_bytes) < 44 or wav_bytes[:4] != b"RIFF":
++        # Not a RIFF WAV — assume bare PCM (forward compatibility).
++        return wav_bytes
++    # Find the "data" chunk header. Fish puts it at byte 36 in practice
++    # but the spec allows arbitrary inter-chunk metadata; scan for it.
++    idx = wav_bytes.find(b"data", 12)
++    if idx == -1:
++        return wav_bytes
++    # data subchunk: 4-byte "data" tag + 4-byte size + payload
++    return wav_bytes[idx + 8 :]
++
++
++def _warm_greeting_cache_blocking(fish_url: str) -> bool:
++    """Synthesize the greeting via Fish HTTP, cache PCM bytes + write WAV.
++
++    Synchronous on purpose — called inside an asyncio.to_thread() at the
++    top of entrypoint() so the first entrypoint pays the warm cost
++    (~2-3 s) but every subsequent session starts at <1 ms cache hit.
++
++    Returns True on success, False on any failure (caller should fall
++    back to NOT firing the greeting rather than hanging the session).
++    """
++    global _GREETING_PCM_BYTES, _GREETING_AUDIO_DURATION_MS, _GREETING_WARM_FAILED
++    body = {
++        "text": GREETING_TEXT,
++        "format": "wav",
++        "chunk_length": 200,
++        "normalize": True,
++        # streaming=True is the only path Fish accepts for our msgpack
++        # body (streaming=False returns 500 for this build); the data
++        # comes back as a real RIFF WAV with header.
++        "streaming": True,
++        "max_new_tokens": 1024,
++        "top_p": 0.7,
++        "repetition_penalty": 1.1,
++        "temperature": 0.1,
++        "use_memory_cache": "on",
++        "seed": 911,
++        "references": [],
++    }
++    try:
++        with httpx.Client(timeout=30.0) as client:
++            with client.stream(
++                "POST",
++                f"{fish_url}/v1/tts",
++                content=ormsgpack.packb(body),
++                headers={"Content-Type": "application/msgpack"},
++            ) as resp:
++                resp.raise_for_status()
++                buf = bytearray()
++                for chunk in resp.iter_bytes():
++                    if chunk:
++                        buf.extend(chunk)
++        wav_bytes = bytes(buf)
++        pcm_bytes = _strip_wav_header(wav_bytes)
++        # Pad to a whole frame so the last AudioFrame is full.
++        bytes_per_frame = (
++            _GREETING_SAMPLE_RATE * _GREETING_FRAME_MS // 1000
++        ) * 2 * _GREETING_CHANNELS
++        rem = len(pcm_bytes) % bytes_per_frame
++        if rem:
++            pcm_bytes = pcm_bytes + b"\x00" * (bytes_per_frame - rem)
++        with _GREETING_CACHE_LOCK:
++            _GREETING_PCM_BYTES = pcm_bytes
++            _GREETING_AUDIO_DURATION_MS = int(
++                len(pcm_bytes) / 2 / _GREETING_SAMPLE_RATE * 1000
++            )
++            _GREETING_WARM_FAILED = False
++        # Archival WAV file (use the original RIFF blob so we keep
++        # the standard header for analysts who download it).
++        try:
++            with open(GREETING_AUDIO_PATH, "wb") as f:
++                f.write(wav_bytes)
++        except OSError as e:
++            log.warning(
++                "greeting.911.archive_write_failed",
++                path=GREETING_AUDIO_PATH,
++                err=str(e)[:200],
++            )
++        log.info(
++            "greeting.911.cache_warmed",
++            text=GREETING_TEXT,
++            wav_bytes=len(wav_bytes),
++            pcm_bytes=len(pcm_bytes),
++            duration_ms=_GREETING_AUDIO_DURATION_MS,
++            archive_path=GREETING_AUDIO_PATH,
++            sample_rate=_GREETING_SAMPLE_RATE,
++        )
++        return True
++    except Exception as e:  # noqa: BLE001
++        with _GREETING_CACHE_LOCK:
++            _GREETING_WARM_FAILED = True
++        log.warning(
++            "greeting.911.cache_warm_failed",
++            err=str(e)[:200],
++            fish_url=fish_url,
++        )
++        return False
++
++
++async def _ensure_greeting_cache(fish_url: str) -> bool:
++    """Idempotent warm — first caller pays the synth cost, rest cache-hit.
++
++    Runs the blocking synth in a worker thread so the asyncio loop
++    keeps serving heartbeats / WebRTC frames while Fish renders.
++    """
++    if _GREETING_PCM_BYTES is not None:
++        return True
++    return await asyncio.to_thread(_warm_greeting_cache_blocking, fish_url)
++
++
++def _greeting_audio_iter() -> AsyncIterator[rtc.AudioFrame]:
++    """Yield cached AudioFrames for session.say(audio=...).
++
++    Each call returns a fresh async iterator that walks the cached
++    PCM bytes once. session.say expects an AsyncIterable[AudioFrame],
++    not a list — the iterator pattern lets LiveKit pace frame delivery
++    (e.g. interruption mid-greeting just stops pulling).
++    """
++    pcm = _GREETING_PCM_BYTES
++    if pcm is None:
++        async def _empty() -> AsyncIterator[rtc.AudioFrame]:
++            if False:
++                yield  # pragma: no cover - never runs
++        return _empty()
++
++    samples_per_frame = _GREETING_SAMPLE_RATE * _GREETING_FRAME_MS // 1000
++    bytes_per_frame = samples_per_frame * 2 * _GREETING_CHANNELS
++
++    async def _iter() -> AsyncIterator[rtc.AudioFrame]:
++        for offset in range(0, len(pcm), bytes_per_frame):
++            chunk = pcm[offset : offset + bytes_per_frame]
++            if len(chunk) < bytes_per_frame:
++                # Pad final frame so AudioFrame's data-length check passes.
++                chunk = chunk + b"\x00" * (bytes_per_frame - len(chunk))
++            yield rtc.AudioFrame(
++                data=chunk,
++                sample_rate=_GREETING_SAMPLE_RATE,
++                num_channels=_GREETING_CHANNELS,
++                samples_per_channel=samples_per_frame,
++            )
++
++    return _iter()
++
++
++# ---------------------------------------------------------------------
+ # Transcript bus — POST each finalized turn (caller + dispatcher) to
+ # the Vercel SSE endpoint so the /prism42/livekit dispatcher UI renders
+ # the live transcript that the ElevenLabs path already shows. Without
+@@ -343,6 +553,20 @@
+     store = get_session_store()
+     store.open(session_id)
+ 
++    # Cycle-2i: kick off the 911 greeting cache warm in the background
++    # the moment we get a session. First entrypoint pays the ~2-3 s synth
++    # cost on a worker thread; every subsequent session hits the module-
++    # level cache for free. Spawning here (not at module import) keeps
++    # logging set up and the Fish health-check decisional — if Fish is
++    # down at startup we log the failure and the hot-path cache_miss
++    # fallback handles it gracefully.
++    if ENABLE_911_GREETING and _GREETING_PCM_BYTES is None and not _GREETING_WARM_FAILED:
++        _fish_url = os.environ.get("FISH_SPEECH_URL", "http://127.0.0.1:9200")
++        asyncio.create_task(
++            _ensure_greeting_cache(_fish_url),
++            name="greeting-911-warm",
++        )
++
+     # AgentSession composition — STT + LLM + TTS + VAD + turn detection.
+     #
+     # LLM backend selector — Phase B of the B300 purr migration plan
+@@ -792,19 +1016,92 @@
+         except Exception:  # noqa: BLE001
+             pass
+ 
++    # Cycle-2i: warm the 911 greeting cache BEFORE session.start() so the
++    # greeting is ready to fire the moment the caller's audio track
++    # subscribes. Order matters: if we wait until after session.start()
++    # the LiveKit preemptive-generation pipeline can race ahead and queue
++    # the LLM reply for an early caller utterance BEFORE our greeting,
++    # which puts the greeting in second-position in the speech queue and
++    # the harness times out before it plays.
++    if ENABLE_911_GREETING and _GREETING_PCM_BYTES is None:
++        # Block on cold-cache warm (~3 s Fish synth). Subsequent sessions
++        # in the same Python subprocess hit the module cache for free.
++        # Worth the ~3 s on the very first session because NENA identity
++        # is mandatory and the alternative is no greeting at all.
++        await _ensure_greeting_cache(
++            os.environ.get("FISH_SPEECH_URL", "http://127.0.0.1:9200")
++        )
++
+     await session.start(agent=orchestrator, room=ctx.room)
+ 
++    # Cycle-2i: dispatch the NENA-STA-020.1-2020 §2.2.3 identity greeting
++    # IMMEDIATELY after session.start() returns, BEFORE wait_for_participant
++    # and BEFORE any preemptive-generation pipeline can fire on caller
++    # audio. PSAP standard requires the operator answer with "9-1-1" before
++    # any other audio. session.say(audio=...) bypasses TTS inference and
++    # forwards the cached AudioFrames directly to the WebRTC output queue,
++    # so the greeting is first-position in the playback queue regardless
++    # of whether the caller is mid-utterance. allow_interruptions=True
++    # lets LiveKit's adaptive interruption-detection cut the greeting
++    # short if the caller's barge-in is detected as a real interruption
++    # (vs backchannel cough/breath).
++    greeting_dispatched = False
++    if ENABLE_911_GREETING:
++        cache_source = "cached" if _GREETING_PCM_BYTES is not None else "miss"
++        if _GREETING_PCM_BYTES is None:
++            # Last-chance synth; warm above already tried but Fish may
++            # have been transiently down.
++            ok = await _ensure_greeting_cache(
++                os.environ.get("FISH_SPEECH_URL", "http://127.0.0.1:9200")
++            )
++            cache_source = "resynth" if ok else "miss"
++        if _GREETING_PCM_BYTES is not None:
++            try:
++                log.info(
++                    "greeting.911.played",
++                    session_id=session_id,
++                    source=cache_source,
++                    text=GREETING_TEXT,
++                    duration_ms=_GREETING_AUDIO_DURATION_MS,
++                )
++                handle = session.say(
++                    GREETING_TEXT,
++                    audio=_greeting_audio_iter(),
++                    allow_interruptions=True,
++                    # add_to_chat_ctx=False keeps the LLM ChatContext
++                    # clean — the greeting is operator identity, not
++                    # a user-visible turn the model should echo back.
++                    add_to_chat_ctx=False,
++                )
++                log.info(
++                    "greeting.911.dispatched",
++                    session_id=session_id,
++                    handle_id=getattr(handle, "id", None),
++                )
++                greeting_dispatched = True
++            except Exception as e:  # noqa: BLE001
++                log.warning(
++                    "greeting.911.failed",
++                    session_id=session_id,
++                    err=str(e)[:200],
++                )
++        else:
++            log.info(
++                "greeting.911.skipped",
++                session_id=session_id,
++                reason="cache_miss",
++            )
++
+     # Pre-roll utterance: PSAP dispatchers answer first. Saying this BEFORE
+     # waiting on the orchestrator's first LLM round-trip gives the caller
+     # immediate audible confirmation that the line is live, and buys ~5-10s
+     # of pipeline time during which the (slower) orchestrator+specialist
+     # hop can complete without the caller hanging up in silence.
+     #
+-    # HOWEVER: if the caller has ALREADY started speaking by the time we
+-    # get here, we MUST NOT play the greeting on top of their utterance.
+-    # Give a 500 ms grace window — if they haven't spoken, we lead with
+-    # the greeting; otherwise we stay silent and let the orchestrator
+-    # respond to what they actually said.
++    # When ENABLE_911_GREETING is OFF, this falls through to the legacy
++    # cycle-2a preroll-disabled path (no greeting, first audio is the
++    # real reply). When the flag is ON, the greeting was already
++    # dispatched above and this block is just a no-op tail.
+     try:
+         await ctx.wait_for_participant()
+     except Exception as e:  # noqa: BLE001
+@@ -812,19 +1109,19 @@
+ 
+     try:
+         await asyncio.wait_for(caller_spoke.wait(), timeout=0.5)
+-        log.info("preroll.skipped_caller_spoke_first", session_id=session_id)
++        if not greeting_dispatched:
++            log.info("preroll.skipped_caller_spoke_first", session_id=session_id)
+     except asyncio.TimeoutError:
+         # Cycle-1 Fix 2 (2026-04-25): T5 forensic showed 4/10 turns paid
+         # +850 ms median pad because preroll TTS blocked `speech_created`
+         # firing. The wait_for timeout above only catches caller speech
+         # within the first 500 ms — but the caller can also start
+         # speaking between the timeout and the session.say() launch
+-        # (race window) OR while session.say() is mid-utterance. The
+-        # defensive is_set() check below skips the preroll entirely if
+-        # the caller has already started, so the agent's first audio is
+-        # always the actual reply, not a now-stale "What's your
+-        # emergency?" greeting overlapping the caller.
+-        if caller_spoke.is_set():
++        # (race window) OR while session.say() is mid-utterance.
++        if greeting_dispatched:
++            # Greeting already played; nothing more to do here.
++            pass
++        elif caller_spoke.is_set():
+             log.info("preroll.skipped_caller_spoke_race", session_id=session_id)
+         else:
+             log.info("preroll.disabled_for_demo", session_id=session_id)  # cycle-2a: drop preroll-always-on; first audio = real reply

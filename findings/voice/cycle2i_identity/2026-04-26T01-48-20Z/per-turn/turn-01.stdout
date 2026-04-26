@@ -1,0 +1,63 @@
+Nvidia Encoder is supported.
+Nvidia Decoder is supported.
+=== STAGE A: generate caller audio for 'I think I am having a heart attack. Chest pain and short of breath.' ===
+[gen] synthesizing caller audio: 'I think I am having a heart attack. Chest pain and short of breath.'
+[gen] got 487,468 bytes (5.53s of audio at 44100Hz)
+[gen] resampled to 48000Hz, duration 5.53s
+
+=== STAGE B: mint session + token via https://prism42-console.vercel.app ===
+[mint] session_id=93f2e8ee-0baa-ef63-e85b-82661e47922d url=wss://ai-therapy-v3svfd9o.livekit.cloud
+
+=== STAGE C: connect + listen ===
+[stage C] connected @ +0.67s
+[evt] participant_connected: identity='agent-AJ_RB4UKjNWd34q'
+[stage C] AGENT JOINED @ +7.22s (agent-AJ_RB4UKjNWd34q)
+[evt] track_subscribed kind=1 from=agent-AJ_RB4UKjNWd34q
+[stage C] AUDIO TRACK SUBSCRIBED @ +7.53s
+
+=== STAGE D: wait for pre-roll (0.5s) ===
+[stage D] pre-roll audio: 34 non-silent frames, peak 15943
+
+=== STAGE E: publish caller audio (5.5s) ===
+[stage E] track published @ +8.06s
+[stage E] publish ended @ +13.99s
+
+=== STAGE F: wait up to 30.0s for agent reply ===
+[stage F] filler-skip-window: 2.5s after pub-end
+[stage F] + 0.50s after pub-end | reply_peak=1 useful_peak=0 (0 = silence)
+[stage F] + 1.00s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 1.50s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 2.00s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 2.50s after pub-end | reply_peak=2 useful_peak=0 (0 = silence)
+[stage F] + 3.00s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 3.51s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 4.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 4.51s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 5.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 5.51s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 6.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 6.51s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] + 7.01s after pub-end | reply_peak=2 useful_peak=2 (0 = silence)
+[stage F] AGENT REPLY DETECTED (raw) @ +21.50s (7.51s after caller end), peak 25965
+[stage F] AGENT USEFUL REPLY DETECTED @ +21.06s (7.07s after caller end), peak 25965
+[stage F] listening 1.0s more to confirm sustained speech ...
+
+======================================================================
+RESULT
+======================================================================
+agent_joined          : YES
+audio_track_subscribed: YES
+preroll_speech_frames : 34 (peak 15943)
+reply_speech_amp_max  : 25965
+reply_latency_after_pubend: +7.51s
+filler_skip_window_s  : 2.5
+useful_reply_amp_max  : 25965
+first_useful_audio_after_speech_ms: 7074
+first_audio_after_speech_ms: 7511
+useful_audio_skipped_filler=False raw_to_useful_delta_ms=-438
+total_speech_frames   : 429
+global_peak_amplitude : 25965
+first_segment_min_ms  : 200.0
+tts_total_ms          : 8505
+useful_audio_duration_ms: 1431
+VERDICT: PASS — full turn round-trip works
