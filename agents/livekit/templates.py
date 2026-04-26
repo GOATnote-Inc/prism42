@@ -182,6 +182,15 @@ TEMPLATES: dict[str, TemplateSpec] = {
         text="Push hard and fast on the center of the chest, twice per second.",
         notes="ONLY emitted when CPR safety gate (cycle-2T) green-lights.",
     ),
+    # Cycle-2R3 (B3-A) — physician-reviewed text, Brandon Dent, MD 2026-04-26.
+    # Caller said patient is in chair / sitting / bed / etc.; we cannot
+    # begin compressions on a non-flat surface. Direct caller to reposition.
+    "instruct_cpr_repositioning": TemplateSpec(
+        # 9 words. Physician-revised wording (less alarm, clear instruction).
+        text="Move them flat on the floor, on their back.",
+        notes="MPDS-9: caller indicated patient not on floor — reposition before CPR. "
+              "Life-safety; physician-reviewed (Brandon Dent, MD per CLAUDE.md §10).",
+    ),
     "instruct_choking_back_blows": TemplateSpec(
         # 11 words. Genderless ("them" placeholder).
         text="Stand behind {pronoun_object} and give five firm back blows.",

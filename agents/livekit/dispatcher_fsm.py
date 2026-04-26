@@ -129,6 +129,10 @@ class Intent(str, Enum):
     VERIFY_BREATHING = "verify_cpr_breathing"
     # Pre-arrival instructions
     INSTRUCT_CPR_BEGIN = "instruct_cpr_compressions"
+    # Cycle-2R3 (B3-A): caller indicated patient not on floor — direct
+    # caller to reposition before CPR can begin. Physician-reviewed by
+    # Brandon Dent, MD 2026-04-26 per CLAUDE.md §10.
+    INSTRUCT_CPR_REPOSITIONING = "instruct_cpr_repositioning"
     INSTRUCT_CHOKING = "instruct_choking_back_blows"
     INSTRUCT_PRESSURE_BLEED = "instruct_pressure_bleed"
     INSTRUCT_SEIZURE = "instruct_seizure_clear_area"
@@ -167,6 +171,18 @@ _RE_NOT_BREATHING = re.compile(
 _RE_FLOOR_FLAT = re.compile(
     r"\b(?:on the (?:floor|ground)|laying down|lying flat|flat on (?:his|her|their) back|"
     r"on (?:his|her|their) back|on the back)\b",
+    re.IGNORECASE,
+)
+# Cycle-2R3 (B3-A): caller indicates patient NOT on the floor / not flat —
+# a chair, bed, couch, vehicle, sitting, standing, upright, slumped, etc.
+# Drives the INSTRUCT_CPR_REPOSITIONING intent. Physician-reviewed
+# 2026-04-26 by Brandon Dent, MD per CLAUDE.md §10.
+_RE_FLOOR_NEGATION = re.compile(
+    r"\b(?:in (?:a |the )?(?:chair|recliner|car seat|bed|couch|sofa|wheelchair)|"
+    r"sitting (?:up|on|in)|seated|standing|upright|slumped|"
+    r"on the (?:couch|sofa|bed)|in (?:his|her|their) (?:chair|bed)|"
+    r"not (?:on the floor|flat|laying down)|"
+    r"can'?t (?:move|get) (?:him|her|them))\b",
     re.IGNORECASE,
 )
 _RE_GASPING = re.compile(
@@ -235,6 +251,10 @@ class Features:
     is_third_party: bool = False
     not_breathing: bool = False
     floor_flat: bool = False
+    # Cycle-2R3 (B3-A): caller signaled patient NOT on the floor —
+    # drives INSTRUCT_CPR_REPOSITIONING. Mutually-exclusive with floor_flat;
+    # both can't be true on the same utterance.
+    floor_negation: bool = False
     gasping: bool = False
     breathing_normal: bool = False
     choking: bool = False
@@ -364,6 +384,8 @@ def classify(utterance: str) -> Features:
         is_third_party=bool(_RE_THIRD_PARTY.search(t)),
         not_breathing=bool(_RE_NOT_BREATHING.search(t)),
         floor_flat=bool(_RE_FLOOR_FLAT.search(t)),
+        # Cycle-2R3 (B3-A): caller signaled patient NOT on the floor.
+        floor_negation=bool(_RE_FLOOR_NEGATION.search(t)),
         gasping=bool(_RE_GASPING.search(t)),
         breathing_normal=bool(_RE_BREATHING_NORMAL.search(t)),
         choking=bool(_RE_CHOKING.search(t)),
@@ -430,6 +452,10 @@ class DispatcherFSM:
     # Telemetry.
     turns: int = 0
     last_intent: Intent | None = None
+    # Cycle-2R3 (B3-A): count of consecutive INSTRUCT_CPR_REPOSITIONING
+    # emits — used to latch surface_confirmed heuristically after 2
+    # repositions if caller still hasn't moved patient to the floor.
+    _reposition_emits: int = 0
 
     # ---- main API -----------------------------------------------------
 
@@ -626,6 +652,32 @@ class DispatcherFSM:
         q = self._direct_question_intent(f)
         if q is not None:
             return self._record(q, t0)
+        # Cycle-2R3 (B3-A): caller's positive surface confirmation
+        # mid-verify also latches surface_confirmed. (E.g. caller says
+        # "yes, on the floor" or "okay he's on his back now" after the
+        # reposition instruction.)
+        if (not self.surface_confirmed) and f.floor_flat:
+            self.surface_confirmed = True
+            log.info("fsm.surface_confirmed_mid_verify")
+        # Cycle-2R3 (B3-A) life-safety: caller signaled patient NOT on
+        # the floor (chair / sitting / bed / etc). Direct caller to
+        # reposition BEFORE re-asking the surface verification — the
+        # patient has to be flat on a hard surface for compressions to
+        # work (MPDS-9). If the negation persists across two emits,
+        # surface_confirmed latches True heuristically (caller is doing
+        # what they can; every second matters).
+        if (not self.surface_confirmed) and f.floor_negation:
+            self._reposition_emits = getattr(self, "_reposition_emits", 0) + 1
+            if self._reposition_emits >= 3:
+                # Caller has heard the reposition instruction twice and
+                # still signals not-on-floor. Latch surface_confirmed
+                # heuristically and proceed to breathing-verify so we
+                # don't loop forever. Logged so the metric surfaces.
+                self.surface_confirmed = True
+                log.info("fsm.surface_latch_heuristic",
+                         reposition_emits=self._reposition_emits)
+            else:
+                return self._record(Intent.INSTRUCT_CPR_REPOSITIONING, t0)
         if not self.surface_confirmed:
             self.verify_step = VerifyStep.Q_SURFACE
             return self._record(Intent.VERIFY_SURFACE, t0)
@@ -666,6 +718,19 @@ class DispatcherFSM:
     def _record(self, intent: Intent, t0: float) -> Intent:
         self.last_intent = intent
         dt_ms = int((time.monotonic() - t0) * 1000)
+        # Cycle-2R3 (B3-A) life-safety telemetry: surface_status reflects
+        # the FSM's view of whether the patient is on a hard surface
+        # (compressions can begin). cpr_allowed is the safety gate result —
+        # MUST be False unless caller volunteered both unresponsive AND
+        # not-breathing (the AHA T-CPR two-question gate; CLAUDE.md §10
+        # life-safety per Brandon Dent, MD 2026-04-26).
+        surface_status = (
+            "confirmed" if self.surface_confirmed
+            else "negated" if self._reposition_emits > 0
+            else "unknown"
+        )
+        cpr_allowed = bool(self.surface_confirmed and self.breathing_assessed
+                           and self.is_cardiac_arrest)
         log.info(
             "fsm.transition",
             state=self.state.value,
@@ -680,6 +745,9 @@ class DispatcherFSM:
             cardiac=self.is_cardiac_arrest,
             complaint=self.complaint,
             third_party=self.is_third_party,
+            surface_status=surface_status,
+            cpr_allowed=cpr_allowed,
+            reposition_emits=self._reposition_emits,
             turns=self.turns,
             ms=dt_ms,
         )
@@ -726,6 +794,9 @@ class DispatcherFSM:
         Intent.INSTRUCT_CPR_BEGIN:
             "Instruct the caller to start chest compressions — center of "
             "the chest, hard and fast, two per second.",
+        Intent.INSTRUCT_CPR_REPOSITIONING:
+            "Direct the caller to move the patient flat on the floor, on "
+            "their back. Compressions cannot start on a chair or bed.",
         Intent.INSTRUCT_CHOKING:
             "Instruct: stand behind {PRONOUN_OBJECT}, five back blows "
             "between the shoulder blades.",
@@ -745,6 +816,9 @@ class DispatcherFSM:
         Intent.ANSWER_OUTCOME_UNCERTAIN:
             "Do NOT promise an outcome. Tell the caller responders are "
             "close and to tell you if anything changes.",
+        Intent.ANSWER_HEARD_ADDRESS:
+            "Reassure the caller: yes, you have their address and units "
+            "are on the way.",
         Intent.REPROMPT:
             "Ask the caller to repeat what they just said.",
         Intent.CLOSEOUT:

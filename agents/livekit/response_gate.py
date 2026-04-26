@@ -193,6 +193,9 @@ def validate_llm_output(
 _SAFETY_TEMPLATE_ONLY: frozenset[str] = frozenset(
     {
         "instruct_cpr_compressions",     # life-safety
+        # Cycle-2R3 (B3-A): caller said "in a chair" — life-safety
+        # repositioning instruction. NEVER let LLM rephrase.
+        "instruct_cpr_repositioning",    # life-safety, physician-reviewed
         "instruct_choking_back_blows",   # life-safety
         "instruct_pressure_bleed",       # life-safety
         "instruct_seizure_clear_area",   # life-safety
