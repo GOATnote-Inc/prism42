@@ -1,0 +1,134 @@
+{
+  "cycle": "2M",
+  "task": "fish_reference_voice_steadiness_validation",
+  "ts_utc": "2026-04-26T051841Z",
+  "ship_decision": "REJECT_BOTH",
+  "summary_text": "Cycle-2M bench executor evaluated Team M-V's top-2 LibriTTS reference candidates (M1=cycle-2j wav1 = ..._000001_000000.wav, M2=NEW ..._000013_000000.wav) against the 5 PSAP phrases via Fish HTTP /v1/tts direct synth (mirrors cycle-2j harness pattern). All 10 synth calls succeeded with valid PCM (5/5 each, TTFB p95 5-6ms, total p95 1156-1211ms). Both M1 and M2 outputs FAIL the L1 GO criterion (f0_std<=39 AND f0_range<=128 loose, <=30 / <=130 strict): M1 hits 0/5 PASS_loose (mean f0_std=49.0, mean f0_range=352.7), M2 hits 1/5 PASS_loose (mean f0_std=46.8, mean f0_range=288.4 — only p3 'Are they breathing?' passes at f0_std=12.0, f0_range=48.8). For comparison anchor, the production psap-fast default in cycle-2L hit 3/5 PASS_loose under the same tracker (B_psap_fast: p3,p4,p5 pass) — both M-candidates are STRICTLY WORSE than the existing psap-fast default by the steadiness criterion. The L1 hypothesis (steady reference voice -> steady output via VQ-token inheritance) is FALSIFIED in this run: the M-V references themselves measure f0_std=51 (M-V's tracker) / 50.9-51.2 — both reference clips run well above L1's 30-39 Hz strict/loose threshold for steadiness, so the pre-condition the hypothesis requires (steady-reference) was never met by the available LibriTTS pool. M-V's audit explicitly flagged this caveat in section 1: 'NO file in the 6 meets L1's strict f0_std<=30 Hz GO criterion'. The steadiness levers in this candidate pool are exhausted; further progress requires either (a) a different reference corpus (real PSAP dispatcher recordings or news anchor 10-30s clips at measured f0_std<=30), or (b) acceptance that L1's threshold is unattainable on Fish-S2-Pro and the discriminator is something other than f0 steadiness. Recommendation: REJECT_BOTH, leave 90-cycle2M-refaudio.conf REMOVED (worker reverts to default psap reference_id), proceed with user listening review in case audio quality differs from f0-steadiness measurement.",
+  "phases": {
+    "phase_1_watchdog_pre": {
+      "status": "GREEN",
+      "fish_health": "200 ok at /v1/health",
+      "vllm_health": "200 at /health (model nemotron-nano)",
+      "worker_active": true,
+      "fish_active": true
+    },
+    "phase_2_mv_wait": {
+      "status": "RECEIVED",
+      "wait_seconds": 270,
+      "team_mv_file": "/Users/kiteboard/prism42/findings/voice/cycle2M_steadiness/2026-04-26T051841Z/team_mv_validation.md",
+      "top_2_candidates": {
+        "M1": {
+          "source": "/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.wav",
+          "transcript": "Day after day as he bent his steps homeward, returning from some new effort to procure employment, Kit raised his eyes to the window of the little room he had so much commended to the child, and hoped to see some indication of her presence.",
+          "mv_f0_std": 50.9,
+          "mv_f0_range_p5p95": 132.2,
+          "duration_s": 13.530,
+          "note": "Same file as cycle-2j wav1 (already on pod). Re-bench provides differential against M2 only."
+        },
+        "M2": {
+          "source": "/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000013_000000.wav",
+          "transcript": "Kit scratched his head mournfully, in reluctant admission that it did not, and clambering up to the old nail took down the cage and set himself to clean it and to feed the bird.",
+          "mv_f0_std": 51.2,
+          "mv_f0_range_p5p95": 139.8,
+          "duration_s": 10.949,
+          "note": "NEW from M-V audit; functionally tied with M1 on f0_std (delta=0.3 Hz)."
+        }
+      }
+    },
+    "phase_3_wav_install": {
+      "status": "INSTALLED",
+      "wav_M1_pod_path": "/opt/prism42/voice-refs/wav_M1.wav",
+      "wav_M1_md5": "d08ca432846b45327f315f85d597ee39",
+      "wav_M1_size_bytes": 649484,
+      "wav_M1_format": "RIFF WAV PCM 16-bit mono 24000 Hz",
+      "wav_M2_pod_path": "/opt/prism42/voice-refs/wav_M2.wav",
+      "wav_M2_md5": "ab15d121de8a6ed7cf0521171598f903",
+      "wav_M2_size_bytes": 525644,
+      "wav_M2_format": "RIFF WAV PCM 16-bit mono 24000 Hz",
+      "verification": "md5 matches local source files; cycle-2j proved 24kHz mono 16-bit succeeds against Fish."
+    },
+    "phase_4_dropin": {
+      "status": "INSTALLED_AND_REVERTED",
+      "drop_in_path": "/etc/systemd/system/prism42-worker.service.d/90-cycle2M-refaudio.conf",
+      "first_pass_bug": "Initial drop-in lacked quote marks around Environment= values containing spaces — systemd truncated PRISM42_FISH_REFERENCE_TEXT at 'Day' (first word). Fixed by wrapping each Environment value in double quotes.",
+      "drop_in_format": "Environment=\"KEY=VALUE\" (3 lines: PRISM42_FISH_REFERENCE_AUDIO, PRISM42_FISH_REFERENCE_TEXT, FISH_SPEECH_REFERENCE_ID=)",
+      "alphabetic_priority": "90-* sorts after 70-cycle2k-pacetag (which sets PRISM42_FISH_PACE_TAG empty); 90-* overrides .env FISH_SPEECH_REFERENCE_ID=psap with empty",
+      "rollback": "Drop-in removed at end of bench; daemon-reload + worker restart; verified worker active and Environment back to baseline (drop-ins 10/20/50/70 only)."
+    },
+    "phase_5_bench": {
+      "status": "COMPLETE",
+      "approach": "direct Fish HTTP /v1/tts; references=[{audio: <bytes>, text: <transcript>}], reference_id unset (mirror cycle-2j success path).",
+      "phrases": 5,
+      "conditions": 2,
+      "synth_calls_per_condition": 6,
+      "synth_calls_total": 12,
+      "synth_calls_successful": 12,
+      "warmup_per_condition": 1
+    }
+  },
+  "phrase_metrics": {
+    "M1": {
+      "p1": {"text": "Nine one one, where is your emergency?", "ttfb_ms": 6, "total_ms": 2532, "duration_s": 3.298, "wpm_proxy": 127.3, "peak": 28006, "rms": 2373.6, "f0_mean": 154.1, "f0_std": 47.8, "f0_range": 381.4, "pass_loose": false, "pass_strict": false},
+      "p2": {"text": "What's your location?", "ttfb_ms": 5, "total_ms": 1054, "duration_s": 1.022, "wpm_proxy": 176.1, "peak": 28006, "rms": 3207.8, "f0_mean": 196.7, "f0_std": 76.5, "f0_range": 390.3, "pass_loose": false, "pass_strict": false},
+      "p3": {"text": "Are they breathing?", "ttfb_ms": 6, "total_ms": 890, "duration_s": 0.790, "wpm_proxy": 227.8, "peak": 28006, "rms": 1556.4, "f0_mean": 131.9, "f0_std": 36.0, "f0_range": 296.8, "pass_loose": false, "pass_strict": false},
+      "p4": {"text": "Stay with me.", "ttfb_ms": 6, "total_ms": 1030, "duration_s": 0.976, "wpm_proxy": 184.4, "peak": 28006, "rms": 1727.6, "f0_mean": 135.3, "f0_std": 47.9, "f0_range": 365.8, "pass_loose": false, "pass_strict": false},
+      "p5": {"text": "Help is on the way.", "ttfb_ms": 6, "total_ms": 1156, "duration_s": 1.161, "wpm_proxy": 258.4, "peak": 28006, "rms": 1817.9, "f0_mean": 135.0, "f0_std": 36.7, "f0_range": 329.1, "pass_loose": false, "pass_strict": false}
+    },
+    "M2": {
+      "p1": {"text": "Nine one one, where is your emergency?", "ttfb_ms": 5, "total_ms": 2754, "duration_s": 3.623, "wpm_proxy": 115.9, "peak": 28006, "rms": 1788.0, "f0_mean": 152.6, "f0_std": 50.5, "f0_range": 372.4, "pass_loose": false, "pass_strict": false},
+      "p2": {"text": "What's your location?", "ttfb_ms": 5, "total_ms": 1211, "duration_s": 1.254, "wpm_proxy": 143.5, "peak": 28006, "rms": 2652.3, "f0_mean": 183.7, "f0_std": 67.1, "f0_range": 345.0, "pass_loose": false, "pass_strict": false},
+      "p3": {"text": "Are they breathing?", "ttfb_ms": 5, "total_ms": 969, "duration_s": 0.883, "wpm_proxy": 203.9, "peak": 28006, "rms": 2052.7, "f0_mean": 153.5, "f0_std": 12.0, "f0_range": 48.8, "pass_loose": true, "pass_strict": true},
+      "p4": {"text": "Stay with me.", "ttfb_ms": 5, "total_ms": 1061, "duration_s": 1.022, "wpm_proxy": 176.1, "peak": 28006, "rms": 1283.8, "f0_mean": 141.1, "f0_std": 66.3, "f0_range": 361.7, "pass_loose": false, "pass_strict": false},
+      "p5": {"text": "Help is on the way.", "ttfb_ms": 5, "total_ms": 1148, "duration_s": 1.161, "wpm_proxy": 258.4, "peak": 28006, "rms": 1527.1, "f0_mean": 130.6, "f0_std": 37.9, "f0_range": 314.3, "pass_loose": false, "pass_strict": false}
+    }
+  },
+  "aggregate": {
+    "M1": {
+      "synth_success": "5/5",
+      "ttfb_p50_ms": 6,
+      "ttfb_p95_ms": 6,
+      "total_p50_ms": 1054,
+      "total_p95_ms": 1156,
+      "p1_wpm_slow": 127.3,
+      "median_wpm": 184.4,
+      "f0_std_mean": 49.0,
+      "f0_std_max": 76.5,
+      "f0_range_mean": 352.7,
+      "f0_range_max": 390.3,
+      "pass_loose_count": "0/5",
+      "pass_strict_count": "0/5"
+    },
+    "M2": {
+      "synth_success": "5/5",
+      "ttfb_p50_ms": 5,
+      "ttfb_p95_ms": 5,
+      "total_p50_ms": 1148,
+      "total_p95_ms": 1211,
+      "p1_wpm_slow": 115.9,
+      "median_wpm": 176.1,
+      "f0_std_mean": 46.8,
+      "f0_std_max": 67.1,
+      "f0_range_mean": 288.4,
+      "f0_range_max": 372.4,
+      "pass_loose_count": "1/5",
+      "pass_strict_count": "1/5"
+    }
+  },
+  "comparison_anchor": {
+    "B_psap_fast_cycle2L": {
+      "note": "Production default reference; same tracker re-applied to cycle-2L's psap-fast condition outputs.",
+      "pass_loose_count": "3/5 (p3, p4, p5)",
+      "f0_std_mean": 35.3,
+      "f0_range_mean": 193.2
+    },
+    "M1_vs_psap_fast": "STRICTLY WORSE (0/5 vs 3/5)",
+    "M2_vs_psap_fast": "STRICTLY WORSE (1/5 vs 3/5)"
+  },
+  "l1_hypothesis_validation": {
+    "claim": "If reference has steady f0 (low f0_std + compact f0_range), Fish's VQ-token inheritance carries that steadiness into the synthesized output.",
+    "result": "FALSIFIED in this candidate pool, but contingent on M-V's flagged caveat. M-V explicitly noted that NO LibriTTS file in the 6 met L1's strict f0_std<=30 threshold (range 51-69 Hz f0_std on the references themselves). Since the antecedent of the hypothesis (steady reference) was never satisfied, this run cannot reject the hypothesis logically — but it does establish that the available LibriTTS reference pool is insufficient to invoke the hypothesized steadiness benefit. The references measured by M-V (f0_std 51-52) propagated to Fish outputs measured at 47-49 mean (M1/M2). Whether the reference->output ratio holds for steadier references is unknown and untestable without recordings of measured-steady speech.",
+    "evidence": "Reference f0_std (M-V tracker): M1=50.9, M2=51.2. Output f0_std (this tracker): M1 mean=49.0, M2 mean=46.8. Output is approximately the same as reference, NOT lower — Fish does not magnify or attenuate the reference's steadiness; it inherits it ~1:1. Therefore: steadiness in = steadiness out. To get f0_std<=30 in output, need a reference at f0_std<=30."
+  },
+  "decision": "REJECT_BOTH",
+  "decision_rationale": "Both M-candidates fail the GO criterion (M1: 0/5, M2: 1/5; need >=4/5). Both are also strictly worse than the existing psap-fast default (3/5). User listening review may still differ from f0-measurement, in which case TIE_PICK or partial GO applies — see listening_checklist.md. Default action: leave 90-* drop-in REMOVED (rolled back), production stays on psap reference_id."
+}

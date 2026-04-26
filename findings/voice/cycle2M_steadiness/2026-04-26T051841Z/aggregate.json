@@ -1,0 +1,98 @@
+{
+  "M1": {
+    "n_total": 5,
+    "n_ok": 5,
+    "f0_std_mean": 49.0,
+    "f0_std_max": 76.5,
+    "f0_range_mean": 352.7,
+    "f0_range_max": 390.3,
+    "f0_mean_mean": 150.6,
+    "pass_strict_count": 0,
+    "pass_loose_count": 0,
+    "per_phrase": {
+      "p1": {
+        "f0_mean": 154.1,
+        "f0_std": 47.8,
+        "f0_range": 381.4,
+        "pass_strict": false,
+        "pass_loose": false
+      },
+      "p2": {
+        "f0_mean": 196.7,
+        "f0_std": 76.5,
+        "f0_range": 390.3,
+        "pass_strict": false,
+        "pass_loose": false
+      },
+      "p3": {
+        "f0_mean": 131.9,
+        "f0_std": 36.0,
+        "f0_range": 296.8,
+        "pass_strict": false,
+        "pass_loose": false
+      },
+      "p4": {
+        "f0_mean": 135.3,
+        "f0_std": 47.9,
+        "f0_range": 365.8,
+        "pass_strict": false,
+        "pass_loose": false
+      },
+      "p5": {
+        "f0_mean": 135.0,
+        "f0_std": 36.7,
+        "f0_range": 329.1,
+        "pass_strict": false,
+        "pass_loose": false
+      }
+    }
+  },
+  "M2": {
+    "n_total": 5,
+    "n_ok": 5,
+    "f0_std_mean": 46.8,
+    "f0_std_max": 67.1,
+    "f0_range_mean": 288.4,
+    "f0_range_max": 372.4,
+    "f0_mean_mean": 152.3,
+    "pass_strict_count": 1,
+    "pass_loose_count": 1,
+    "per_phrase": {
+      "p1": {
+        "f0_mean": 152.6,
+        "f0_std": 50.5,
+        "f0_range": 372.4,
+        "pass_strict": false,
+        "pass_loose": false
+      },
+      "p2": {
+        "f0_mean": 183.7,
+        "f0_std": 67.1,
+        "f0_range": 345.0,
+        "pass_strict": false,
+        "pass_loose": false
+      },
+      "p3": {
+        "f0_mean": 153.5,
+        "f0_std": 12.0,
+        "f0_range": 48.8,
+        "pass_strict": true,
+        "pass_loose": true
+      },
+      "p4": {
+        "f0_mean": 141.1,
+        "f0_std": 66.3,
+        "f0_range": 361.7,
+        "pass_strict": false,
+        "pass_loose": false
+      },
+      "p5": {
+        "f0_mean": 130.6,
+        "f0_std": 37.9,
+        "f0_range": 314.3,
+        "pass_strict": false,
+        "pass_loose": false
+      }
+    }
+  }
+}
