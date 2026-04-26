@@ -1,0 +1,42 @@
+# /etc/systemd/system/prism42-vllm.service
+#
+# OPTIONAL: full systemd unit for vLLM. The current pod runs vLLM as a manual
+# `vllm serve` (PID 389310, parent=init via nohup). If/when the integrator wants
+# to bring vLLM under systemd, drop this file in alongside 00-cycle2S-merged.conf
+# (which lives in prism42-vllm.service.d/).
+#
+# To install (NOT auto-applied):
+#   sudo install -m 0644 prism42-vllm.service /etc/systemd/system/prism42-vllm.service
+#   sudo install -m 0755 -d /etc/systemd/system/prism42-vllm.service.d
+#   sudo install -m 0644 00-cycle2S-merged.conf /etc/systemd/system/prism42-vllm.service.d/00-cycle2S-merged.conf
+#   sudo systemctl daemon-reload
+#   # 1) stop the current manual vLLM:
+#   sudo kill $(pgrep -f "vllm serve nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4")
+#   # 2) wait ~30s for shutdown, then:
+#   sudo systemctl enable --now prism42-vllm.service
+#   # 3) verify:
+#   sudo systemctl status prism42-vllm.service
+#   journalctl -u prism42-vllm.service -f
+#
+# WARNING: starting this unit will trigger a fresh CUDA graph capture +
+# FlashInfer autotune. Cold-start budget ~62 seconds (from log evidence).
+# During that window, all vLLM requests will fail. Voice path will be DOWN.
+
+[Unit]
+Description=Prism42 vLLM (Nemotron-3-Nano-30B-A3B-NVFP4) on B300
+After=network-online.target nvidia-persistenced.service
+Wants=network-online.target nvidia-persistenced.service
+# vLLM and Fish-Speech share the GPU; if Fish dies, we stay up:
+# (we don't add a hard dependency)
+
+[Service]
+Type=simple
+# All Environment= and ExecStart= settings live in
+# /etc/systemd/system/prism42-vllm.service.d/00-cycle2S-merged.conf
+# This file is the BARE unit; the drop-in carries the configuration.
+
+# Hard NoNewPrivileges + minimal CapabilityBoundingSet not used — vLLM needs
+# CUDA driver access via /dev/nvidia* and large mmap regions.
+
+[Install]
+WantedBy=multi-user.target
