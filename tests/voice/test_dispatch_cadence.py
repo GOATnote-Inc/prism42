@@ -688,6 +688,96 @@ def test_breathing_quality_absent_permits_cpr():
     assert gate.cpr_safe() is True
 
 
+# ------------------------------------------------------------------
+# Cycle-2D15 LIFE-SAFETY — stop CPR when patient resumes breathing
+# ------------------------------------------------------------------
+
+
+def test_breathing_resumed_mid_cpr_stops_compressions_LIFE_SAFETY():
+    """RED-FLAG bug from user attestation 2026-04-26 16:05: caller
+    said 'Oh sorry, they they started breathing again.' (turn 8) and
+    'You want me to push hard on their chest even though they're
+    breathing?' (turn 9). Dispatcher kept emitting INSTRUCT_CPR_BEGIN.
+
+    Cycle-2D13 only checked breathing_quality in CRITICAL_VERIFY, not
+    in CRITICAL_CPR. Once compressions started, breathing-resumption
+    signals were ignored.
+
+    Cycle-2D15 fix: detect breathing-resumed at the top of
+    _intent_in_cpr, exit to STOP_CPR template, un-latch
+    is_cardiac_arrest, set breathing_quality='normal'.
+
+    THIS TEST IS A SAFETY GATE. DO NOT WEAKEN. CPR on a breathing
+    patient causes broken ribs, pneumothorax, internal injury.
+    """
+    from response_gate import ResponseGate
+    fsm = DispatcherFSM()
+    fsm.is_cardiac_arrest = True
+    fsm.surface_confirmed = True
+    fsm.breathing_assessed = True
+    fsm.breathing_quality = "absent"
+    fsm.state = State.CRITICAL_CPR
+
+    # Turn N: caller says "they started breathing again"
+    intent = fsm.transition("Oh sorry, they they started breathing again.")
+    assert intent == Intent.STOP_CPR, (
+        f"Caller signaled breathing resumption mid-CPR. FSM must "
+        f"emit STOP_CPR. Got {intent}"
+    )
+    assert fsm.breathing_quality == "normal"
+    assert fsm.is_cardiac_arrest is False
+
+    gate = ResponseGate(fsm=fsm)
+    assert gate.cpr_safe() is False, (
+        "Defense-in-depth: gate.cpr_safe() must return False after "
+        "breathing resumption."
+    )
+    text = gate.render_template_for("stop_cpr_breathing_resumed")
+    assert text == (
+        "Stop compressions and watch their breathing — "
+        "stay on the line."
+    )
+
+
+def test_caller_questions_breathing_during_cpr_stops_compressions():
+    """Caller asking 'why am I doing CPR on a breathing patient' is
+    itself a breathing-resumed signal. The dispatcher must stop, not
+    answer-the-question."""
+    fsm = DispatcherFSM()
+    fsm.is_cardiac_arrest = True
+    fsm.surface_confirmed = True
+    fsm.breathing_assessed = True
+    fsm.breathing_quality = "absent"
+    fsm.state = State.CRITICAL_CPR
+
+    intent = fsm.transition(
+        "You want me to push hard on their chest even though they're breathing?"
+    )
+    assert intent == Intent.STOP_CPR
+    assert fsm.breathing_quality == "normal"
+
+
+def test_breathing_resumed_regex_variants():
+    """Regex catches common phrasings of 'patient resumed breathing'."""
+    cases = [
+        "they started breathing again",
+        "he's breathing",
+        "she is breathing now",
+        "they're breathing now",
+        "they came back",
+        "they woke up",
+        "moving again",
+        "they're alive",
+        "even though they're breathing",
+        "but they are breathing",
+    ]
+    for utterance in cases:
+        f = classify(utterance)
+        assert f.breathing_resumed, (
+            f"Expected breathing_resumed=True for {utterance!r}, got False"
+        )
+
+
 def test_e2e_user_repro_address_echoed_and_no_dead_air():
     """End-to-end: caller's screenshot scenario.
 

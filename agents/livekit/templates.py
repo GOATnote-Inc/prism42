@@ -278,6 +278,17 @@ TEMPLATES: dict[str, TemplateSpec] = {
         text="Sorry, could you repeat that for me?",
         notes="Caller utterance unintelligible / classifier blank.",
     ),
+    # Cycle-2D15 LIFE-SAFETY: physician-reviewed by Brandon Dent, MD on
+    # 2026-04-26 per CLAUDE.md §10. Triggers when caller signals patient
+    # resumed breathing mid-CPR. Imperative + monitoring + co-presence.
+    "stop_cpr_breathing_resumed": TemplateSpec(
+        # 11 words. Single terminator.
+        text="Stop compressions and watch their breathing — stay on the line.",
+        notes=(
+            "Cycle-2D15 LIFE-SAFETY: stop CPR when patient resumed breathing. "
+            "Physician-reviewed (Brandon Dent, MD 2026-04-26)."
+        ),
+    ),
     "closeout": TemplateSpec(
         # 9 words.
         text="Stay on the line until they get there.",

@@ -149,6 +149,10 @@ class Intent(str, Enum):
     ANSWER_OUTCOME_UNCERTAIN = "answer_outcome_uncertain"
     # Cycle-2R3 (B1-A): caller asks if we heard their address.
     ANSWER_HEARD_ADDRESS = "answer_heard_address"
+    # Cycle-2D15 LIFE-SAFETY: stop compressions on breathing resumption.
+    # Physician-reviewed by Brandon Dent, MD on 2026-04-26 per CLAUDE.md
+    # §10. Wording: imperative + monitoring instruction + co-presence.
+    STOP_CPR = "stop_cpr_breathing_resumed"
     # Defaults / fallback
     REPROMPT = "reprompt_caller"
     CLOSEOUT = "closeout"
@@ -185,6 +189,23 @@ _RE_ADDRESS_ECHO = re.compile(
     r"|\b[a-z]+(?:\s+[a-z]+){1,3}\s+"
     r"(?:st|street|ave|avenue|rd|road|blvd|boulevard|ln|lane|"
     r"dr|drive|ct|court|way|hwy|highway|pkwy|parkway)\b",
+    re.IGNORECASE,
+)
+# Cycle-2D15 LIFE-SAFETY: detect breathing-RESUMED signals mid-CPR.
+# When the caller indicates the patient has begun breathing again
+# (regained spontaneous respiration) during compressions, the FSM must
+# IMMEDIATELY stop CPR and route to monitoring. Continuing CPR on a
+# breathing patient causes broken ribs, pneumothorax, internal injury.
+# Per AHA: "If patient resumes breathing, stop compressions, place
+# them in recovery position, monitor."
+_RE_BREATHING_RESUMED = re.compile(
+    r"\b(?:started breathing|breathing again|is breathing|"
+    r"they(?:'re|'?re| are) breathing|he(?:'s| is) breathing|"
+    r"she(?:'s| is) breathing|they're breathing now|"
+    r"they're alive|came back|woke up|moving again|"
+    r"even though they(?:'re| are) breath\w*|"
+    r"but they(?:'re| are) breath\w*|"
+    r"why am I (?:doing|pushing) (?:cpr|compressions))\b",
     re.IGNORECASE,
 )
 _RE_NOT_BREATHING = re.compile(
@@ -305,6 +326,11 @@ class Features:
     is_first_person: bool = False
     is_third_party: bool = False
     not_breathing: bool = False
+    # Cycle-2D15 LIFE-SAFETY: caller signaled patient resumed breathing
+    # mid-CPR. Triggers STOP_CPR. Distinct from breathing_normal which
+    # is the answer to verify-breathing — this is the unprompted "they
+    # started breathing again" signal during compressions.
+    breathing_resumed: bool = False
     floor_flat: bool = False
     # Cycle-2R3 (B3-A): caller signaled patient NOT on the floor —
     # drives INSTRUCT_CPR_REPOSITIONING. Mutually-exclusive with floor_flat;
@@ -461,6 +487,8 @@ def classify(utterance: str) -> Features:
         is_first_person=bool(_RE_FIRST_PERSON.search(t)),
         is_third_party=bool(_RE_THIRD_PARTY.search(t)),
         not_breathing=bool(_RE_NOT_BREATHING.search(t)),
+        # Cycle-2D15 LIFE-SAFETY: breathing-resumed signal mid-CPR.
+        breathing_resumed=bool(_RE_BREATHING_RESUMED.search(t)),
         floor_flat=bool(_RE_FLOOR_FLAT.search(t)),
         # Cycle-2R3 (B3-A): caller signaled patient NOT on the floor.
         floor_negation=bool(_RE_FLOOR_NEGATION.search(t)),
@@ -999,6 +1027,22 @@ class DispatcherFSM:
         return self._record(Intent.INSTRUCT_CPR_BEGIN, t0)
 
     def _intent_in_cpr(self, f: Features, t0: float) -> Intent:
+        # Cycle-2D15 LIFE-SAFETY: caller signaled patient resumed
+        # breathing OR asked why they're doing CPR on a breathing
+        # patient. Stop compressions IMMEDIATELY. Continuing CPR on a
+        # breathing patient = harm. This branch fires before the direct-
+        # question router so "even though they're breathing?" routes
+        # to STOP_CPR rather than answer-the-question fallback.
+        if (
+            f.breathing_normal
+            or getattr(f, "breathing_resumed", False)
+        ):
+            log.warning("fsm.cpr_stopped_breathing_resumed",
+                        breathing_normal=f.breathing_normal,
+                        breathing_resumed=getattr(f, "breathing_resumed", False))
+            self.breathing_quality = "normal"
+            self.is_cardiac_arrest = False
+            return self._record(Intent.STOP_CPR, t0)
         # Inside active CPR coaching, keep encouraging compressions
         # unless the caller explicitly asks a question.
         q = self._direct_question_intent(f)

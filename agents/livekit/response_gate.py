@@ -203,6 +203,11 @@ _SAFETY_TEMPLATE_ONLY: frozenset[str] = frozenset(
         "answer_outcome_uncertain",      # do-not-promise hard rule
         "verify_cpr_surface",            # CPR gate guard
         "verify_cpr_breathing",          # CPR gate guard
+        # Cycle-2D15 LIFE-SAFETY: STOP_CPR must ship verbatim. The
+        # template is physician-reviewed; LLM rephrasing could soften
+        # "stop compressions" into "you might want to slow down" which
+        # would be life-threatening on a re-arrested patient too.
+        "stop_cpr_breathing_resumed",
     }
 )
 
