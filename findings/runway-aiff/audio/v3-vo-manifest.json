@@ -1,0 +1,112 @@
+[
+  {
+    "id": "v3-B1-question",
+    "speaker": "harrison",
+    "text": "Every 911 call starts with a question. How fast can help arrive.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B1-question-harrison.mp3",
+    "size_bytes": 82799,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  },
+  {
+    "id": "v3-B2-physician",
+    "speaker": "harrison",
+    "text": "I'm a physician. I spent five days trying to get that question answered in under fifty milliseconds.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B2-physician-harrison.mp3",
+    "size_bytes": 107877,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  },
+  {
+    "id": "v3-B4-baseline",
+    "speaker": "harrison",
+    "text": "The hosted API baseline. p95: sixteen-fifty-five milliseconds. The local stack. Forty-four.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B4-baseline-harrison.mp3",
+    "size_bytes": 149673,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  },
+  {
+    "id": "v3-B5-codegen",
+    "speaker": "harrison",
+    "text": "Native sm one-oh-three codegen. NVFP4 on Blackwell. CUDA thirteen. vLLM, rebuilt from source.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B5-codegen-harrison.mp3",
+    "size_bytes": 163884,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  },
+  {
+    "id": "v3-B6-broke",
+    "speaker": "harrison",
+    "text": "Three things broke first. macOS shipped no timeout binary. An env file took down a shell. A perf claim got retracted under review.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B6-broke-harrison.mp3",
+    "size_bytes": 165137,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  },
+  {
+    "id": "v3-B7a-opus-intro",
+    "speaker": "harrison",
+    "text": "Opus 4.7. Adaptive thinking, display omitted \u2014 so the dispatcher answers, not narrates. Task budgets, so the model paces itself across a multi-turn call.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B7a-opus-intro-harrison.mp3",
+    "size_bytes": 224070,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  },
+  {
+    "id": "v3-B7c-attribution",
+    "speaker": "harrison",
+    "text": "Voice: ElevenLabs. Words: Opus 4.7. Unedited.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B7c-attribution-harrison.mp3",
+    "size_bytes": 97010,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  },
+  {
+    "id": "v3-B8-managed-agents",
+    "speaker": "harrison",
+    "text": "One coordinator. Parallel threads. The dispatcher answers the call. The auditor checks every clinical claim against HealthBench Hard, while the call is still happening.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B8-managed-agents-harrison.mp3",
+    "size_bytes": 193559,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  },
+  {
+    "id": "v3-B9-e2e",
+    "speaker": "harrison",
+    "text": "End-to-end p95 \u2014 under one and a half seconds.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B9-e2e-harrison.mp3",
+    "size_bytes": 62737,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  },
+  {
+    "id": "v3-B10-shifts",
+    "speaker": "harrison",
+    "text": "Built between hospital shifts. Five days. One developer.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B10-shifts-harrison.mp3",
+    "size_bytes": 74440,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  },
+  {
+    "id": "v3-B11-repo",
+    "speaker": "harrison",
+    "text": "Open source. Apache two. github dot com slash GOATnote dash inc slash prism four two.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B11-repo-harrison.mp3",
+    "size_bytes": 145911,
+    "voice": "Harrison Gale",
+    "voice_id": "fCxG8OHm4STbIsWe4aT9",
+    "model": "eleven_multilingual_v2"
+  }
+]

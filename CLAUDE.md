@@ -4,6 +4,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## 0. HACKATHON MODE (active 2026-04-21 → 2026-04-26)
+
+**This section overrides §1 mission framing for voice-shipping work until 2026-04-27. Delete it then and revert to charter rails.**
+
+Goal: SOTA voice agent on prism42 (LiveKit + B300 self-hosted; Cartesia Sonic-3 TTS, Deepgram Nova-3 STT, Opus 4.7 LLM). Public surface at `www.thegoatnote.com/prism42`. ElevenLabs path under `/prism42` is the fallback; LiveKit path under `/prism42/livekit` is the new build.
+
+Sprint rules:
+
+- **Ship over explore.** If a slice can't land by EOD 2026-04-26, defer it. State the ship-by time before coding.
+- **Demo path is one path.** Five half-paths < one shipped path. Pick the path that demos end-to-end and protect it. Don't regress the ElevenLabs fallback.
+- **End-to-end verify, every claim of done.** `curl https://livekit.thegoatnote.com` AND a real voice turn through the live stack. Component-green ≠ system-green.
+- **Latency is a feature.** Target p95 end-to-end < 1.5s. Instrument each leg (STT, LLM TTFT, TTS, WebRTC RTT) before claiming "feels good."
+- **Voice failure modes** to anticipate before they bite: STT hallucination on PSAP-domain terms (911 jargon, ambulance dispatch codes), TTS phoneme glitches on names/numbers, websocket reconnect storms, B300 deploy staleness, missing/expired secrets (Cartesia / Deepgram / LiveKit / Anthropic), region-routing surprises, p95 tail far worse than p50.
+- **Loop fast.** deploy → talk to it → measure → fix. 4-hour cycles minimum, faster ideal. Do not batch a day of changes before the first listen.
+- **Frozen surface during sprint:** do not refactor unrelated kernel/clinical rail code. The charter §3 frozen-paths list still applies; this sprint adds the ElevenLabs `/prism42` path to the same protection.
+- **Agent teams** for parallelizable slow paths (deployment, latency profiling, integration test, alt-provider fallback, public-site smoke). Solo only for one-file surgery.
+
+After 2026-04-27: delete this §0, the SessionStart hackathon countdown, and revert the UserPromptSubmit reminder content to research-mode.
+
+---
+
 # CLAUDE.md — Prism agent operating charter
 
 Any agent (Claude session, Managed Agent, or subagent) working in this repo reads this first. It is the operating contract. The normative specs (`docs/clinical-extension-spec.md`, `docs/clinical-roadmap.md`, `docs/sota-portfolio.md`) are the *what*; this file is the *how*.

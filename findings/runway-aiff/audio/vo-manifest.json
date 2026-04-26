@@ -1,0 +1,86 @@
+[
+  {
+    "id": "v2-S1-bumper",
+    "speaker": "brian",
+    "text": "Every night, in rooms most people never see, a question gets asked thousands of times. How fast can help arrive.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S1-bumper-brian.mp3",
+    "size_bytes": 120834
+  },
+  {
+    "id": "v2-S1-tease",
+    "speaker": "brian",
+    "text": "This week, one developer cut the time it takes a voice agent to start answering that question \u2014 by ninety-one percent.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S1-tease-brian.mp3",
+    "size_bytes": 107877
+  },
+  {
+    "id": "v2-S2-stringer",
+    "speaker": "charlie",
+    "text": "Brian \u2014 picking up a feed from the dispatch desk now \u2014 the prior pipeline was a hosted API, latency p95 sixteen-fifty-five milliseconds \u2014 they're running a local stack tonight \u2014",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S2-stringer-charlie.mp3",
+    "size_bytes": 186035
+  },
+  {
+    "id": "v2-S2-stay",
+    "speaker": "brian",
+    "text": "Stay with that.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S2-stay-brian.mp3",
+    "size_bytes": 18016
+  },
+  {
+    "id": "v2-S3-build",
+    "speaker": "brian",
+    "text": "The build: a self-hosted Blackwell-class GPU pod. Caddy auto-TLS. Parakeet on port nine-one-hundred for speech recognition. Fish Speech on nine-two-hundred for synthesis. The model: Nemotron Nano three, on vLLM zero-point-twenty.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S3-build-brian.mp3",
+    "size_bytes": 265448
+  },
+  {
+    "id": "v2-S3-broke",
+    "speaker": "brian",
+    "text": "Not everything held. Three things broke before anything worked. macOS ships no timeout binary, which silently broke a session-start hook for two days. An environment file with unquoted multi-line JSON took down a shell. And one performance claim \u2014 about a CUDA toolchain mismatch \u2014 was retracted under pressure. It was, in fact, broken at runtime.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S3-broke-brian.mp3",
+    "size_bytes": 372445
+  },
+  {
+    "id": "v2-S4-firstboot",
+    "speaker": "brian",
+    "text": "First boot of the local stack: the NVFP4 GEMM crashed on the GPU. They installed CUDA thirteen nvcc. They installed flashinfer-cubin. They rebuilt vLLM with native sm one-oh-three. The five-gate strict performance gate \u2014",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S4-firstboot-brian.mp3",
+    "size_bytes": 275897
+  },
+  {
+    "id": "v2-S4-passed",
+    "speaker": "brian",
+    "text": "\u2014 passed. Time-to-first-token, p95 \u2014 forty-four milliseconds. Down from sixteen-fifty-five.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S4-passed-brian.mp3",
+    "size_bytes": 114564
+  },
+  {
+    "id": "v2-S4-quiet",
+    "speaker": "charlie",
+    "text": "Brian \u2014 that's the latency of a well-rested human.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S4-quiet-charlie.mp3",
+    "size_bytes": 50199
+  },
+  {
+    "id": "v2-S5-closer",
+    "speaker": "brian",
+    "text": "Five days. One developer. A purpose-built GPU pod, three things that broke on the way to a number that didn't, and a voice agent that now answers in forty-four milliseconds.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S5-closer-brian.mp3",
+    "size_bytes": 174333
+  },
+  {
+    "id": "v2-S5-room",
+    "speaker": "brian",
+    "text": "The room never sleeps. Now neither does the model.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S5-room-brian.mp3",
+    "size_bytes": 48527
+  },
+  {
+    "id": "v2-S5-button",
+    "speaker": "charlie",
+    "text": "Back to you, Brian.",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v2-S5-button-charlie.mp3",
+    "size_bytes": 20524
+  }
+]

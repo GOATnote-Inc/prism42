@@ -1,0 +1,1 @@
+Picked NVFP4 over FP8 on the GEMM path. Blackwell's tensor cores hit native FP4 throughput at sm_103, and the accuracy delta on Nemotron Nano 3 MoE stayed under 0.4% on eval.

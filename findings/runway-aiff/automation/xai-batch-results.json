@@ -1,0 +1,42 @@
+[
+  {
+    "id": "B01",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B01.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-85483fba-cc6d-4683-b4a2-04b0cb1c00dc.mp4",
+    "size_mb": 2.601999,
+    "wall_s": 58.49959993362427
+  },
+  {
+    "id": "B02",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B02.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-48d8d41d-6463-435b-97ac-92ff73ea2912.mp4",
+    "size_mb": 2.468331,
+    "wall_s": 72.71274399757385
+  },
+  {
+    "id": "B03",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B03.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-54e44186-e26c-434e-86eb-a1e9a608fb8c.mp4",
+    "size_mb": 1.742158,
+    "wall_s": 136.6186079978943
+  },
+  {
+    "id": "B04",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B04.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-762a9297-f435-4cfb-94a6-3f57a00404e6.mp4",
+    "size_mb": 1.820736,
+    "wall_s": 46.96886205673218
+  },
+  {
+    "id": "B05",
+    "status": "downloaded",
+    "path": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B05.mp4",
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-0168f862-01f0-4728-8809-8d9b43fb5a36.mp4",
+    "size_mb": 1.114431,
+    "wall_s": 46.427937030792236
+  }
+]

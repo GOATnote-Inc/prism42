@@ -1,0 +1,200 @@
+[
+  {
+    "t_start": 0.0,
+    "duration": 4.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C01.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B1-question-harrison.mp3",
+    "chyron": "GOATnote \u00b7 prism42",
+    "label": "B1-dispatch"
+  },
+  {
+    "t_start": 4.0,
+    "duration": 4.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C02.mp4",
+    "visual_in": 0.0,
+    "vo": null,
+    "chyron": "how fast can help arrive",
+    "label": "B1-headset"
+  },
+  {
+    "t_start": 8.0,
+    "duration": 6.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C03.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B2-physician-harrison.mp3",
+    "chyron": "Brandon Dent, MD \u00b7 solo build",
+    "label": "B2-stakes"
+  },
+  {
+    "t_start": 14.0,
+    "duration": 6.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C04.mp4",
+    "visual_in": 0.0,
+    "vo": null,
+    "chyron": "five days \u00b7 between hospital shifts",
+    "label": "B2-emt"
+  },
+  {
+    "t_start": 20.0,
+    "duration": 15.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C07.mp4",
+    "visual_in": 0.0,
+    "vo": null,
+    "chyron": "LIVE \u2014 voice turn (placeholder until pod capture)",
+    "label": "B3-live-voice-turn-PLACEHOLDER"
+  },
+  {
+    "t_start": 35.0,
+    "duration": 6.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C09.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B4-baseline-harrison.mp3",
+    "chyron": "hosted API baseline",
+    "label": "B4-baseline-context"
+  },
+  {
+    "t_start": 41.0,
+    "duration": 7.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/HERO_44ms.mp4",
+    "visual_in": 0.0,
+    "vo": null,
+    "chyron": null,
+    "label": "B4-HERO-44ms"
+  },
+  {
+    "t_start": 48.0,
+    "duration": 7.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B01.mp4",
+    "visual_in": 0.0,
+    "vo": null,
+    "chyron": "\u221291.6%",
+    "label": "B4-gpu-context"
+  },
+  {
+    "t_start": 55.0,
+    "duration": 8.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B03.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B5-codegen-harrison.mp3",
+    "chyron": "sm_103 native \u00b7 NVFP4 \u00b7 CUDA 13 \u00b7 vLLM rebuilt",
+    "label": "B5-codegen"
+  },
+  {
+    "t_start": 63.0,
+    "duration": 7.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B02.mp4",
+    "visual_in": 0.0,
+    "vo": null,
+    "chyron": "B300 SXM6 AC",
+    "label": "B5-rack"
+  },
+  {
+    "t_start": 70.0,
+    "duration": 12.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B03.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B6-broke-harrison.mp3",
+    "chyron": "honesty audit \u00b7 three things broke first",
+    "label": "B6-honesty"
+  },
+  {
+    "t_start": 82.0,
+    "duration": 3.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C05.mp4",
+    "visual_in": 0.0,
+    "vo": null,
+    "chyron": null,
+    "label": "B6-tail"
+  },
+  {
+    "t_start": 85.0,
+    "duration": 8.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B01.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B7a-opus-intro-harrison.mp3",
+    "chyron": "adaptive thinking \u00b7 display omitted \u00b7 task budgets",
+    "label": "B7a-opus-intro"
+  },
+  {
+    "t_start": 93.0,
+    "duration": 16.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C07.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-opus-self-harrison.mp3",
+    "chyron": "Voice: ElevenLabs.  Words: Opus 4.7, unedited.",
+    "label": "B7b-opus-self"
+  },
+  {
+    "t_start": 109.0,
+    "duration": 3.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B04.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B7c-attribution-harrison.mp3",
+    "chyron": null,
+    "label": "B7c-attribution"
+  },
+  {
+    "t_start": 112.0,
+    "duration": 12.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B02.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B8-managed-agents-harrison.mp3",
+    "chyron": "Managed Agents \u00b7 agent_toolset_20260401",
+    "label": "B8-managed-agents-PLACEHOLDER"
+  },
+  {
+    "t_start": 124.0,
+    "duration": 8.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C07.mp4",
+    "visual_in": 0.0,
+    "vo": null,
+    "chyron": "coordinator \u00b7 dispatcher \u00b7 auditor \u00b7 in parallel",
+    "label": "B8-tail"
+  },
+  {
+    "t_start": 132.0,
+    "duration": 15.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C09.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B9-e2e-harrison.mp3",
+    "chyron": "end-to-end p95 \u00b7 4.4 seconds",
+    "label": "B9-e2e"
+  },
+  {
+    "t_start": 147.0,
+    "duration": 7.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C04.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B10-shifts-harrison.mp3",
+    "chyron": "five days \u00b7 one developer",
+    "label": "B10-shifts"
+  },
+  {
+    "t_start": 154.0,
+    "duration": 8.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/C01.mp4",
+    "visual_in": 0.0,
+    "vo": null,
+    "chyron": "Brandon Dent, MD",
+    "label": "B10-room"
+  },
+  {
+    "t_start": 162.0,
+    "duration": 10.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B05.mp4",
+    "visual_in": 0.0,
+    "vo": "/Users/kiteboard/prism42/findings/runway-aiff/audio/v3-B11-repo-harrison.mp3",
+    "chyron": "github.com/GOATnote-Inc/prism42  \u00b7  Apache 2.0",
+    "label": "B11-repo"
+  },
+  {
+    "t_start": 172.0,
+    "duration": 5.0,
+    "visual": "/Users/kiteboard/prism42/findings/runway-aiff/clips/B04.mp4",
+    "visual_in": 0.0,
+    "vo": null,
+    "chyron": "prism42 \u2014 answer in 44 ms",
+    "label": "B12-endcard"
+  }
+]

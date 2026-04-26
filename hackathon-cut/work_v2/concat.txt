@@ -1,0 +1,3 @@
+file '/Users/kiteboard/prism42/hackathon-cut/work_v2/ken_a.mp4'
+file '/Users/kiteboard/prism42/hackathon-cut/work_v2/fizz_cut.mp4'
+file '/Users/kiteboard/prism42/hackathon-cut/work_v2/ken_b.mp4'
