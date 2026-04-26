@@ -546,6 +546,14 @@ class DispatcherFSM:
     # loops on "Are they on the floor, flat on their back?" forever
     # when the caller cannot or will not directly answer.
     _verify_surface_emits: int = 0
+    # Cycle-2D9: count of consecutive same-KQ emits (KQ_BLEEDING_LOCATION,
+    # KQ_RESPONSIVE_BREATHING, KQ_SEVERITY, KQ_FIRE_EVACUATION,
+    # KQ_SAFE_LOCATION). When the caller's answer is partial or off-topic
+    # and the FSM has no per-KQ answer detector, repeating the same
+    # question 3+ times is worse than advancing with imperfect info
+    # (PSAP discipline + AHA T-CPR <150s gate). After 2 emits, advance
+    # to PRE_ARRIVAL.
+    _kq_emits: int = 0
 
     # ---- main API -----------------------------------------------------
 
@@ -792,15 +800,36 @@ class DispatcherFSM:
         q = self._direct_question_intent(f)
         if q is not None:
             return self._record(q, t0)
+        # Cycle-2D9 anti-stuck: if we've emitted the same KQ twice in a row
+        # without progress, advance to PRE_ARRIVAL. The caller has either
+        # given a partial / off-topic answer or is panicking; either way
+        # repeating the same question is worse than instructing them on
+        # the next physical action with the info we have.
+        if self._kq_emits >= 2:
+            self.state = State.PRE_ARRIVAL
+            log.info("fsm.kq_loop_force_advance",
+                     last_intent=getattr(self.last_intent, "value", None),
+                     kq_emits=self._kq_emits)
+            self._kq_emits = 0
+            return self._intent_in_pre_arrival(f, t0)
+
+        # Pick the appropriate KQ for this complaint.
         if self.complaint == "fire":
             self.state = State.PRE_ARRIVAL
             return self._record(Intent.KQ_FIRE_EVACUATION, t0)
         if self.complaint == "trauma":
-            return self._record(Intent.KQ_BLEEDING_LOCATION, t0)
-        # Medical default. Branch on first-vs-third-party.
-        if self.is_third_party:
-            return self._record(Intent.KQ_RESPONSIVE_BREATHING, t0)
-        return self._record(Intent.KQ_SEVERITY, t0)
+            kq = Intent.KQ_BLEEDING_LOCATION
+        elif self.is_third_party:
+            kq = Intent.KQ_RESPONSIVE_BREATHING
+        else:
+            kq = Intent.KQ_SEVERITY
+
+        # Increment counter when we are about to re-emit the SAME KQ.
+        if self.last_intent == kq:
+            self._kq_emits += 1
+        else:
+            self._kq_emits = 1
+        return self._record(kq, t0)
 
     def _intent_in_pre_arrival(self, f: Features, t0: float) -> Intent:
         q = self._direct_question_intent(f)
@@ -812,6 +841,15 @@ class DispatcherFSM:
             return self._record(Intent.INSTRUCT_PRESSURE_BLEED, t0)
         if f.seizure:
             return self._record(Intent.INSTRUCT_SEIZURE, t0)
+        # Cycle-2D9: when the FSM force-advances from a trauma KQ-loop
+        # the current-turn classifier may not have re-fired f.bleeding
+        # (caller said something off-topic or panicked). Fall back to
+        # the trauma rail's most-likely pre-arrival action: direct
+        # pressure on the wound. StatPearls + AHA hands-only guidance:
+        # direct pressure first, elevation second, tourniquet only if
+        # available. Safe default for trauma complaint.
+        if self.complaint == "trauma":
+            return self._record(Intent.INSTRUCT_PRESSURE_BLEED, t0)
         return self._record(Intent.CLOSEOUT, t0)
 
     def _intent_in_verify(self, f: Features, t0: float) -> Intent:

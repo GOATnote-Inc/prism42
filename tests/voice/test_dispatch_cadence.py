@@ -336,6 +336,80 @@ def test_address_echo_strips_stt_disfluencies():
         )
 
 
+# ------------------------------------------------------------------
+# Cycle-2D9 — anti-stuck KQ loop guard
+# ------------------------------------------------------------------
+
+
+def test_kq_bleeding_loop_force_advances_after_two_emits():
+    """Trauma rail: when caller's answer to 'where is the bleeding'
+    is partial / off-topic / panicking on consecutive turns, the FSM
+    force-advances to PRE_ARRIVAL after 2 emits rather than looping
+    on the same question.
+
+    Repro from user attestation 2026-04-26 14:28: dispatcher emitted
+    'Where is the bleeding, and how heavy?' three times in a row even
+    though caller said 'his bone is sticking out of his legs, and he's
+    got some blood on his chest.'
+    """
+    fsm = DispatcherFSM()
+    fsm.transition("200 river drive")
+    fsm.transition("my friend was shot in the chest")
+    fsm.transition("uh okay help")  # advances; reassurance fires
+    assert fsm.last_intent == Intent.DELIVER_REASSURANCE_TRAUMA
+
+    # Two off-topic answers to KQ_BLEEDING_LOCATION.
+    i4 = fsm.transition("uh it seems like his bone is sticking out of his legs")
+    assert i4 == Intent.KQ_BLEEDING_LOCATION
+    i5 = fsm.transition("there is blood everywhere uh I don't know what to do")
+    assert i5 == Intent.KQ_BLEEDING_LOCATION
+
+    # 3rd turn: FSM must NOT emit KQ_BLEEDING_LOCATION again. It must
+    # force-advance to PRE_ARRIVAL with INSTRUCT_PRESSURE_BLEED (trauma
+    # rail's safe default).
+    i6 = fsm.transition("please help him")
+    assert i6 == Intent.INSTRUCT_PRESSURE_BLEED, (
+        f"After 2 KQ_BLEEDING_LOCATION emits the FSM must advance, "
+        f"not repeat. Got intent={i6}, state={fsm.state}"
+    )
+    assert fsm.state == State.PRE_ARRIVAL
+
+
+def test_kq_emits_resets_on_different_intent():
+    """Counter resets when the FSM emits a different intent (e.g.
+    direct-question handler interrupts the KQ loop). Prevents
+    spurious force-advances."""
+    fsm = DispatcherFSM()
+    fsm.transition("200 river drive")
+    fsm.transition("my friend was shot in the chest")
+    fsm.transition("uh okay")
+    fsm.transition("blood is on his chest")  # 1st KQ_BLEEDING emit
+    assert fsm._kq_emits == 1
+
+    # Caller asks "should I move him?" -> direct-question handler fires.
+    fsm.transition("should I move him")
+    # Counter retained but next KQ emit will reset it (last_intent != KQ).
+    fsm.transition("just blood")
+    assert fsm._kq_emits == 1, (
+        f"After non-KQ interrupt, next KQ emit should reset counter. "
+        f"Got _kq_emits={fsm._kq_emits}"
+    )
+
+
+def test_pre_arrival_defaults_to_pressure_bleed_for_trauma():
+    """When force-advance lands in PRE_ARRIVAL with no current-turn
+    f.bleeding/f.choking/f.seizure but complaint=trauma, default to
+    INSTRUCT_PRESSURE_BLEED. Avoids the previous CLOSEOUT fallthrough
+    which would leave the caller with no instruction at all."""
+    fsm = DispatcherFSM()
+    fsm.complaint = "trauma"
+    fsm.state = State.PRE_ARRIVAL
+    from dispatcher_fsm import classify
+    f = classify("please help him")  # no specific feature
+    intent = fsm._intent_in_pre_arrival(f, 0.0)
+    assert intent == Intent.INSTRUCT_PRESSURE_BLEED
+
+
 def test_e2e_user_repro_address_echoed_and_no_dead_air():
     """End-to-end: caller's screenshot scenario.
 
