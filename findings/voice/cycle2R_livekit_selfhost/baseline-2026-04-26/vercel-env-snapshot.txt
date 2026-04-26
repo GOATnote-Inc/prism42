@@ -1,0 +1,8 @@
+ NEXT_PUBLIC_LIVEKIT_URL                    Encrypted           Production                  2h ago     
+ NEXT_PUBLIC_ELEVENLABS_V2_AGENT_ID         Encrypted           Production                  2d ago     
+ LIVEKIT_API_SECRET                         Encrypted           Production                  2d ago     
+ LIVEKIT_API_KEY                            Encrypted           Production                  2d ago     
+ NEXT_PUBLIC_ELEVENLABS_AGENT_ID            Encrypted           Production                  2d ago     
+ ANTHROPIC_API_KEY                          Encrypted           Preview, Production         2d ago     
+ OPENAI_API_KEY                             Encrypted           Preview, Production         2d ago     
+ PRISM42_COORDINATOR_AGENT_ID               Encrypted           Preview, Production         2d ago     
