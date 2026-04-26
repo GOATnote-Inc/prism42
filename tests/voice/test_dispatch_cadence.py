@@ -49,6 +49,23 @@ def test_address_text_captured_from_combined_turn():
     assert f.address_text == "twelve riverside drive"
 
 
+def test_address_text_captures_four_word_address():
+    """Cycle-2D7: '<digit/word> <word> <word> <suffix>' captures intact.
+
+    Repro from user attestation 2026-04-26 14:03: caller said "Two hundred
+    oceanfront avenue" but dispatcher echoed "hundred oceanfront avenue"
+    because the {0,1} middle-word allowance dropped the leading "Two".
+    """
+    f = classify("Two hundred oceanfront avenue")
+    assert f.address_text == "Two hundred oceanfront avenue"
+
+    f2 = classify("1234 east main boulevard")
+    assert f2.address_text == "1234 east main boulevard"
+
+    f3 = classify("twelve north shore drive")
+    assert f3.address_text == "twelve north shore drive"
+
+
 def test_address_text_none_when_only_digit_no_street():
     """Bare digits without a street suffix → no echo span (fallback path)."""
     f = classify("apartment 3")

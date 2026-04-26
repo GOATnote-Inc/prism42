@@ -174,11 +174,15 @@ _RE_STREET = re.compile(
 # echo template can read back the full address ("100 ocean avenue", not
 # "100 ocean" or "ocean avenue"). Only used for the echo string; address
 # detection still uses _RE_STREET / _RE_HAS_DIGIT for has_address.
+# Cycle-2D7: bumped the optional-middle-word allowance from 1 to 3 so
+# 4+-word addresses ("two hundred oceanfront avenue", "1234 east main
+# boulevard", "twelve north shore drive") capture intact. Without this,
+# "Two hundred oceanfront avenue" echoed as "hundred oceanfront avenue".
 _RE_ADDRESS_ECHO = re.compile(
-    r"\b\d+\s+[a-z]+(?:\s+[a-z]+)?\s+"
+    r"\b\d+(?:\s+[a-z]+){1,3}\s+"
     r"(?:st|street|ave|avenue|rd|road|blvd|boulevard|ln|lane|"
     r"dr|drive|ct|court|way|hwy|highway|pkwy|parkway)\b"
-    r"|\b[a-z]+(?:\s+[a-z]+)?\s+"
+    r"|\b[a-z]+(?:\s+[a-z]+){1,3}\s+"
     r"(?:st|street|ave|avenue|rd|road|blvd|boulevard|ln|lane|"
     r"dr|drive|ct|court|way|hwy|highway|pkwy|parkway)\b",
     re.IGNORECASE,
