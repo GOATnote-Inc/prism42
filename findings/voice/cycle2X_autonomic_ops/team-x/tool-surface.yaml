@@ -1,0 +1,321 @@
+# Cycle-2X — Autonomic agent tool surface
+#
+# Manifest of dev-tool bindings the coordinator Managed Agent is authorized to
+# call via `client.beta.agents.create(tools=[...])`. Each tool maps to either
+# (a) a key in `agent_toolset_20260401`'s `configs` array, or
+# (b) a `type: custom` tool whose handler is implemented host-side and routed
+#     through Anthropic's custom-tool callback (per
+#     https://platform.claude.com/docs/en/managed-agents/tools, fetched 2026-04-26).
+#
+# Permission levels:
+#   passive_read       — auto-allowed; no env-flag; never mutates pod state
+#   active_mutate      — auto-allowed only when the agent's loop state warrants;
+#                        writes only under /opt/prism42/scratch/ or local fs
+#   gated_destructive  — requires per-tool env-flag pre-armed by integrator;
+#                        agent fails loud if flag missing
+#
+# All gated_destructive tools obey the single-service-at-a-time discipline
+# from memory note `prism42_b300_voice_durable_findings.md` plus a 5-tick
+# (~150s) cooldown after each invocation.
+
+version: 1
+agent_name: prism42-autonomic-coordinator
+model: claude-opus-4-7
+beta_header: managed-agents-2026-04-01
+
+# ─────────────────────────────────────────────────────────────────────
+# Built-in toolset (Anthropic Managed Agents agent_toolset_20260401)
+# ─────────────────────────────────────────────────────────────────────
+builtin_toolset:
+  type: agent_toolset_20260401
+  default_config:
+    enabled: true
+  configs:
+    # bash, read, write, edit, glob, grep, web_fetch, web_search default ON
+    - name: web_search
+      enabled: false  # autonomic agent does not need search; reduce surface
+    - name: web_fetch
+      enabled: true   # used to fetch NVIDIA / Anthropic docs when diagnosing
+
+# ─────────────────────────────────────────────────────────────────────
+# Custom tools (host-side handlers)
+# ─────────────────────────────────────────────────────────────────────
+custom_tools:
+
+  - name: pod_smi
+    permission: passive_read
+    description: |
+      Query nvidia-smi over SSH on prism-mla-b300-h4h5. Returns parsed JSON
+      from --query-gpu. Never mutates pod state. Use this BEFORE every
+      heartbeat tick AND before/after every gated_destructive action.
+    args:
+      query:
+        type: string
+        description: Comma-separated --query-gpu fields
+        default: "memory.used,memory.free,memory.total,utilization.gpu,temperature.gpu,power.draw"
+    handler: scripts/autonomic/tool_pod_smi.py
+    failure_mode: timeout_5s_returns_error_object_no_throw
+
+  - name: pod_journalctl
+    permission: passive_read
+    description: |
+      Tail journalctl for one of the whitelisted units on the pod. Read-only.
+      Whitelist is enforced host-side; agent cannot read arbitrary units.
+    args:
+      unit:
+        type: string
+        enum: [prism42-worker, prism42-fish, prism42-vllm, caddy, b300-livekit-1]
+      lines:
+        type: integer
+        default: 50
+        maximum: 500
+      since:
+        type: string
+        description: Systemd time spec, e.g. "60 seconds ago", "5 min ago"
+        default: "60 seconds ago"
+    handler: scripts/autonomic/tool_pod_journalctl.py
+
+  - name: vllm_health
+    permission: passive_read
+    description: |
+      HTTP probe of vLLM /health and /metrics on :8001. Read-only.
+    args: {}
+    handler: scripts/autonomic/tool_vllm_health.py
+
+  - name: livekit_health
+    permission: passive_read
+    description: |
+      HTTP probe of https://prism42.thegoatnote.com (self-host) AND
+      LiveKit Cloud REST list-rooms (fallback path). Read-only.
+    args: {}
+    handler: scripts/autonomic/tool_livekit_health.py
+
+  - name: vercel_status
+    permission: passive_read
+    description: |
+      Run `vercel inspect` for the 911-console-live project. Reads only.
+      No env mutations, no redeploys. Used to confirm the public surface
+      is current.
+    args: {}
+    handler: scripts/autonomic/tool_vercel_status.py
+
+  - name: synthetic_caller
+    permission: passive_read
+    description: |
+      Invoke agents/livekit/synthetic_caller.py for a one-shot smoke turn.
+      Reads voice path end-to-end. Bounded duration (35s). Counts as
+      passive because it does not mutate pod state — it joins as a fake
+      caller, listens, exits.
+    args:
+      timeout_s:
+        type: integer
+        default: 40
+        maximum: 60
+    handler: scripts/autonomic/tool_synthetic_caller.py
+
+  - name: heartbeat_publish
+    permission: active_mutate
+    description: |
+      Publish one event onto a prism42.* LiveKit data-track topic.
+      Mutates the room data plane only; never touches voice path.
+      Mirrors agents/livekit/dispatch_publisher.py's additive pattern.
+    args:
+      topic:
+        type: string
+        enum: [prism42.heartbeat, prism42.alert, prism42.action, prism42.profile_ready, prism42.elasticity]
+      payload:
+        type: object
+        description: JSON event body; schema in heartbeat-design.md
+    handler: scripts/autonomic/tool_heartbeat_publish.py
+
+  - name: nsys_profile_attach
+    permission: active_mutate
+    description: |
+      Run `nsys profile --duration=N --trace=cuda,nvtx,cudnn,cublas` against
+      a target PID. Outputs .nsys-rep under /opt/prism42/scratch/profiles/.
+      MUST NOT enable --cuda-trace-all-apis, --cudabacktrace, or
+      --cuda-um-cpu-page-faults (NVIDIA-documented "significant overhead").
+      Allowed only when (a) heartbeat detected an anomaly OR (b) explicit
+      user prompt requested profiling AND (c) LiveKit room count < 2.
+    args:
+      pid:
+        type: integer
+      duration_s:
+        type: integer
+        default: 30
+        minimum: 5
+        maximum: 120
+      trace:
+        type: string
+        default: "cuda,nvtx,cudnn,cublas"
+        description: Allowed values are restricted to the set above; host-side enforces.
+    handler: scripts/autonomic/tool_nsys_profile_attach.py
+
+  - name: nsys_export
+    permission: passive_read
+    description: |
+      Export a .nsys-rep file to JSON Lines or SQLite for parsing.
+      Reads the .rep, writes a new file in the same directory; counts as
+      passive because the source file is not modified.
+    args:
+      rep_path:
+        type: string
+        description: Absolute path to .nsys-rep, must be under /opt/prism42/scratch/profiles/
+      format:
+        type: string
+        enum: [jsonl, sqlite]
+        default: jsonl
+    handler: scripts/autonomic/tool_nsys_export.py
+
+  - name: gds_op
+    permission: active_mutate
+    description: |
+      Wrapper for cuFile-bound storage operations (Pillar 2). Subcommands:
+      - prefetch_weights: stream weights from /opt/prism42/models into HBM
+        via cuFileBatchIOSubmit; agent-driven, no NVIDIA daemon.
+      - spill_kv: best-effort eviction of cold KV blocks to NVMe scratch
+        (vLLM cooperation required; current vLLM version may not expose
+        the necessary API — this subcommand may return "not supported").
+      - stage_checkpoint: write a cuda-checkpoint snapshot to
+        /opt/prism42/scratch/checkpoints/.
+      - status: report current GDS driver state.
+    args:
+      subcommand:
+        type: string
+        enum: [prefetch_weights, spill_kv, stage_checkpoint, status]
+      target:
+        type: string
+        description: Path or PID, depending on subcommand
+    handler: scripts/autonomic/tool_gds_op.py
+
+  - name: cuda_checkpoint_ctl
+    permission: gated_destructive
+    description: |
+      Wrapper around NVIDIA's cuda-checkpoint CLI. Driver 580+ required
+      (pod confirmed). Subcommands map 1:1 to --action: lock, checkpoint,
+      restore, unlock, get_state. Limitations from upstream: does not
+      support UVM or IPC memory; x64 only.
+      GATE: PRISM42_AUTONOMIC_ELASTICITY=1 must be set in the agent's host
+      environment. Without the gate, every call returns a refused-action
+      object that the agent must surface as an alert.
+    args:
+      action:
+        type: string
+        enum: [lock, checkpoint, restore, unlock, get_state]
+      pid:
+        type: integer
+      timeout_ms:
+        type: integer
+        default: 5000
+        description: Only honored for action=lock
+    handler: scripts/autonomic/tool_cuda_checkpoint_ctl.py
+    gate_env_flag: PRISM42_AUTONOMIC_ELASTICITY
+
+  - name: service_restart
+    permission: gated_destructive
+    description: |
+      systemctl restart of one whitelisted service on the pod. Single-
+      service-at-a-time per memory `prism42_b300_voice_durable_findings.md`.
+      GATE: PRISM42_AUTONOMIC_AUTORESTART_<UNIT>=1 (per-unit). Without the
+      matching flag, every call refuses.
+    args:
+      unit:
+        type: string
+        enum: [prism42-vllm, prism42-fish, prism42-worker, caddy]
+      reason:
+        type: string
+        description: Free text logged into the prism42.action event for audit
+    handler: scripts/autonomic/tool_service_restart.py
+    gate_env_flag: PRISM42_AUTONOMIC_AUTORESTART_PER_UNIT  # see handler
+
+  - name: restore_invoke
+    permission: gated_destructive
+    description: |
+      Invoke findings/voice/cycle2R_livekit_selfhost/baseline-2026-04-26/restore.sh
+      to roll the demo path back to LiveKit Cloud. Highest-impact action;
+      requires both PRISM42_AUTONOMIC_RESTORE=1 AND a freshly-supplied
+      confirm token in the prompt. This tool is the autonomic agent's
+      "big red button"; expect to use it never or near-never.
+    args:
+      mode:
+        type: string
+        enum: [check, pod-only, vercel-only, full]
+        default: check
+      confirm_token:
+        type: string
+        description: Must match the value in /etc/prism42/autonomic.confirm.token
+    handler: scripts/autonomic/tool_restore_invoke.py
+    gate_env_flag: PRISM42_AUTONOMIC_RESTORE
+
+  - name: workload_prior_emit
+    permission: active_mutate
+    description: |
+      Write the cuTILE workload-prior JSON to /opt/prism42/scratch/priors/
+      so the next vLLM/CUTLASS launch can consume it. Pillar 5 stub —
+      writes the JSON only; does not re-tune kernels (cycle-2Z work).
+    args:
+      prior:
+        type: object
+        description: |
+          Workload prior, e.g. {"batch": 1, "ctx": 32768, "dtype": "nvfp4",
+          "model": "nemotron-30b-a3b-moe", "phase": "decode"}
+    handler: scripts/autonomic/tool_workload_prior_emit.py
+
+  - name: incident_log_write
+    permission: active_mutate
+    description: |
+      Append a structured incident JSON to
+      findings/voice/cycle2X_autonomic_ops/incidents/<ts>.json. The agent's
+      durable provenance log; never auto-rotated within a session.
+    args:
+      incident:
+        type: object
+        description: Incident schema documented in heartbeat-design.md §3
+    handler: scripts/autonomic/tool_incident_log_write.py
+
+# ─────────────────────────────────────────────────────────────────────
+# Sandbox + safety knobs
+# ─────────────────────────────────────────────────────────────────────
+sandbox:
+  scratch_root: /opt/prism42/scratch         # all active_mutate writes confined here
+  ssh_target:   prism-mla-b300-h4h5
+  ssh_user:     shadeform                    # never root via ssh
+  ssh_keyfile:  ~/.brev/brev.pem             # per memory `brev_ssh_bypass.md`
+  forbidden_paths:
+    - /etc
+    - /opt/prism42/agents       # frozen voice path
+    - /opt/prism42/voice-refs   # frozen voice refs
+  forbidden_commands_via_bash:
+    - rm -rf
+    - dd
+    - mkfs
+    - shutdown
+    - reboot
+
+cooldowns:
+  per_tool_cooldown_s:
+    cuda_checkpoint_ctl: 30
+    service_restart: 150
+    restore_invoke: 0           # human-confirmed each time; no auto-cooldown needed
+  per_unit_max_actions_30min: 3 # halts loop on 4th attempt against same unit
+
+audit:
+  incident_dir: findings/voice/cycle2X_autonomic_ops/incidents
+  action_log:   findings/voice/cycle2X_autonomic_ops/actions.jsonl
+  retain_days:  90
+
+# ─────────────────────────────────────────────────────────────────────
+# Upgrade path: when callable_agents becomes available on this workspace
+# ─────────────────────────────────────────────────────────────────────
+multi_agent_upgrade:
+  status: not_available_2026_04_26   # CLAUDE.md §8
+  if_available_then:
+    coordinator: this agent retains all custom tools above
+    sub_agents:
+      - name: prism42-profiler
+        tools_subset: [pod_smi, pod_journalctl, nsys_profile_attach, nsys_export]
+      - name: prism42-elasticity
+        tools_subset: [pod_smi, vllm_health, cuda_checkpoint_ctl, gds_op]
+      - name: prism42-recovery
+        tools_subset: [pod_smi, vllm_health, livekit_health, service_restart, restore_invoke]
+    do_not_change_until: callable_agents kwarg present in beta.agents.list response
