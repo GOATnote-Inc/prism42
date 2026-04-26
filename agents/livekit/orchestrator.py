@@ -437,24 +437,33 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
                         # gate elected a template successfully (final_text
                         # populated, session.say did not raise).
                         gate_emitted_template = True
-                        return  # break out of try; StopResponse raised below
+                        # Cycle-2Q2 (Team Q): do NOT `return` here — `return`
+                        # from inside `try:` exits the function and skips the
+                        # post-try `raise StopResponse()` block, leaving the
+                        # preemptive_generation LLM stream uncancelled. We
+                        # MUST fall through past the try so the post-try
+                        # `if gate_emitted_template:` check executes.
 
             # Fall-through: LLM path. Cycle-2Q FSM-rewritten prompt.
-            prompt = self._fsm.next_prompt(utterance, intent)
-            # Update the agent's instructions so the next LLM call sees
-            # the FSM-derived per-turn prompt.
-            await self.update_instructions(prompt)
-            # NOTE: turn event already published above (cycle-2T2 fix).
-            # The LLM-fallthrough path's `reply` event still fires from
-            # worker.py:_on_item via conversation_item_added.
-            dt_ms = int((time.monotonic() - t0) * 1000)
-            local_log.info(
-                "orchestrator.fsm_turn_ms",
-                session_id=self._session_id,
-                ms=dt_ms,
-                intent=getattr(intent, "value", str(intent)),
-                state=self._fsm.state.value,
-            )
+            # Cycle-2Q2 (Team Q): only run when the gate did NOT emit a
+            # template — if the gate fired we let StopResponse cancel the
+            # preemptive LLM call from the post-try block below.
+            if not gate_emitted_template:
+                prompt = self._fsm.next_prompt(utterance, intent)
+                # Update the agent's instructions so the next LLM call sees
+                # the FSM-derived per-turn prompt.
+                await self.update_instructions(prompt)
+                # NOTE: turn event already published above (cycle-2T2 fix).
+                # The LLM-fallthrough path's `reply` event still fires from
+                # worker.py:_on_item via conversation_item_added.
+                dt_ms = int((time.monotonic() - t0) * 1000)
+                local_log.info(
+                    "orchestrator.fsm_turn_ms",
+                    session_id=self._session_id,
+                    ms=dt_ms,
+                    intent=getattr(intent, "value", str(intent)),
+                    state=self._fsm.state.value,
+                )
         except Exception as e:  # noqa: BLE001
             # Hard rule: FSM must never wedge the voice path. On any
             # error fall back to the prior instructions (the original
