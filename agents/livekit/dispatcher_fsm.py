@@ -136,6 +136,8 @@ class Intent(str, Enum):
     ANSWER_DO_NOT_MOVE = "answer_do_not_move"
     ANSWER_HOW_LONG = "answer_how_long"
     ANSWER_OUTCOME_UNCERTAIN = "answer_outcome_uncertain"
+    # Cycle-2R3 (B1-A): caller asks if we heard their address.
+    ANSWER_HEARD_ADDRESS = "answer_heard_address"
     # Defaults / fallback
     REPROMPT = "reprompt_caller"
     CLOSEOUT = "closeout"
@@ -206,6 +208,21 @@ _RE_OUTCOME_Q = re.compile(
     r"\b(?:going to (?:be (?:ok|okay|alright)|make it|die)|will (?:he|she|they) (?:be|live|die))\b",
     re.IGNORECASE,
 )
+# Cycle-2R3 (Team R3 B1-A): caller asking whether dispatcher heard the address
+# or where help is being sent. Routes to ANSWER_HEARD_ADDRESS template.
+_RE_DID_YOU_HEAR_Q = re.compile(
+    r"\bdid (?:you|ya) (?:hear|get|catch)\b|"
+    r"\bdo you (?:know|have) (?:where|the address|my address)\b|"
+    r"\bwhere are you sending\b|\bdid (?:you|that) go through\b",
+    re.IGNORECASE,
+)
+# Cycle-2R3 (Team R3 B2-A): backchannel detector — short acknowledgements
+# like "uh okay", "yeah", "got it" that should NOT advance FSM state.
+_RE_BACKCHANNEL = re.compile(
+    r"^\s*(?:uh+|um+|ah+|oh+|ok(?:ay)?|alright|right|yeah|yep|yes|"
+    r"got it|sure|mm+hmm+|hmm+)[.,!?\s]*$",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -229,6 +246,10 @@ class Features:
     asks_do_not_move: bool = False
     asks_how_long: bool = False
     asks_outcome: bool = False
+    # Cycle-2R3 (B1-A): caller asking if dispatcher heard the address.
+    asks_heard_address: bool = False
+    # Cycle-2R3 (B2-A): backchannel utterance — should not advance state.
+    is_backchannel: bool = False
     pronoun_he: bool = False
     pronoun_she: bool = False
 
@@ -354,6 +375,13 @@ def classify(utterance: str) -> Features:
         asks_do_not_move=bool(_RE_DO_NOT_MOVE_Q.search(t)),
         asks_how_long=bool(_RE_HOW_LONG_Q.search(t)),
         asks_outcome=bool(_RE_OUTCOME_Q.search(t)),
+        # Cycle-2R3 (B1-A): caller asks if we heard their address.
+        asks_heard_address=bool(_RE_DID_YOU_HEAR_Q.search(t)),
+        # Cycle-2R3 (B2-A): backchannel — short, content-free utterance.
+        # The <=14-char guard rejects long utterances that happen to
+        # start with a backchannel filler (e.g. "Yeah, my friend stopped
+        # breathing" should still latch cardiac).
+        is_backchannel=bool(_RE_BACKCHANNEL.match(t)) and len(t) <= 14,
         pronoun_he=bool(_RE_HE.search(t)),
         pronoun_she=bool(_RE_SHE.search(t)),
     )
@@ -410,6 +438,19 @@ class DispatcherFSM:
         t0 = time.monotonic()
         f = classify(utterance)
         self.turns += 1
+
+        # Cycle-2R3 (B2-A): backchannel guard — caller is acknowledging,
+        # not committing a substantive new turn. Re-emit last_intent
+        # rather than advancing state. Only applies after caller has
+        # entered the call (post-INTAKE) — backchannels in INTAKE could
+        # be the address itself misheard, so preserve current behavior
+        # there.
+        if f.is_backchannel and self.state in (
+            State.ADDRESS_CONFIRMED,
+            State.REASSURANCE_DELIVERED,
+            State.KEY_QUESTIONS,
+        ):
+            return self._record(self.last_intent or Intent.REPROMPT, t0)
 
         # Pronoun commit (only on explicit signal).
         if self.pronouns == "unknown":
@@ -607,6 +648,11 @@ class DispatcherFSM:
     # ---- direct-question router ---------------------------------------
 
     def _direct_question_intent(self, f: Features) -> Intent | None:
+        # Cycle-2R3 (B1-A): caller asking "did you hear my address?" or
+        # "where are you sending them?" preempts ALL other intents — caller
+        # trust is on the line. Goes first in the priority order.
+        if f.asks_heard_address:
+            return Intent.ANSWER_HEARD_ADDRESS
         if f.asks_do_not_move:
             return Intent.ANSWER_DO_NOT_MOVE
         if f.asks_how_long:
