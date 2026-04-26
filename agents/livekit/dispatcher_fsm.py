@@ -353,8 +353,30 @@ class DispatcherFSM:
         # jump into the verification mini-FSM unless we are already in
         # CPR coaching. This honors the MPDS-9 "verify before instruct"
         # gate — we never skip straight to compressions.
-        if f.not_breathing and self.state not in (State.CRITICAL_VERIFY,
-                                                   State.CRITICAL_CPR):
+        # Cycle-2P2 (Team P A1): defense-in-depth gate. Positive arrest
+        # cues ("stopped breathing", "no pulse", "unresponsive") trigger
+        # unconditionally. Ambiguous cues ("not responding") require
+        # third-party context — first-person "I'm not responding" / "my
+        # phone won't respond" no longer mis-routes to CPR-verify.
+        positive_arrest_cue = bool(
+            re.search(
+                r"\b(?:stopped breathing|not breathing|"
+                r"isn'?t breathing|no pulse|no heartbeat|"
+                r"unresponsive|won'?t wake up|just gasping)\b",
+                utterance, re.IGNORECASE,
+            )
+        )
+        ambiguous_arrest_cue = bool(
+            re.search(
+                r"\b(?:not responding|won'?t respond|no(?:t)? breath)\b",
+                utterance, re.IGNORECASE,
+            )
+        )
+        should_jump_to_verify = positive_arrest_cue or (
+            ambiguous_arrest_cue and self.is_third_party
+        )
+        if should_jump_to_verify and self.state not in (State.CRITICAL_VERIFY,
+                                                          State.CRITICAL_CPR):
             self.is_cardiac_arrest = True
             self.state = State.CRITICAL_VERIFY
             # Pre-fill latches from anything the caller already volunteered.
