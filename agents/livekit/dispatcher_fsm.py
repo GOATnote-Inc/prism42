@@ -233,11 +233,101 @@ class Features:
     pronoun_she: bool = False
 
 
+# Cycle-2P2 (Team P C3): spelled-cardinal -> digit normalizer.
+# Maps spoken-form cardinals (zero..nine, ten..nineteen, twenty..ninety,
+# hundred, thousand) to digit form so the address-classification regex
+# (_RE_HAS_DIGIT) catches "one hundred ocean of new" -> "100 ocean of new"
+# even when Parakeet mis-hears the suffix. Hard-coded; no NLP library.
+# Pre-FSM only: the UI / transcript pane keeps the raw utterance.
+_SPELLED_DIGIT_UNITS: dict[str, int] = {
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
+    "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+    "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+    "fourteen": 14, "fifteen": 15, "sixteen": 16,
+    "seventeen": 17, "eighteen": 18, "nineteen": 19,
+}
+_SPELLED_DIGIT_TENS: dict[str, int] = {
+    "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50,
+    "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
+}
+# Compiled once. Match order matters — try multi-word forms before
+# single-word forms so "one hundred" beats "one" alone.
+_SPELLED_NUMBER_PATTERNS: list[tuple[re.Pattern[str], int | str]] = []
+
+
+def _build_spelled_number_patterns() -> list[tuple[re.Pattern[str], int | str]]:
+    """Build (pattern, value-or-template) pairs once at import time."""
+    pats: list[tuple[re.Pattern[str], int | str]] = []
+    # Pattern: "<tens>-<unit>" or "<tens> <unit>" -> tens+unit (52, 21, ...)
+    for tens_word, tens_val in _SPELLED_DIGIT_TENS.items():
+        for unit_word, unit_val in _SPELLED_DIGIT_UNITS.items():
+            if unit_val == 0 or unit_val >= 10:
+                continue
+            combo = f"{tens_word}[\\s-]+{unit_word}"
+            pats.append(
+                (re.compile(rf"\b{combo}\b", re.IGNORECASE), tens_val + unit_val)
+            )
+    # Pattern: "<unit> hundred [and <rest>]" -> 100..999. Without the
+    # optional rest we just emit the hundreds value (e.g. "one hundred"
+    # -> 100). With the rest we recurse via a placeholder; keep it simple
+    # and only support the no-tail form, which covers the canonical
+    # "one hundred ocean ave" smoking-gun case.
+    for unit_word, unit_val in _SPELLED_DIGIT_UNITS.items():
+        if unit_val == 0 or unit_val >= 10:
+            continue
+        pats.append(
+            (re.compile(rf"\b{unit_word}\s+hundred\b", re.IGNORECASE),
+             unit_val * 100)
+        )
+    # "<unit> thousand" -> 1000..9000.
+    for unit_word, unit_val in _SPELLED_DIGIT_UNITS.items():
+        if unit_val == 0 or unit_val >= 10:
+            continue
+        pats.append(
+            (re.compile(rf"\b{unit_word}\s+thousand\b", re.IGNORECASE),
+             unit_val * 1000)
+        )
+    # Standalone tens (twenty, thirty, ...).
+    for tens_word, tens_val in _SPELLED_DIGIT_TENS.items():
+        pats.append((re.compile(rf"\b{tens_word}\b", re.IGNORECASE), tens_val))
+    # Standalone units 1..19. Skip "zero" -> "0" because addresses rarely
+    # start with a literal zero and "zero" appears in non-numeric contexts.
+    for unit_word, unit_val in _SPELLED_DIGIT_UNITS.items():
+        if unit_val == 0:
+            continue
+        pats.append((re.compile(rf"\b{unit_word}\b", re.IGNORECASE), unit_val))
+    return pats
+
+
+_SPELLED_NUMBER_PATTERNS = _build_spelled_number_patterns()
+
+
+def _normalize_spelled_cardinals(text: str) -> str:
+    """Convert spelled-out cardinals to digits. Idempotent on already-numeric input.
+
+    Best-effort and conservative: applies patterns in longest-match-first
+    order. Does NOT solve full English number parsing (no "one hundred and
+    twenty-three"). Solves the smoking-gun cases: "one hundred ocean
+    avenue", "twelve riverside drive", "fifty-two main street",
+    "twenty lakeside".
+    """
+    if not text:
+        return text
+    out = text
+    for pat, val in _SPELLED_NUMBER_PATTERNS:
+        out = pat.sub(str(val), out)
+    return out
+
+
 def classify(utterance: str) -> Features:
     """Extract features. Conservative: ambiguous -> all-False."""
     if not utterance:
         return Features()
-    t = utterance.strip()
+    # Cycle-2P2 (Team P C3): normalize spelled cardinals BEFORE regex
+    # matching so "one hundred ocean of new" registers a digit and
+    # latches address_known on turn 1 even when STT mis-hears the
+    # street suffix. UI / transcript still sees the original utterance.
+    t = _normalize_spelled_cardinals(utterance.strip())
     return Features(
         has_address=bool(_RE_STREET.search(t)) or bool(_RE_HAS_DIGIT.search(t)),
         has_emergency=bool(
