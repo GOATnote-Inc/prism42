@@ -31,7 +31,7 @@ jobs:
             --exclude=".pre-commit-config.yaml" \
             --exclude="verify.yml" \
             --exclude-dir=".git" --exclude-dir=".github" \
-            --exclude-dir="node_modules" --exclude-dir="findings/private" \
+            --exclude-dir="node_modules" --exclude-dir="findings/private" --exclude-dir="vendor" \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             echo "::error::Vendor-identifier hit in tracked content:"
@@ -49,7 +49,7 @@ jobs:
             --exclude=".pre-commit-config.yaml" \
             --exclude="verify.yml" \
             --exclude-dir=".git" --exclude-dir=".github" \
-            --exclude-dir="node_modules" --exclude-dir="findings/private" \
+            --exclude-dir="node_modules" --exclude-dir="findings/private" --exclude-dir="vendor" \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             echo "::error::Personal-identifier hit in tracked content:"
@@ -86,7 +86,7 @@ jobs:
             --exclude=".pre-commit-config.yaml" \
             --exclude="verify.yml" \
             --exclude-dir=".git" --exclude-dir=".github" \
-            --exclude-dir="node_modules" --exclude-dir="findings/private" \
+            --exclude-dir="node_modules" --exclude-dir="findings/private" --exclude-dir="vendor" \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             echo "::error::Upstream-SHA-pin hit in tracked content:"

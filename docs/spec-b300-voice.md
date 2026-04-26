@@ -462,7 +462,7 @@ This spec is complete when a build-agent can:
 - **prism42 structured-JSON gate**: `schemas/psap-turn.schema.json`
 - **prism42 pipeline narrative**: `docs/pipeline-narrative.md`
 - **prism42 ElevenLabs blueprint (decode-latency budget)**: `docs/anthropic-elevenlabs-agent-bp-2026-04-21.md` §5 (updated 2026-04-23)
-- **prism MLA decode measurements (H100, B300 torch-only)**: `/Users/kiteboard/prism/mla/claims/CLAIM_001_flashinfer_fa3_ceiling_kv4096.md`, `.../CLAIM_002_b300_blackwell_ultra_torch_ceiling.md`
+- **prism MLA decode measurements (H100, B300 torch-only)**: `<off-tree benchmark corpus>`, `.../CLAIM_002_b300_blackwell_ultra_torch_ceiling.md`
 - **prism hypothesis ladder (H4 deferred, H5 supported)**: `/Users/kiteboard/prism/docs/mla-corpus/HYPOTHESIS_LADDER.md`
 - **Empirical B300 pod session**: Brev/Verda `prism-mla-b300-h4h5`, 2026-04-23, artifacts at `/Users/kiteboard/prism/mla/results/logs/h5_h4_b300/`
 

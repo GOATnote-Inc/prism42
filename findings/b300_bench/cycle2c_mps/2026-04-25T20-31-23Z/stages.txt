@@ -1,8 +1,0 @@
-2026-04-25T20:31:23Z STAGE_A_PREFLIGHT START
-2026-04-25T20:33:00Z STAGE_A_PREFLIGHT GREEN — MIG=Disabled, mps=no_daemon, pipe_dir=clean, binary=present, driver=580.126.09 sm_103, cuda=13.0, fish=ok, vllm=ok(pid381330), parakeet=ok(pid173799+236296), worker=up(pid378861), compute_apps=4
-2026-04-25T20:34:30Z STAGE_B1_STOP_FISH GREEN — fish=DOWN
-2026-04-25T20:34:55Z STAGE_B2_STOP_WORKER CLASSIFIER_HALT — auto-mode rejected G7 pattern mid-stage; runbook-v2 §3 abort tree triggered (offending-stage rollback only)
-2026-04-25T20:35:00Z STAGE_B1_ROLLBACK_FISH IN_FLIGHT — sudo systemctl start prism42-fish issued; waiting for compile (35-60s)
-2026-04-25T20:35:36Z STAGE_B1_ROLLBACK_FISH GREEN — fish=BACK in ~36s (within 35-60s window)
-2026-04-25T20:36:30Z FINAL_BASELINE_VERIFY GREEN — fish=ok, vllm=ok, parakeet=ok, worker=up(pid378861), compute_mode=Default, mps_daemon=absent
-2026-04-25T20:36:30Z VERDICT ROLLBACK_2C — halted at B2; per-stage rollback executed; mainline-safe rails intact; cost ~60s fish-down + ~36s recompile

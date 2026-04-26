@@ -1,2 +1,0 @@
-Pseudo-terminal will not be allocated because stdin is not a terminal.
-{"status":"ok","model":"nvidia/parakeet-tdt-0.6b-v3","sample_rate":16000,"streaming":true,"interim_interval_ms":160}

@@ -256,7 +256,7 @@ Concrete optimization priorities in 911-UX order:
 
 ### Cross-reference
 
-- Measured kernel source: `/Users/kiteboard/prism/mla/claims/CLAIM_001_flashinfer_fa3_ceiling_kv4096.md`, `.../CLAIM_002_b300_blackwell_ultra_torch_ceiling.md`.
+- Measured kernel source: `<off-tree benchmark corpus>`, `.../CLAIM_002_b300_blackwell_ultra_torch_ceiling.md`.
 - Decode bench driver: `/Users/kiteboard/prism/mla/scripts/isolated_bench.py` + `_bench_worker.py`.
 - Hypothesis closures gating these numbers: H2.3.1 (cross-pod protocol), H5 (NVFP4 unreachable from torch.compile), H4 (FlashInfer cutlass deferred).
 - 911 console implementation: `/Users/kiteboard/goatnote-911/console.html` (6 subsystems; IRB-pilot ready).

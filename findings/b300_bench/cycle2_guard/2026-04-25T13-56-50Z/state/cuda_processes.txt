@@ -1,6 +1,0 @@
-Pseudo-terminal will not be allocated because stdin is not a terminal.
-pid, process_name, used_gpu_memory [MiB]
-173799, .venv/bin/python, 5834 MiB
-217878, /opt/prism42/infra/b300/services/fish-speech/.venv/bin/python, 20068 MiB
-236296, .venv/bin/python, 5924 MiB
-285796, VLLM::EngineCore, 56602 MiB

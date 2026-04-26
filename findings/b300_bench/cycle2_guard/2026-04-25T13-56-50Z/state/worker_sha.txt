@@ -1,2 +1,0 @@
-Pseudo-terminal will not be allocated because stdin is not a terminal.
-42c8d2e8b5930c470fb04c3b0ee0834158ad66090d6c524bd3dd283b9186d3ab  /opt/prism42/agents/livekit/worker.py

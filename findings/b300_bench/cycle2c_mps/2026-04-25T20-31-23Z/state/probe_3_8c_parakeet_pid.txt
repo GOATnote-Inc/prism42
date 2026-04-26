@@ -1,2 +1,0 @@
-Pseudo-terminal will not be allocated because stdin is not a terminal.
-236295 bash -c   echo '--- killing pid 60210 ---';   sudo kill 60210 2>&1;   sleep 2;   ps -p 60210 -o pid= 2>&1 | head -1 || echo '(killed)';   echo '--- relaunching new server.py with /ws ---';   cd /opt/prism42/infra/b300/services/parakeet &&   nohup .venv/bin/python server.py > /tmp/prism42-logs/parakeet.log 2>&1 &disown;   sleep 3;   echo '--- new pid ---';   pgrep -af 'python.*parakeet/server.py' | head -2

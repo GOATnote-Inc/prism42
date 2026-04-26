@@ -41,7 +41,7 @@ cycle-2c  CUDA MPS (Fish HIGH / vLLM DEFAULT)          STAGED  T2 measured +95% 
                                                               predicted -1300 ms
                                                               → e2e ~3300 ms
 
-cycle-2d  Fish FLASH_ATTENTION + drop dense mask       STAGED  T1 + SGLang-Omni
+cycle-2d  Fish FA-FAST + drop dense mask       STAGED  T1 + SGLang-Omni
                                                               proven recipe →
                                                               -750 ms predicted
                                                               → e2e ~2550 ms

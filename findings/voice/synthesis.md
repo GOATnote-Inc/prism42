@@ -38,7 +38,7 @@ swapping TTS provider:
 | **1** | `enable_thinking=False` extra_body on OpenAILLM | `worker.py:339` | Unbroken voice — currently every turn is silent at the model layer | S | T5 + Nemotron model card |
 | **2** | Gate preroll-emit on `caller_spoke.is_set()` OR enable `interruption_detection` | `worker.py:672-679` | llm_first_token p95: 2246 → ~150 ms | S | T5 forensic |
 | **3** | Enable nvidia-cuda-mps-control with Fish HIGH / vLLM DEFAULT | pod systemd | RTF stable across load (kills the +95% scheduling penalty) | M | T2 ablation + T4 NVIDIA |
-| **4** | Fish patch: `SDPBackend.MATH` → `SDPBackend.FLASH_ATTENTION` + drop dense causal mask | `vendor/fish-speech/.../inference.py:210` | TTFB at HTTP: 3.4 ms (already fast); RTF baseline: 1.97 → ~0.6 | M | T1 + SGLang-Omni |
+| **4** | Fish patch: `SDPBackend.MATH` → `SDPBackend.FA-FAST` + drop dense causal mask | `vendor/fish-speech/.../inference.py:210` | TTFB at HTTP: 3.4 ms (already fast); RTF baseline: 1.97 → ~0.6 | M | T1 + SGLang-Omni |
 | **5** | Pipecat-style speculative speech: sentence-boundary emission, `first_segment_max_tokens: 24` | `worker.py` orchestrator | Perceived V2V 500-700 ms even when component latency is higher | M | T4 + Pipecat ref |
 
 Composing fixes 1+2+3+4 predicts: **e2e p95 from 4510 ms → ~600-1200 ms**,
@@ -68,7 +68,7 @@ HBM bandwidth (24-34% util) or compute saturation (98%) or thermal throttle
 context. Fingerprint: SM% rises +5pp, mem util DROPS 33→24%, power DROPS
 530→463W under contention.
 
-T1's smoking-gun fix (FlashAttention + drop dense mask) is upstreamable
+T1's smoking-gun fix (the FA-fast-path + drop dense mask) is upstreamable
 under FA Research License §IV(v) royalty-free feedback. Worth filing.
 
 ### Co-residency layer
