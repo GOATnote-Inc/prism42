@@ -1,6 +1,11 @@
 # Private findings — pre-embargo, never pushed
 findings/private/
 
+# Local-only secrets snapshots inside findings/ (per-team forensic reports
+# may capture API key + secret pairs for takeover/replay; never committed).
+findings/**/keys.local.txt
+findings/**/*.local.txt
+
 # Env / secrets
 .env
 .env.*
@@ -87,3 +92,8 @@ third_party/*
 !.claude/agents/
 .vercel
 /vendor/fish-speech/
+
+# cycle-2R baseline artifact (contains secret env values; never commit)
+findings/voice/cycle2R_livekit_selfhost/baseline-2026-04-26/*.local.tgz
+findings/voice/cycle2R_livekit_selfhost/baseline-2026-04-26/*.local.txt
+findings/voice/cycle2R_livekit_selfhost/baseline-2026-04-26/*.local.env

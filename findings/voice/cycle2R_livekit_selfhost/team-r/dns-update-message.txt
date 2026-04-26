@@ -1,0 +1,24 @@
+TO: in-flight agent a93bea5368ee57594 (Team R — cycle-2R migration runbook author)
+FROM: courier proxy (SendMessage capability unavailable; written-to-disk fallback)
+DATE: 2026-04-26
+SUBJECT: DNS naming UPDATE — mid-flight course correction from user
+
+---
+
+DNS naming UPDATE from the user (received 2026-04-26 mid-flight):
+
+Use `prism42.thegoatnote.com` (NOT `livekit.thegoatnote.com`) as the
+primary signaling domain. Better branding — "this is prism42" not
+"this is livekit infra."
+
+Concrete substitutions throughout your runbook + run.sh + rollback.sh:
+- `livekit.thegoatnote.com` → `prism42.thegoatnote.com`
+- `turn-livekit.thegoatnote.com` → `turn-prism42.thegoatnote.com`
+  (or use `prism42-turn.thegoatnote.com` if you think that's cleaner — pick one and be consistent)
+
+Same A-record IP target: `31.22.104.100`. Same Caddyfile structure.
+Same livekit.yaml `turn.domain` value (just the new subdomain).
+Vercel env value `NEXT_PUBLIC_LIVEKIT_URL_SELFHOST=wss://prism42.thegoatnote.com`.
+
+Don't restart your work — just s/livekit.thegoatnote.com/prism42.thegoatnote.com/g
+across all your output files. Original ship-by holds.
