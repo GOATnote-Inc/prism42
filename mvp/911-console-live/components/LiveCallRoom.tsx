@@ -27,6 +27,7 @@ import {
 } from "@livekit/components-react";
 import { ConnectionState, RoomEvent, Track } from "livekit-client";
 import { Orb, type OrbAgentState } from "./Orb";
+import { DispatchSubscription, type DispatchEvent } from "./DispatchPanel";
 
 // See agents/livekit/worker.py `_publish_latency` for the producer side.
 // Topic string MUST match the Python side exactly.
@@ -52,9 +53,18 @@ interface CallerProps {
   onRoomLiveChange?: (live: boolean) => void;
   /** Called once per message on the b3-latency LiveKit data channel. */
   onLatency?: (lat: LatencyTelemetry) => void;
+  /** Called once per message on the prism42.dispatch LiveKit data channel.
+   * Forwarded to the <DispatchPanel /> in the page for PSAP-CAD rendering.
+   * See findings/voice/cycle2R_livekit_selfhost/team-f/design.md. */
+  onDispatchEvent?: (ev: DispatchEvent) => void;
 }
 
-export function LiveCallRoom({ sessionId, onRoomLiveChange, onLatency }: CallerProps) {
+export function LiveCallRoom({
+  sessionId,
+  onRoomLiveChange,
+  onLatency,
+  onDispatchEvent,
+}: CallerProps) {
   const [token, setToken] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [phase, setPhase] = useState<
@@ -151,6 +161,7 @@ export function LiveCallRoom({ sessionId, onRoomLiveChange, onLatency }: CallerP
         onRoomLiveChange={onRoomLiveChange}
       />
       {onLatency && <LatencyTap onLatency={onLatency} />}
+      {onDispatchEvent && <DispatchSubscription onEvent={onDispatchEvent} />}
     </LiveKitRoom>
   );
 }
