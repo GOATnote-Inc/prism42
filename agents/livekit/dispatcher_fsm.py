@@ -224,6 +224,20 @@ _RE_OUTCOME_Q = re.compile(
     r"\b(?:going to (?:be (?:ok|okay|alright)|make it|die)|will (?:he|she|they) (?:be|live|die))\b",
     re.IGNORECASE,
 )
+# Cycle-2D2 (Team RCA B2-B): bare-no surface negation. Caller answers
+# "No" / "Nope" / "Negative" / "Nah" / "Uh-uh" to a VERIFY_SURFACE
+# question. The bare-no signal alone (without a positive surface
+# keyword like "chair" or "bed") does not match _RE_FLOOR_NEGATION
+# but is a strong intent-driven floor-negation cue. The negative
+# lookahead ensures "No, he's breathing" / "No, he's responsive" do
+# NOT trigger reposition (they're answering a different question).
+_RE_BARE_NO_SURFACE = re.compile(
+    r"^\s*(?:no+|nope|negative|nah|uh[- ]?uh)\b"
+    r"(?!.*\b(?:breath|pulse|responsive|responding|awake|conscious|alert|"
+    r"gasping|moving|alive|talking|crying)\b)",
+    re.IGNORECASE,
+)
+
 # Cycle-2R3 (Team R3 B1-A): caller asking whether dispatcher heard the address
 # or where help is being sent. Routes to ANSWER_HEARD_ADDRESS template.
 _RE_DID_YOU_HEAR_Q = re.compile(
@@ -478,6 +492,24 @@ class DispatcherFSM:
         ):
             return self._record(self.last_intent or Intent.REPROMPT, t0)
 
+        # Cycle-2D2 (Team RCA fix 2B): intent-aware bare-no surface
+        # negation. If FSM just asked VERIFY_SURFACE and caller's reply
+        # opens with "No" / "Nope" / "Nah" AND the utterance does NOT
+        # mention breathing / pulse / responsiveness (i.e. they're
+        # answering THIS question, not a different one), treat as
+        # floor_negation regardless of whether _RE_FLOOR_NEGATION
+        # matched. Covers "No, he's on the street" / "Nope." / "No he
+        # is not on his back" — patterns the substantive-keyword regex
+        # cannot infer surface-negation from.
+        if (
+            self.last_intent == Intent.VERIFY_SURFACE
+            and self.state == State.CRITICAL_VERIFY
+            and not self.surface_confirmed
+            and _RE_BARE_NO_SURFACE.match(utterance)
+            and not f.floor_flat
+        ):
+            f.floor_negation = True
+
         # Pronoun commit (only on explicit signal).
         if self.pronouns == "unknown":
             if f.pronoun_he and not f.pronoun_she:
@@ -498,11 +530,20 @@ class DispatcherFSM:
             self.address_known = True
         if f.has_emergency:
             self.emergency_known = True
+            # Cycle-2D2 (Team RCA fix 1A): trauma is sticky once latched.
+            # Subsequent turns that introduce a medical cue (e.g. "not
+            # breathing") on a known-trauma victim represent dual-rail
+            # (traumatic arrest) — preserve the cardiac short-circuit AND
+            # the trauma context so future KQ branching can re-engage
+            # hemorrhage / safe-location flows. Without this latch the
+            # FSM silently flipped trauma → medical on the cardiac jump
+            # and lost the mechanism-of-injury context entirely.
             if f.fire:
                 self.complaint = "fire"
             elif f.trauma:
                 self.complaint = "trauma"
-            else:
+            elif self.complaint != "trauma":
+                # Only flip to 'medical' if not already on a trauma rail.
                 self.complaint = "medical"
 
         # ----- CRITICAL OVERRIDE: caller signals cardiac arrest -----
