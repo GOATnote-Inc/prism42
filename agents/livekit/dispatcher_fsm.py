@@ -195,8 +195,8 @@ _RE_NOT_BREATHING = re.compile(
     # "I don't think she's breathing at all anymore", "doesn't seem
     # like he's breathing" — the literal-adjacency "not breathing"
     # rule misses these natural-language variants.
-    r"don'?t think (?:he|she|they|the patient)(?:'s| is| are)? breath\w*|"
-    r"doesn'?t (?:seem|look|sound) (?:like )?(?:he|she|they)(?:'s| is)? breath\w*|"
+    r"don'?t think (?:he|she|they|the patient)(?:'?s| is| are)? breath\w*|"
+    r"doesn'?t (?:seem|look|sound) (?:like )?(?:he|she|they)(?:'?s| is)? breath\w*|"
     r"breathing at all)\b",
     re.IGNORECASE,
 )
@@ -431,6 +431,21 @@ def classify(utterance: str) -> Features:
     # the gate falls back to the no-echo template.
     addr_match = _RE_ADDRESS_ECHO.search(utterance.strip())
     address_text = addr_match.group(0).strip() if addr_match else None
+    # Cycle-2D8: strip STT disfluencies ("uh", "um", "er", "like", "ah")
+    # from the captured address span so the echo doesn't read back
+    # "200 uh river drive". STT often drops these into the middle of
+    # multi-word addresses when the caller hesitates. Case-insensitive
+    # word-boundary match; collapse runs of whitespace afterwards.
+    if address_text:
+        address_text = re.sub(
+            r"\b(?:uh+|um+|er+|ah+|like|y'?know)\b",
+            "",
+            address_text,
+            flags=re.IGNORECASE,
+        )
+        address_text = re.sub(r"\s+", " ", address_text).strip()
+        if not address_text:
+            address_text = None
     return Features(
         has_address=bool(_RE_STREET.search(t)) or bool(_RE_HAS_DIGIT.search(t)),
         address_text=address_text,
@@ -648,11 +663,25 @@ class DispatcherFSM:
         # unconditionally. Ambiguous cues ("not responding") require
         # third-party context — first-person "I'm not responding" / "my
         # phone won't respond" no longer mis-routes to CPR-verify.
+        # Cycle-2D8: extend the inline positive-arrest regex with the
+        # natural-language patterns that cycle-2D3 added to
+        # _RE_NOT_BREATHING. Without this, "I don't think he's breathing
+        # anymore" is detected as a feature flag (f.not_breathing=True)
+        # but does NOT trigger the cardiac short-circuit, so the FSM
+        # stays in trauma key-questions instead of jumping to
+        # CRITICAL_VERIFY. The new patterns are anchored to a third-
+        # person subject so they remain "positive" cues (no first-person
+        # ambiguity that motivated the original ambiguous/positive split).
         positive_arrest_cue = bool(
             re.search(
                 r"\b(?:stopped breathing|not breathing|"
                 r"isn'?t breathing|no pulse|no heartbeat|"
-                r"unresponsive|won'?t wake up|just gasping)\b",
+                r"unresponsive|won'?t wake up|just gasping|"
+                r"don'?t think (?:he|she|they|the patient)"
+                r"(?:'?s| is| are)? breath\w*|"
+                r"doesn'?t (?:seem|look|sound) (?:like )?"
+                r"(?:he|she|they)(?:'?s| is)? breath\w*|"
+                r"breathing at all)\b",
                 utterance, re.IGNORECASE,
             )
         )

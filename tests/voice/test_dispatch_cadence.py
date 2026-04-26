@@ -270,6 +270,72 @@ def test_floor_negation_catches_sit_up_variants():
         )
 
 
+# ------------------------------------------------------------------
+# Cycle-2D8 — cardiac short-circuit on natural-language not-breathing
+#             + STT disfluency stripping in address echo
+# ------------------------------------------------------------------
+
+
+def test_cardiac_short_circuit_on_natural_language_not_breathing():
+    """Caller says 'I don't think he's breathing anymore' AFTER reassurance
+    fired. The FSM must jump to CRITICAL_VERIFY, not stay in trauma KQ.
+
+    Repro from user attestation 2026-04-26 14:15: cardiac short-circuit
+    used a stricter inline regex than _RE_NOT_BREATHING. Cycle-2D3 added
+    natural-language patterns to _RE_NOT_BREATHING but missed the inline
+    positive_arrest_cue; result was f.not_breathing=True but the FSM
+    stayed in KEY_QUESTIONS emitting KQ_BLEEDING_LOCATION on loop.
+    """
+    fsm = DispatcherFSM()
+    fsm.transition("200 river drive")
+    fsm.transition("my friend was shot in the chest")
+    fsm.transition("uh okay help me")  # advances out of confirm; trauma reassurance fires
+    assert fsm.state == State.REASSURANCE_DELIVERED
+
+    # Now the cardiac cue with apostrophe — must trigger short-circuit.
+    intent = fsm.transition(
+        "Uh in his chest and uh I d I don't think he's breathing anymore."
+    )
+    assert fsm.is_cardiac_arrest is True
+    assert fsm.state == State.CRITICAL_VERIFY
+    assert intent in (Intent.VERIFY_SURFACE, Intent.VERIFY_BREATHING)
+
+
+def test_cardiac_short_circuit_tolerates_stt_dropped_apostrophes():
+    """Parakeet/Deepgram occasionally transcribe 'he's' as 'hes' and
+    'don't' as 'dont'. The regex must catch both forms."""
+    fsm = DispatcherFSM()
+    fsm.transition("200 river drive")
+    fsm.transition("my friend was shot in the chest")
+    fsm.transition("uh okay")
+    intent = fsm.transition("dont think hes breathing anymore")
+    assert fsm.is_cardiac_arrest is True
+    assert fsm.state == State.CRITICAL_VERIFY
+
+
+def test_address_echo_strips_stt_disfluencies():
+    """Cycle-2D8: 'uh', 'um', 'er', 'ah', 'like', 'y'know' are STT-captured
+    disfluencies. They must NOT appear in the echoed address.
+
+    Repro from 2026-04-26 14:15: caller said '200 river drive' but STT
+    captured '200 uh river drive' which echoed verbatim.
+    """
+    cases = [
+        ("200 uh river drive", "200 river drive"),
+        ("two hundred uh oceanfront avenue", "two hundred oceanfront avenue"),
+        ("twelve um riverside drive", "twelve riverside drive"),
+        ("100 ah ocean ave", "100 ocean ave"),
+        # Negative case: clean address passes through
+        ("100 ocean avenue", "100 ocean avenue"),
+        ("twelve riverside drive", "twelve riverside drive"),
+    ]
+    for utterance, expected in cases:
+        f = classify(utterance)
+        assert f.address_text == expected, (
+            f"{utterance!r} -> address_text={f.address_text!r}, expected {expected!r}"
+        )
+
+
 def test_e2e_user_repro_address_echoed_and_no_dead_air():
     """End-to-end: caller's screenshot scenario.
 
