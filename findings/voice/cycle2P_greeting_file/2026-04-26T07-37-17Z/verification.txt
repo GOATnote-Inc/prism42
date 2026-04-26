@@ -1,0 +1,80 @@
+cycle-2P verification log (2026-04-26T07:37:17Z)
+=================================================
+
+[1] Source MP3 inspection
+   /Users/kiteboard/prism42/assets/MWintro.mp3
+   "Audio file with ID3 version 2.4.0, contains: MPEG ADTS, layer III, v1, 128 kbps, 44.1 kHz, Monaural"
+
+[2] WAV conversion (afconvert)
+   afconvert -d LEI16@44100 -c 1 -f WAVE \
+     /Users/kiteboard/prism42/assets/MWintro.mp3 /tmp/mw_intro_greeting.wav
+   bytes: 262144
+   duration: 2.926s (129024 frames @ 44100 Hz)
+   md5: dddb0012d1bcd9b90970ee30560d294e
+   header probe: RIFF / WAVE / fmt (16) / FLLR / data (correct PCM_S16_LE 1ch 44100Hz)
+
+[3] scp to pod
+   scp /tmp/mw_intro_greeting.wav prism-mla-b300-h4h5:/tmp/...
+   sudo mv -> /opt/prism42/voice-refs/mw_intro_greeting.wav (root:root 644)
+   pod md5: dddb0012d1bcd9b90970ee30560d294e  -> matches local
+
+[4] worker.py.pre-cycle2P backup on pod (65497 bytes)
+
+[5] Patched worker.py scp'd to pod (shadeform:shadeform 644)
+   line 164: GREETING_TEXT updated
+   line 221-282: PRISM42_GREETING_AUDIO_FILE branch inserted
+
+[6] Drop-in 110-cycle2P-greeting-file.conf installed:
+     [Service]
+     Environment="PRISM42_GREETING_AUDIO_FILE=/opt/prism42/voice-refs/mw_intro_greeting.wav"
+
+[7] daemon-reload + restart prism42-worker
+   pre-PID 468115 -> post-PID 471619
+   systemctl is-active prism42-worker  -> active
+   no errors in post-restart journal
+
+[8] Env exposure to live worker process (PID 471619):
+   PRISM42_GREETING_AUDIO_FILE=/opt/prism42/voice-refs/mw_intro_greeting.wav  (NEW, cycle-2P)
+   PRISM42_FISH_REFERENCE_AUDIO=/opt/prism42/voice-refs/mw_sample.wav         (cycle-2N Q4-B preserved)
+   PRISM42_FISH_REFERENCE_TEXT=Bleeding, choking, or trouble breathing? ...   (cycle-2N Q4-B preserved)
+   FISH_SPEECH_REFERENCE_ID=                                                  (cycle-2N Q4-B preserved)
+   PRISM42_ENABLE_911_GREETING=1                                              (cycle-2i preserved)
+   PRISM42_FISH_PACE_TAG=                                                     (cycle-2k preserved)
+
+[9] Standalone unit test on pod (file-load path)
+   2026-04-26 07:39:20 [info] greeting.911.cache_loaded_from_file
+       archive_path=/tmp/prism42-greeting-cycle2P-test.wav
+       duration_ms=2940
+       pcm_bytes=259308
+       sample_rate=44100
+       source_path=/opt/prism42/voice-refs/mw_intro_greeting.wav
+       text='Nine one one, what is the address of your emergency?'
+       wav_bytes=262144
+   {"ok": true, "pcm_bytes": 259308, "duration_ms": 2940, "archive": 262144,
+    "greeting_text": "Nine one one, what is the address of your emergency?"}
+
+[10] Standalone unit test on pod (missing-file fallback)
+   2026-04-26 07:39:32 [warning] greeting.911.cache_file_missing path=/opt/prism42/voice-refs/DOES_NOT_EXIST.wav
+   2026-04-26 07:39:35 [info] greeting.911.cache_warmed     <-- Fish synth fallback fired
+       text='Nine one one, what is the address of your emergency?'
+       wav_bytes=344108
+   --> cycle-2N Q4-B fallback path verified intact + uses new GREETING_TEXT
+
+[11] Live /tmp/prism42-greeting.wav refresh
+   pre  : 315436 bytes / mtime 2026-04-26 07:26:45 (Fish synth output)
+   post : 262144 bytes / mtime 2026-04-26 07:39:50 (file-load output)
+   md5  : dddb0012d1bcd9b90970ee30560d294e (matches /opt/prism42/voice-refs/mw_intro_greeting.wav)
+
+[12] Watchdog status
+   No prism42-specific user-space watchdog exists; "GREEN" defined as
+   systemctl is-active = active AND no error/fail/exception lines in
+   post-restart journal. Both conditions held throughout cycle-2P.
+
+[13] Mainline-safe rails
+   - only edited: worker.py, voice-refs/mw_intro_greeting.wav, 110-cycle2P-greeting-file.conf
+   - untouched: fish_speech_tts.py, orchestrator.py, vendor/, vLLM, Parakeet, .env, Vercel
+   - existing drop-ins 10/20/50/70/100 retained
+   - worker.py.pre-cycle2P backup created
+   - no destructive ops; rollback in 30s
+
+VERDICT: PASS_2P
