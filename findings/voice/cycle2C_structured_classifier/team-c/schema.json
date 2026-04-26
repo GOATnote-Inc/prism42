@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/GOATnote-Inc/prism42/agents/livekit/structured_classifier/psap_classification.schema.json",
+  "title": "PsapClassification",
+  "description": "Structured classification of one PSAP caller utterance. Emitted by Nemotron-3-Nano-30B-A3B-NVFP4 via vLLM response_format=json_schema. Consumed by DispatcherFSM in agents/livekit/dispatcher_fsm.py. Designed for cycle-2C 'supervisors not dispatchers' pivot — the LLM classifies, the FSM decides, templates speak.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "intent",
+    "acuity",
+    "address_candidate",
+    "awake",
+    "breathing",
+    "surface",
+    "caller_question",
+    "caller_role",
+    "complaint_category",
+    "negation_signal",
+    "direct_question_kind",
+    "confidence"
+  ],
+  "properties": {
+    "intent": {
+      "type": "string",
+      "description": "The protocol-action category the caller's utterance maps to. SMALL CATEGORICAL — five values that align with FSM phase, NOT the 21-value Intent enum. The FSM picks the exact 21-Intent based on its current state plus this category. Rationale: the model is being asked 'what kind of move is the caller asking for?' (intake / key_question / verify / instruct / answer), not 'pick exactly one of 21 strings' which is harder to evaluate and more brittle to enum drift.",
+      "enum": [
+        "intake",
+        "key_question",
+        "verify",
+        "instruct",
+        "answer",
+        "reprompt"
+      ]
+    },
+    "acuity": {
+      "type": "string",
+      "description": "MPDS-style call priority. P1 = imminent life threat (cardiac arrest, choking, severe bleed, fire). P2 = serious not immediately life-threatening. P3 = non-life-threatening urgent. P4 = non-urgent. P5 = non-emergent referral. Source: NHTSA Medical Priority Dispatch System priority levels (https://www.nhtsa.gov/sites/nhtsa.gov/files/documents/811625.pdf, fetched 2026-04-26).",
+      "enum": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "unknown"
+      ]
+    },
+    "address_candidate": {
+      "type": "object",
+      "description": "Address mention extracted from the utterance. Object form (not bare string) so the FSM can dispatch on the parts. raw_text is the substring the model believes is the address; normalized is the post-spelled-cardinal form (digits substituted); has_digit reflects whether the normalized form contains at least one numeric token (the FSM's address-known latch criterion).",
+      "additionalProperties": false,
+      "required": [
+        "raw_text",
+        "normalized",
+        "has_digit"
+      ],
+      "properties": {
+        "raw_text": {
+          "type": ["string", "null"],
+          "description": "Verbatim substring of the utterance that the model believes is the address, or null if no address present. Do not invent.",
+          "maxLength": 200
+        },
+        "normalized": {
+          "type": ["string", "null"],
+          "description": "Address with spelled cardinals converted to digits ('one hundred' -> '100'). null if raw_text is null. The FSM does its own normalization in agents/livekit/dispatcher_fsm.py:_normalize_spelled_cardinals; this field is the model's view, used for log diff/audit.",
+          "maxLength": 200
+        },
+        "has_digit": {
+          "type": "boolean",
+          "description": "True iff the normalized form contains at least one ASCII digit. Mirrors agents/livekit/dispatcher_fsm.py:_RE_HAS_DIGIT semantics."
+        }
+      }
+    },
+    "awake": {
+      "type": ["boolean", "null"],
+      "description": "Tri-state. true = caller affirmed patient is responsive / awake. false = caller affirmed patient is unresponsive / not waking. null = caller did not say. NEVER infer from absence; null is the only honest answer when the caller has not committed."
+    },
+    "breathing": {
+      "type": ["boolean", "null"],
+      "description": "Tri-state. true = caller affirmed normal breathing. false = caller affirmed not breathing / agonal / gasping. null = caller did not say. Gasping maps to false (clinical: gasping is agonal, not breathing). Same null-honest discipline as 'awake'."
+    },
+    "surface": {
+      "type": "string",
+      "description": "Where the patient currently is, for CPR-positioning logic. MPDS-9 surface enum: 'floor' (CPR-ready), 'chair'/'bed'/'couch'/'vehicle'/'standing' (needs reposition before CPR), 'unknown' (caller did not say). Cycle-2R3 Bug 3 specifically blocks on this — 'in a chair' must route to INSTRUCT_CPR_REPOSITIONING, not VERIFY_SURFACE on repeat.",
+      "enum": [
+        "floor",
+        "chair",
+        "bed",
+        "couch",
+        "vehicle",
+        "standing",
+        "unknown"
+      ]
+    },
+    "caller_question": {
+      "type": "boolean",
+      "description": "True iff the caller's utterance contains a question directed AT the dispatcher (not a statement that incidentally has interrogative tone). Used to route to ANSWER_* intents. Solves Team R3 Bug 1: 'did you hear my address?' must register as caller_question=true even when no clear category in 'direct_question_kind'."
+    },
+    "caller_role": {
+      "type": "string",
+      "description": "Whose emergency this is. first_party = caller is the patient ('I have chest pain'). third_party = caller is reporting on someone else ('my husband has chest pain'). unknown = caller has not committed. Drives KQ_RESPONSIVE_BREATHING (third) vs KQ_SEVERITY (first) routing in the FSM key-question phase.",
+      "enum": [
+        "first_party",
+        "third_party",
+        "unknown"
+      ]
+    },
+    "complaint_category": {
+      "type": "string",
+      "description": "Top-level complaint bucket. Mirrors agents/livekit/dispatcher_fsm.py:complaint field. Drives which key-question and which pre-arrival instruction the FSM selects. 'medical' covers cardiac, respiratory, severity, and bleeding-from-medical-cause; 'trauma' covers fall/hit/stab/shot; 'fire' covers building / vehicle / wildfire; 'crime' covers active threats. 'unknown' is the start state.",
+      "enum": [
+        "medical",
+        "trauma",
+        "fire",
+        "crime",
+        "unknown"
+      ]
+    },
+    "negation_signal": {
+      "type": "boolean",
+      "description": "True iff the caller's utterance CONTRADICTS the dispatcher's last question. E.g. dispatcher asked 'are they on the floor?' and caller said 'no, they're in a chair' — negation_signal=true AND surface='chair'. Cycle-2R3 Bug 3: today the FSM has positive cues only and re-asks the same question forever. With this signal, the FSM can route to a contradiction-handling intent (e.g. INSTRUCT_CPR_REPOSITIONING)."
+    },
+    "direct_question_kind": {
+      "type": "string",
+      "description": "Sub-category of caller_question. Drives the FSM's _direct_question_intent router. 'none' = caller_question is false OR the question doesn't fit a known answer template. 'do_not_move' / 'how_long' / 'outcome' map to existing FSM ANSWER_* intents. 'did_you_hear' (cycle-2R3 B1-A) maps to ANSWER_HEARD_ADDRESS. 'where_sending' is a near-synonym of 'did_you_hear' that the FSM also routes to ANSWER_HEARD_ADDRESS.",
+      "enum": [
+        "none",
+        "do_not_move",
+        "how_long",
+        "outcome",
+        "did_you_hear",
+        "where_sending"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Single overall confidence in this classification, [0,1]. Used by orchestrator to dispatch: confidence >= 0.7 -> trust LLM features and merge with regex; confidence in [0.4, 0.7) -> log disagreement, regex still wins on hard signals; confidence < 0.4 -> ignore LLM features entirely and treat as if PRISM42_ENABLE_STRUCTURED_CLASSIFIER=0 for this turn. Per-field confidence was considered (one float per field) and rejected: it doubles schema complexity, and the FSM does not currently have a mechanism to dispatch on field-level confidence — gating on a single overall score gives 90 % of the value at 10 % of the complexity."
+    }
+  }
+}
