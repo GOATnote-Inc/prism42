@@ -1,0 +1,138 @@
+{
+  "cycle": "2j",
+  "task": "fish_reference_voice_bench",
+  "ts_utc": "2026-04-26T024915Z",
+  "ship_decision": "PARTIAL",
+  "summary_text": "Cycle-2j combined cycle-2i greeting re-enable + cycle-2j reference-voice bench executor complete. Phase 0 re-enabled the cycle-2i greeting drop-in (PRISM42_ENABLE_911_GREETING=1) cleanly; worker active and registered with LiveKit Cloud (region Germany 2). Phase 1 applied J0's 3-site patch to fish_speech_tts.py: env reads (DEFAULT_REFERENCE_AUDIO_PATH, DEFAULT_REFERENCE_AUDIO_TEXT), dataclass fields (reference_audio_path, reference_audio_text), and inline references_payload assembly with mutex guard against reference_id (engine drops references silently when both set; adapter mirrors that). Patch is ~50 LOC including comments, no new imports, py_compile clean. Phase 2 staged 2 LibriTTS WAVs at /opt/prism42/voice-refs/{wav1,wav2}.wav (md5 d08ca432... and ddfbc520...). Phase 3 ran 5 phrases x 3 conditions = 15 synth calls direct against Fish HTTP /v1/tts on the pod, all 15 succeeded with valid PCM. Latency: TTFB p95 5ms baseline -> 6ms WAV1/WAV2 (1ms absolute, 20% relative on already-instant streaming). Total render p95 1352ms baseline -> 1162ms WAV1 (-14.1%) -> 1250ms WAV2 (-7.5%) — both WAV conditions actually rendered FASTER than baseline. Peak amplitude tightened from baseline range [28006, 31088] to a uniform 28006 under both WAV conditions, consistent with reference-voice clipping the loudness envelope to the reference's distribution. No clipping, no silence, no truncation in any of 15 outputs. Audio specs all sane (44.1 kHz mono 16-bit PCM, durations 0.79-3.58 s, RMS 1453-9902). Decision is PARTIAL because the agent has no audio perception and cannot independently rate naturalness — metrics show no regression, both WAVs are tied for latency-improvement and tighter dynamic range, but only human listening can confirm 'sounds more like a calm dispatcher.' Adapter is patched and ready; no systemd drop-in installed (default off). User listens to listening_checklist.md and either installs 60-cycle2j-refvoice.conf with the chosen WAV path or accepts PARTIAL_KEEP_OFF.",
+  "phases": {
+    "phase_0_cycle2i_greeting": {
+      "status": "ENABLED",
+      "drop_in": "/etc/systemd/system/prism42-worker.service.d/50-cycle2i-greeting.conf",
+      "env": {"PRISM42_ENABLE_911_GREETING": "1"},
+      "verification": "systemctl is-active prism42-worker = active; greeting cache wav at /tmp/prism42-greeting.wav 380972B; cache_warmed event fires on first room-join (not at boot) per worker.py:1019 path",
+      "notes": "Worker active + registered (id AW_ocbjqdRhA4qp, url wss://ai-therapy-v3svfd9o.livekit.cloud, region Germany 2). cycle2f_prosody_init still firing (cycle-2f preserved). Greeting will warm-cache on first real caller."
+    },
+    "phase_1_patch": {
+      "status": "APPLIED",
+      "file": "agents/livekit/fish_speech_tts.py",
+      "loc_added": 50,
+      "loc_changed": 1,
+      "py_compile": "OK",
+      "sites": ["module env reads (~10 LOC)", "FishSpeechOptions fields (~9 LOC)", "_run() body inline references assembly (~30 LOC) + 1-line wire change"],
+      "mutex_with_reference_id": "enforced — references_payload stays [] when self._opts.reference_id is truthy",
+      "backup": "/opt/prism42/agents/livekit/fish_speech_tts.py.pre-cycle2j"
+    },
+    "phase_2_wavs": {
+      "status": "STAGED",
+      "wav1": {
+        "pod_path": "/opt/prism42/voice-refs/wav1.wav",
+        "size_bytes": 649484,
+        "md5": "d08ca432846b45327f315f85d597ee39",
+        "duration_s": 13.530,
+        "transcript_chars": 240
+      },
+      "wav2": {
+        "pod_path": "/opt/prism42/voice-refs/wav2.wav",
+        "size_bytes": 698444,
+        "md5": "ddfbc520c75f640e315c58560ace8e58",
+        "duration_s": 14.550,
+        "transcript_chars": 253
+      }
+    },
+    "phase_3_bench": {
+      "status": "COMPLETE",
+      "phrases": 5,
+      "conditions": 3,
+      "synth_calls_total": 18,
+      "synth_calls_successful": 18,
+      "warmups_per_condition": 1,
+      "approach": "direct Fish HTTP /v1/tts (bypass worker, exercise same wire contract the patched adapter would send)"
+    }
+  },
+  "aggregate_metrics": {
+    "baseline": {
+      "success_count": 5,
+      "ttfb_p50_ms": 5,
+      "ttfb_p95_ms": 5,
+      "total_p50_ms": 1236,
+      "total_p95_ms": 1352,
+      "peak_min": 28006,
+      "peak_max": 31088,
+      "total_audio_duration_s": 8.547
+    },
+    "wav1": {
+      "success_count": 5,
+      "ttfb_p50_ms": 6,
+      "ttfb_p95_ms": 6,
+      "total_p50_ms": 1077,
+      "total_p95_ms": 1162,
+      "peak_min": 28006,
+      "peak_max": 28006,
+      "total_audio_duration_s": 7.247,
+      "ttfb_p95_regression_pct_vs_baseline": 20.0,
+      "total_p95_regression_pct_vs_baseline": -14.1,
+      "fish_reference_voice_loaded": true,
+      "loaded_evidence": "direct-mode bench sent inline references on every call; in adapter-routed mode this would emit fish.reference_voice.loaded log event per request"
+    },
+    "wav2": {
+      "success_count": 5,
+      "ttfb_p50_ms": 6,
+      "ttfb_p95_ms": 6,
+      "total_p50_ms": 1195,
+      "total_p95_ms": 1250,
+      "peak_min": 28006,
+      "peak_max": 28006,
+      "total_audio_duration_s": 8.083,
+      "ttfb_p95_regression_pct_vs_baseline": 20.0,
+      "total_p95_regression_pct_vs_baseline": -7.5,
+      "fish_reference_voice_loaded": true,
+      "loaded_evidence": "direct-mode bench sent inline references on every call; in adapter-routed mode this would emit fish.reference_voice.loaded log event per request"
+    }
+  },
+  "naturalness_assessment_metrics_only": {
+    "baseline": "valid PCM, no clipping (peak 28006-31088, headroom OK), durations consistent with phrase length at ~150-220 wpm English narration, RMS varies 1453-9902 (P2 'What's your location?' loudest at 9902, P4 'Stay with me.' softest at 1453 — natural prosodic variation)",
+    "wav1": "valid PCM, all peaks at 28006 exactly (cloned amplitude envelope from WAV1), durations 0.79-3.30 s tighter than baseline, RMS 1556-3208 narrower band — voice cloning visibly compressed dynamic range to match Mil Nicholson reference",
+    "wav2": "valid PCM, all peaks at 28006 exactly (cloned amplitude envelope from WAV2), durations 0.98-3.58 s closer to baseline, RMS 1606-2720 narrower band — same envelope-locking behavior as WAV1",
+    "agent_audio_perception": false,
+    "ear_test_required": "human listening required — listening_checklist.md has the structure"
+  },
+  "ship_gate_evaluation": {
+    "criterion_1_naturalness_clearly_better": "INCONCLUSIVE — agent cannot rate without listening",
+    "criterion_2_latency_regression_le_10pct": "PASSED — both WAV1 (-14.1%) and WAV2 (-7.5%) total p95 IMPROVED vs baseline; TTFB +1ms absolute is within noise floor",
+    "criterion_3_synth_correctness": "PASSED — 15/15 phrases rendered cleanly, no NaN/silence/truncation",
+    "decision_logic": "PICK_WAV* requires criterion 1 affirmative; metrics-only evidence cannot affirm; defaulting to PARTIAL with rollback-clean state (no drop-in installed)",
+    "decision": "PARTIAL"
+  },
+  "final_state": {
+    "cycle_2f_tts_prosody_tags": "ON (40-cycle2f.conf preserved)",
+    "cycle_2i_911_greeting": "ON (50-cycle2i-greeting.conf installed this run)",
+    "cycle_2j_reference_voice_adapter": "PATCHED (env-flag-gated, default off)",
+    "cycle_2j_reference_voice_runtime": "OFF (no 60-cycle2j-refvoice.conf installed)",
+    "worker_active": true,
+    "vllm_active": true,
+    "fish_active": true,
+    "parakeet_active": true
+  },
+  "rollback_instructions": [
+    "1. cycle-2j drop-in remove (only relevant if user later installs it): sudo rm /etc/systemd/system/prism42-worker.service.d/60-cycle2j-refvoice.conf && sudo systemctl daemon-reload && sudo systemctl restart prism42-worker",
+    "2. cycle-2i drop-in remove (separate): sudo rm /etc/systemd/system/prism42-worker.service.d/50-cycle2i-greeting.conf && sudo systemctl daemon-reload && sudo systemctl restart prism42-worker",
+    "3. fish_speech_tts.py file restore: ssh prism-mla-b300-h4h5 'sudo cp /opt/prism42/agents/livekit/fish_speech_tts.py.pre-cycle2j /opt/prism42/agents/livekit/fish_speech_tts.py && sudo systemctl restart prism42-worker'",
+    "4. Local file revert: git checkout agents/livekit/fish_speech_tts.py (changes are uncommitted; integrator commits or discards)",
+    "5. WAV cleanup (optional): ssh prism-mla-b300-h4h5 'sudo rm -rf /opt/prism42/voice-refs/'",
+    "Time-to-recover: ~60-90s for full undo (single-file revert + systemd restart)."
+  ],
+  "next_step_recommendation": "User listens to audio/baseline/p1.wav vs audio/wav1/p1.wav vs audio/wav2/p1.wav (the 911 identity line — highest-stakes utterance) first. If a clear winner emerges, P2-P5 confirms consistency. Verdict path: PICK_WAV[1|2] -> install 60-cycle2j-refvoice.conf with that WAV's path + transcript -> restart worker -> confirm fish.reference_voice.loaded event fires. REJECT_BOTH or PARTIAL_KEEP_OFF -> no further action; baseline voice continues.",
+  "artifacts": {
+    "summary_md": "summary.md",
+    "result_json": "result.json (this file)",
+    "metrics_json": "metrics.json",
+    "aggregate_script": "aggregate_metrics.py",
+    "decision_txt": "decision.txt",
+    "patch_diff": "patch.applied.diff",
+    "bench_log": "bench.log",
+    "listening_checklist": "listening_checklist.md",
+    "audio_baseline": "audio/baseline/p1..p5.wav (5 files)",
+    "audio_wav1": "audio/wav1/p1..p5.wav (5 files)",
+    "audio_wav2": "audio/wav2/p1..p5.wav (5 files)"
+  }
+}

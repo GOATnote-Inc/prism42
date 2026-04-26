@@ -27,6 +27,15 @@ log = structlog.get_logger()
 
 DEFAULT_URL = os.environ.get("FISH_SPEECH_URL", "http://127.0.0.1:9200")
 DEFAULT_REFERENCE_ID = os.environ.get("FISH_SPEECH_REFERENCE_ID", "")
+# Cycle-2j: per-request inline reference voice. Two-knob design — audio
+# bytes come from a path on disk (read at request time); transcript comes
+# from a separate env so we don't embed a paragraph in a systemd unit.
+# Mutex with reference_id is enforced at the engine
+# (vendor/.../inference_engine/__init__.py:48-57); when both are set the
+# engine silently drops `references`. The adapter mirrors that contract:
+# Site-3 below skips inline assembly when reference_id is truthy.
+DEFAULT_REFERENCE_AUDIO_PATH = os.environ.get("PRISM42_FISH_REFERENCE_AUDIO", "").strip() or None
+DEFAULT_REFERENCE_AUDIO_TEXT = os.environ.get("PRISM42_FISH_REFERENCE_TEXT", "").strip() or None
 SAMPLE_RATE = 44_100
 CHANNELS = 1
 
@@ -35,6 +44,14 @@ CHANNELS = 1
 class FishSpeechOptions:
     url: str = DEFAULT_URL
     reference_id: str = DEFAULT_REFERENCE_ID
+    # Cycle-2j: optional inline reference audio. Path defaults to
+    # PRISM42_FISH_REFERENCE_AUDIO env (file is read at request-time, not
+    # at module import). Text is the verbatim transcript of that audio
+    # (PRISM42_FISH_REFERENCE_TEXT). Both must be set, AND reference_id
+    # must be empty, for inline references to actually go on the wire —
+    # see _run() body construction.
+    reference_audio_path: str | None = DEFAULT_REFERENCE_AUDIO_PATH
+    reference_audio_text: str | None = DEFAULT_REFERENCE_AUDIO_TEXT
     # chunk_length = semantic-token chunk size. Fish's ServeTTSRequest
     # Pydantic schema enforces 100 <= chunk_length <= 1000 — values below
     # 100 (we previously tried 50) return 422. 200 is the schema default.
@@ -132,6 +149,38 @@ class _FishSpeechStream(tts.ChunkedStream):
             stream=False,
             frame_size_ms=_frame_ms,
         )
+        # Cycle-2j: build inline references list when path+text are set
+        # AND reference_id is empty. Engine semantics: when reference_id
+        # is non-None, `references` is silently dropped
+        # (vendor/.../inference_engine/__init__.py:48-57). Mirror that.
+        references_payload: list[dict] = []
+        if (
+            not self._opts.reference_id
+            and self._opts.reference_audio_path
+            and self._opts.reference_audio_text
+        ):
+            try:
+                with open(self._opts.reference_audio_path, "rb") as f:
+                    audio_bytes = f.read()
+                references_payload = [
+                    {
+                        "audio": audio_bytes,
+                        "text": self._opts.reference_audio_text,
+                    }
+                ]
+                log.info(
+                    "fish.reference_voice.loaded",
+                    path=self._opts.reference_audio_path,
+                    bytes=len(audio_bytes),
+                    text_chars=len(self._opts.reference_audio_text),
+                )
+            except OSError as e:
+                log.warning(
+                    "fish.reference_voice.load_failed",
+                    path=self._opts.reference_audio_path,
+                    error=str(e)[:200],
+                )
+                references_payload = []
         body = {
             "text": self._text,
             # Fish Speech upstream rejects "pcm" with 500 "Unknown format"; only
@@ -152,7 +201,7 @@ class _FishSpeechStream(tts.ChunkedStream):
             # voice samples into the current response).
             "use_memory_cache": "on",
             "seed": self._opts.seed,
-            "references": [],
+            "references": references_payload,
         }
         if self._opts.reference_id:
             body["reference_id"] = self._opts.reference_id
