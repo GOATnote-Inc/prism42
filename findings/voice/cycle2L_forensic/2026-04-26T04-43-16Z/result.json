@@ -1,0 +1,131 @@
+{
+  "cycle": "2L",
+  "purpose": "test psap-fast preset (Lever A) and comma-to-period adapter (Lever B) \u2014 alone and combined",
+  "phrases": [
+    "Nine one one, where is your emergency?",
+    "What's your location?",
+    "Are they breathing?",
+    "Stay with me.",
+    "Help is on the way."
+  ],
+  "conditions": {
+    "A": {
+      "label": "A_baseline",
+      "description": "psap baseline (no levers)",
+      "reference_id": "psap",
+      "pace_tag": "",
+      "comma_to_period": false,
+      "success_rate": "5/5",
+      "ttfb_p50_ms": 2.93,
+      "ttfb_p95_ms": 3.62,
+      "ttfb_max_ms": 3.78,
+      "total_render_p50_ms": 1131.01,
+      "audio_duration_p50_s": 1.161,
+      "wpm_p50": 184.5,
+      "wpm_p1": 161.5,
+      "wpm_p5": 248.4,
+      "per_phrase_wpm": {
+        "P1": 161.5,
+        "P2": 155.0,
+        "P3": 215.2,
+        "P4": 184.5,
+        "P5": 248.4
+      },
+      "audio_band_min_max_s": [
+        0.836,
+        2.601
+      ]
+    },
+    "B": {
+      "label": "B_psap_fast",
+      "description": "psap-fast preset (Lever A)",
+      "reference_id": "psap-fast",
+      "pace_tag": "",
+      "comma_to_period": false,
+      "success_rate": "5/5",
+      "ttfb_p50_ms": 2.68,
+      "ttfb_p95_ms": 43.31,
+      "ttfb_max_ms": 53.3,
+      "total_render_p50_ms": 1013.79,
+      "audio_duration_p50_s": 0.976,
+      "wpm_p50": 258.2,
+      "wpm_p1": 210.3,
+      "wpm_p5": 307.5,
+      "per_phrase_wpm": {
+        "P1": 210.3,
+        "P2": 184.5,
+        "P3": 258.2,
+        "P4": 258.2,
+        "P5": 307.5
+      },
+      "audio_band_min_max_s": [
+        0.697,
+        1.997
+      ]
+    },
+    "C": {
+      "label": "C_psap_commafix",
+      "description": "psap + comma-to-period (Lever B)",
+      "reference_id": "psap",
+      "pace_tag": "",
+      "comma_to_period": true,
+      "success_rate": "5/5",
+      "ttfb_p50_ms": 2.68,
+      "ttfb_p95_ms": 3.59,
+      "ttfb_max_ms": 3.81,
+      "total_render_p50_ms": 1138.47,
+      "audio_duration_p50_s": 1.161,
+      "wpm_p50": 184.5,
+      "wpm_p1": 164.4,
+      "wpm_p5": 248.4,
+      "per_phrase_wpm": {
+        "P1": 164.4,
+        "P2": 155.0,
+        "P3": 215.2,
+        "P4": 184.5,
+        "P5": 248.4
+      },
+      "audio_band_min_max_s": [
+        0.836,
+        2.555
+      ]
+    },
+    "D": {
+      "label": "D_psap_fast_commafix",
+      "description": "psap-fast + comma-to-period (Lever A+B)",
+      "reference_id": "psap-fast",
+      "pace_tag": "",
+      "comma_to_period": true,
+      "success_rate": "5/5",
+      "ttfb_p50_ms": 2.77,
+      "ttfb_p95_ms": 3.3,
+      "ttfb_max_ms": 3.32,
+      "total_render_p50_ms": 1014.72,
+      "audio_duration_p50_s": 0.976,
+      "wpm_p50": 258.2,
+      "wpm_p1": 210.3,
+      "wpm_p5": 307.5,
+      "per_phrase_wpm": {
+        "P1": 210.3,
+        "P2": 184.5,
+        "P3": 258.2,
+        "P4": 258.2,
+        "P5": 307.5
+      },
+      "audio_band_min_max_s": [
+        0.697,
+        1.997
+      ]
+    }
+  },
+  "decision": "PICK_B (P1 wpm=210.3 vs A=161.5, lift=48.8)",
+  "winner": "B",
+  "rollback_instructions": [
+    "1. (No drop-ins were applied to worker \u2014 bench was direct-to-Fish HTTP.)",
+    "2. (If drop-ins were ever added) sudo rm /etc/systemd/system/prism42-worker.service.d/{80-cycle2L-refid,81-cycle2L-comma}.conf",
+    "3. sudo systemctl daemon-reload && sudo systemctl restart prism42-worker",
+    "4. sudo cp /opt/prism42/agents/livekit/fish_speech_tts.py.pre-cycle2L /opt/prism42/agents/livekit/fish_speech_tts.py",
+    "5. sudo systemctl restart prism42-worker (only needed if Lever B was activated via env-var)",
+    "6. Verify: curl -sf http://localhost:9200/v1/health && systemctl is-active prism42-worker"
+  ]
+}

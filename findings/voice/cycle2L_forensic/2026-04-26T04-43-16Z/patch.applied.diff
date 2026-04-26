@@ -1,0 +1,17 @@
+--- /tmp/fish_speech_tts.py.pod-baseline	2026-04-25 21:43:08
++++ /tmp/fish_speech_tts.py.cycle2k	2026-04-25 21:43:08
+@@ -196,6 +196,14 @@
+         # string = no prefix (preserves cycle-2j baseline byte-for-byte).
+         _pace_tag = os.environ.get("PRISM42_FISH_PACE_TAG", "").strip()
+         text_with_tag = f"{_pace_tag} {self._text}" if _pace_tag else self._text
++        # Cycle-2L Lever B: comma-to-period at adapter (K-A R3). Replaces
++        # `,\s*` with `. ` so Fish sees clause-break punctuation it natively
++        # paces faster than commas. Default OFF; when
++        # PRISM42_FISH_COMMA_TO_PERIOD=1, applied AFTER pace-tag wrap so a
++        # tag like "[urgent]" is preserved untouched (no comma in tag).
++        if os.environ.get("PRISM42_FISH_COMMA_TO_PERIOD", "").strip() == "1":
++            import re as _re_cycle2L
++            text_with_tag = _re_cycle2L.sub(r",\s*", ". ", text_with_tag)
+         body = {
+             "text": text_with_tag,
+             # Fish Speech upstream rejects "pcm" with 500 "Unknown format"; only
