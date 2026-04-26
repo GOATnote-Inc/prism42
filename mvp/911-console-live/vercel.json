@@ -15,5 +15,23 @@
     "app/prism42/api/session/[id]/stream/route.ts": {
       "maxDuration": 300
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/prism42/livekit",
+      "permanent": false,
+      "has": [
+        { "type": "host", "value": "prism42-app.thegoatnote.com" }
+      ]
+    },
+    {
+      "source": "/prism42",
+      "destination": "/prism42/livekit",
+      "permanent": false,
+      "has": [
+        { "type": "host", "value": "prism42-app.thegoatnote.com" }
+      ]
+    }
+  ]
 }
