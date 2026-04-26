@@ -27,6 +27,7 @@ import {
   Soundbar,
   Sparkline,
 } from "@/components/b300/Primitives";
+import { DispatchPanel, type DispatchEvent } from "@/components/DispatchPanel";
 import type {
   PsapAlert,
   PsapPhase,
@@ -107,6 +108,13 @@ export default function LiveKitDispatcherPage() {
   // `b3-latency` LiveKit data channel; fed through LatencyTap in
   // LiveCallRoom). Null until the first turn completes.
   const [latency, setLatency] = useState<LatencyTelemetry | null>(null);
+  // Latest dispatch-track event (cycle-2R, Team F). Forwarded into
+  // <DispatchPanel /> which owns the reducer. Each new ref-identical
+  // event drives a single reducer dispatch in the panel.
+  const [dispatchEvent, setDispatchEvent] = useState<DispatchEvent | null>(null);
+  const fixtureMode =
+    typeof process !== "undefined" &&
+    process.env.NEXT_PUBLIC_DISPATCH_FIXTURE_MODE === "1";
   // Active tab within the console (V1 Command Center / V2 Soundbar-
   // forward / V3 MCI / V4 Vision). Swapped client-side; LiveCallRoom
   // is mounted once in V1 so the voice session survives tab switches.
@@ -214,20 +222,10 @@ export default function LiveKitDispatcherPage() {
   const latestGrade = grades[grades.length - 1];
   const focusedMock = MOCK_CALLS.find((c) => c.focus)!;
 
-  // Map SSE turns into transcript rows for the center panel. Every
-  // PsapTurn in the stream is a dispatcher-side (AI) turn — caller
-  // utterances arrive via the LiveKit audio stream, not as SSE turns.
-  const liveTurns = useMemo(
-    () =>
-      turns.slice(-8).map((t) => ({
-        text: t.content ?? "(no caller-facing content)",
-        agent: t.agent,
-        action: t.action,
-        verify: t.self_verify.all_passed,
-        cites: t.cites,
-      })),
-    [turns],
-  );
+  // NOTE: cycle-2R replaced the chat-bubble transcript with the
+  // <DispatchPanel /> which subscribes directly to the prism42.dispatch
+  // LiveKit data channel. The SSE-driven `turns` stream is still used
+  // by other tabs (V2/V3/V4) and by the rubric/grade plane below.
 
   return (
     <div className="b3-console">
@@ -367,67 +365,28 @@ export default function LiveKitDispatcherPage() {
             </div>
           </div>
 
-          {/* TRANSCRIPT — live from SSE, falls back to a status line */}
-          <div className="b3-panel b3-transcript-panel">
-            <div className="b3-panel-hd">
-              <span className="b3-hd-t">TRANSCRIPT · STREAMING</span>
-              <span className="b3-hd-s">
-                {turns.length} turns · state {sseState}
-              </span>
+          {/* DISPATCH PANEL — cycle-2R, Team F. Replaces the previous
+              chat-bubble transcript block with a PSAP-CAD-style turn-by-turn
+              console. Hydrates from the prism42.dispatch LiveKit data
+              channel (forwarded via VoiceHost → LiveCallRoom →
+              DispatchSubscription → setDispatchEvent → externalEvent
+              prop). In fixture mode, replays the cardiac-arrest demo.
+              See findings/voice/cycle2R_livekit_selfhost/team-f/design.md. */}
+          <DispatchPanel externalEvent={dispatchEvent} />
+          {fixtureMode && (
+            <div
+              className="b3-panel"
+              style={{
+                padding: "8px 12px",
+                fontSize: 10,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--b3-amber)",
+              }}
+            >
+              dispatch fixture mode active · NEXT_PUBLIC_DISPATCH_FIXTURE_MODE=1
             </div>
-            <div className="b3-transcript-body">
-              {liveTurns.length === 0 && (
-                <div className="b3-transcript-empty">
-                  Session initialized. Waiting for the first caller
-                  utterance. When the voice call begins, turns will
-                  stream in from the SSE session endpoint.
-                </div>
-              )}
-              {liveTurns.map((turn, i) => (
-                <div
-                  key={i}
-                  className="b3-turn-row"
-                  style={{
-                    background: "rgba(255,255,255,0.02)",
-                  }}
-                >
-                  <span
-                    className="b3-turn-bar"
-                    style={{ background: "var(--b3-hot)" }}
-                  />
-                  <span
-                    className="b3-turn-tag"
-                    style={{ color: "var(--b3-hot)" }}
-                  >
-                    t{i + 1} · {turn.agent}
-                  </span>
-                  <div
-                    className="b3-turn-text"
-                    style={{ color: "var(--b3-text)" }}
-                  >
-                    <span className="b3-turn-action">
-                      {turn.action}:
-                    </span>{" "}
-                    {turn.text}
-                    {!turn.verify && (
-                      <span className="b3-turn-verify-fail">
-                        · verify FAIL
-                      </span>
-                    )}
-                    {turn.cites.length > 0 && (
-                      <span className="b3-turn-cites">
-                        {" · "}
-                        {turn.cites.slice(0, 2).join(" · ")}
-                      </span>
-                    )}
-                  </div>
-                  <span className="b3-turn-lat">
-                    {turn.verify ? "ok" : "—"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Dispatcher action bar (static mock) */}
           <div className="b3-action-row">
@@ -656,6 +615,7 @@ export default function LiveKitDispatcherPage() {
         sessionId={sessionId}
         onRoomLiveChange={setRoomLive}
         onLatency={setLatency}
+        onDispatchEvent={setDispatchEvent}
       />
 
       {/* FOOTER */}
@@ -800,11 +760,13 @@ function VoiceHost({
   sessionId,
   onRoomLiveChange,
   onLatency,
+  onDispatchEvent,
 }: {
   voiceHost: HTMLElement | null;
   sessionId: string | null;
   onRoomLiveChange: (live: boolean) => void;
   onLatency: (l: LatencyTelemetry) => void;
+  onDispatchEvent: (ev: DispatchEvent) => void;
 }) {
   const fallbackRef = useRef<HTMLDivElement | null>(null);
   const [fallbackEl, setFallbackEl] = useState<HTMLElement | null>(null);
@@ -829,6 +791,7 @@ function VoiceHost({
             sessionId={sessionId}
             onRoomLiveChange={onRoomLiveChange}
             onLatency={onLatency}
+            onDispatchEvent={onDispatchEvent}
           />,
           target,
         )}

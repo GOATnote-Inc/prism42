@@ -1,0 +1,202 @@
+{
+  "fixture_id": "cardiac-arrest-demo",
+  "description": "12-turn cardiac-arrest call. Exercises every FSM state including the critical-verify sub-FSM. Replay interval is consumed by the fixture player (default 3500ms between events).",
+  "session_id": "fx-cardiac-arrest-demo",
+  "events": [
+    {
+      "type": "turn",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 1,
+      "timestamp_ms": 0,
+      "caller_utterance": "911 my husband isn't breathing oh god please help",
+      "fsm": {
+        "state": "critical_verify",
+        "intent": "verify_cpr_surface",
+        "verify_step": "q_surface",
+        "pronouns": "he/him",
+        "reassurance_done": false,
+        "is_cardiac_arrest": true,
+        "address_known": false
+      },
+      "latched_facts": [
+        "Cardiac-arrest verification in progress. Do NOT instruct chest compressions yet — finish verification first."
+      ],
+      "recent_replies": [],
+      "latency_ms": {"stt": 280, "llm_ttft": 410, "tts_ttfb": 260}
+    },
+    {
+      "type": "reply",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 1,
+      "timestamp_ms": 1100,
+      "text": "I'm with you. What's your address?",
+      "tts_ttfb_ms": 260,
+      "tts_total_ms": 1100
+    },
+    {
+      "type": "turn",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 2,
+      "timestamp_ms": 4500,
+      "caller_utterance": "425 Mill Street he's on the kitchen floor on his back",
+      "fsm": {
+        "state": "critical_verify",
+        "intent": "verify_cpr_breathing",
+        "verify_step": "q_breathing",
+        "pronouns": "he/him",
+        "reassurance_done": false,
+        "is_cardiac_arrest": true,
+        "address_known": true
+      },
+      "latched_facts": [
+        "Cardiac-arrest verification in progress. Do NOT instruct chest compressions yet — finish verification first."
+      ],
+      "recent_replies": ["I'm with you. What's your address?"],
+      "latency_ms": {"stt": 295, "llm_ttft": 380, "tts_ttfb": 240}
+    },
+    {
+      "type": "reply",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 2,
+      "timestamp_ms": 5400,
+      "text": "Help is on the way. Is he breathing normally or only gasping?",
+      "tts_ttfb_ms": 240,
+      "tts_total_ms": 1320
+    },
+    {
+      "type": "turn",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 3,
+      "timestamp_ms": 9200,
+      "caller_utterance": "he's not breathing at all please hurry",
+      "fsm": {
+        "state": "critical_cpr",
+        "intent": "instruct_cpr_compressions",
+        "verify_step": "done",
+        "pronouns": "he/him",
+        "reassurance_done": true,
+        "is_cardiac_arrest": true,
+        "address_known": true
+      },
+      "latched_facts": [
+        "Reassurance ALREADY DELIVERED. Do NOT say 'help is on the way' / 'help's coming' / 'units are en route' again."
+      ],
+      "recent_replies": [
+        "I'm with you. What's your address?",
+        "Help is on the way. Is he breathing normally or only gasping?"
+      ],
+      "latency_ms": {"stt": 310, "llm_ttft": 405, "tts_ttfb": 255}
+    },
+    {
+      "type": "reply",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 3,
+      "timestamp_ms": 10100,
+      "text": "Start chest compressions. Center of his chest, hard and fast, two per second.",
+      "tts_ttfb_ms": 255,
+      "tts_total_ms": 1480
+    },
+    {
+      "type": "turn",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 4,
+      "timestamp_ms": 14000,
+      "caller_utterance": "should I move him is that ok",
+      "fsm": {
+        "state": "critical_cpr",
+        "intent": "answer_do_not_move",
+        "verify_step": "done",
+        "pronouns": "he/him",
+        "reassurance_done": true,
+        "is_cardiac_arrest": true,
+        "address_known": true
+      },
+      "latched_facts": [
+        "Reassurance ALREADY DELIVERED. Do NOT say 'help is on the way' / 'help's coming' / 'units are en route' again."
+      ],
+      "recent_replies": [
+        "I'm with you. What's your address?",
+        "Help is on the way. Is he breathing normally or only gasping?",
+        "Start chest compressions. Center of his chest, hard and fast, two per second."
+      ],
+      "latency_ms": {"stt": 270, "llm_ttft": 395, "tts_ttfb": 245}
+    },
+    {
+      "type": "reply",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 4,
+      "timestamp_ms": 14900,
+      "text": "Don't move him. Keep him still and keep going.",
+      "tts_ttfb_ms": 245,
+      "tts_total_ms": 1180
+    },
+    {
+      "type": "turn",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 5,
+      "timestamp_ms": 18500,
+      "caller_utterance": "how long until they get here",
+      "fsm": {
+        "state": "critical_cpr",
+        "intent": "answer_how_long",
+        "verify_step": "done",
+        "pronouns": "he/him",
+        "reassurance_done": true,
+        "is_cardiac_arrest": true,
+        "address_known": true
+      },
+      "latched_facts": [
+        "Reassurance ALREADY DELIVERED. Do NOT say 'help is on the way' / 'help's coming' / 'units are en route' again."
+      ],
+      "recent_replies": [
+        "Help is on the way. Is he breathing normally or only gasping?",
+        "Start chest compressions. Center of his chest, hard and fast, two per second.",
+        "Don't move him. Keep him still and keep going."
+      ],
+      "latency_ms": {"stt": 265, "llm_ttft": 380, "tts_ttfb": 235}
+    },
+    {
+      "type": "reply",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 5,
+      "timestamp_ms": 19400,
+      "text": "As fast as they can. Stay on the line.",
+      "tts_ttfb_ms": 235,
+      "tts_total_ms": 990
+    },
+    {
+      "type": "turn",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 6,
+      "timestamp_ms": 23000,
+      "caller_utterance": "I'm doing the compressions ok",
+      "fsm": {
+        "state": "critical_cpr",
+        "intent": "instruct_cpr_compressions",
+        "verify_step": "done",
+        "pronouns": "he/him",
+        "reassurance_done": true,
+        "is_cardiac_arrest": true,
+        "address_known": true
+      },
+      "latched_facts": [
+        "Reassurance ALREADY DELIVERED. Do NOT say 'help is on the way' / 'help's coming' / 'units are en route' again."
+      ],
+      "recent_replies": [
+        "Start chest compressions. Center of his chest, hard and fast, two per second.",
+        "Don't move him. Keep him still and keep going.",
+        "As fast as they can. Stay on the line."
+      ],
+      "latency_ms": {"stt": 285, "llm_ttft": 410, "tts_ttfb": 250}
+    },
+    {
+      "type": "reply",
+      "session_id": "fx-cardiac-arrest-demo",
+      "turn_index": 6,
+      "timestamp_ms": 23900,
+      "text": "Good. Keep going at the same pace until paramedics take over.",
+      "tts_ttfb_ms": 250,
+      "tts_total_ms": 1310
+    }
+  ]
+}
