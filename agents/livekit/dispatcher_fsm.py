@@ -523,6 +523,14 @@ class DispatcherFSM:
     reassurance_done: bool = False
     surface_confirmed: bool = False
     breathing_assessed: bool = False
+    # Cycle-2D13 LIFE-SAFETY: breathing_assessed alone is "we asked the
+    # question and got an answer" — NOT "patient is in arrest." The
+    # quality of the answer determines CPR-safe. 'absent' and 'agonal'
+    # are arrest indicators (CPR safe). 'normal' is NOT arrest — CPR
+    # MUST be blocked. Without this distinction, "breathing normally"
+    # caller answer would falsely permit compressions.
+    # Values: None (unknown), 'absent', 'agonal', 'normal'.
+    breathing_quality: str | None = None
     is_cardiac_arrest: bool = False
     # Pronouns. 'unknown' until caller commits.
     pronouns: str = "unknown"  # 'unknown' | 'they' | 'he/him' | 'she/her'
@@ -599,32 +607,36 @@ class DispatcherFSM:
         ):
             f.floor_negation = True
 
-        # Cycle-2D3: breathing-verify "no" / "not at all" handler.
-        # Caller has been asked "Are they breathing normally, or only
-        # gasping?" If they answer with "not breathing at all" / "no" /
-        # "negative" / "nothing" → the answer to MPDS-9 V2 is "absent"
-        # which IS a confirmed cardiac arrest indicator. Latch
-        # breathing_assessed=True and let the next intent advance to
-        # INSTRUCT_CPR_BEGIN. Without this, the FSM repeats VERIFY_BREATHING
-        # because not_breathing alone never set breathing_assessed
-        # (the gap was: breathing_assessed only fired on positive cues
-        # gasping/breathing_normal).
+        # Cycle-2D3 + 2D13 LIFE-SAFETY: breathing-verify answer handler.
+        # When asked "Are they breathing normally, or only gasping?",
+        # the answer determines whether CPR is appropriate:
+        #   'normal'  -> patient breathing -> CPR FORBIDDEN
+        #   'agonal'  -> agonal gasps      -> CPR indicated (per AHA)
+        #   'absent'  -> not breathing     -> CPR indicated
+        # The breathing_quality latch carries this distinction; the
+        # response_gate.cpr_safe() reads it. Without quality tracking,
+        # "Breathing normally" would falsely set breathing_assessed and
+        # permit compressions on a breathing patient.
         if (
             self.last_intent == Intent.VERIFY_BREATHING
             and self.state == State.CRITICAL_VERIFY
             and not self.breathing_assessed
-            and (
-                f.not_breathing
-                or f.gasping
-                or f.breathing_normal
-                or _RE_BARE_NO_SURFACE.match(utterance)  # "no" / "nothing" — same regex shape
-            )
         ):
-            self.breathing_assessed = True
-            log.info("fsm.breathing_assessed_mid_verify",
-                     not_breathing=f.not_breathing,
-                     gasping=f.gasping,
-                     breathing_normal=f.breathing_normal)
+            new_quality: str | None = None
+            if f.breathing_normal:
+                new_quality = "normal"
+            elif f.gasping:
+                new_quality = "agonal"
+            elif f.not_breathing or _RE_BARE_NO_SURFACE.match(utterance):
+                new_quality = "absent"
+            if new_quality is not None:
+                self.breathing_assessed = True
+                self.breathing_quality = new_quality
+                log.info("fsm.breathing_assessed_mid_verify",
+                         breathing_quality=new_quality,
+                         not_breathing=f.not_breathing,
+                         gasping=f.gasping,
+                         breathing_normal=f.breathing_normal)
 
         # Pronoun commit (only on explicit signal).
         if self.pronouns == "unknown":
@@ -742,6 +754,10 @@ class DispatcherFSM:
                 # need to confirm because callers often miss agonal
                 # gasps. Pre-fill ONLY on gasping/normal signals.
                 self.breathing_assessed = True
+                # Cycle-2D13: also latch breathing_quality so cpr_safe()
+                # can distinguish 'normal' (CPR forbidden) from 'agonal'
+                # (CPR indicated).
+                self.breathing_quality = "normal" if f.breathing_normal else "agonal"
             return self._intent_in_verify(f, t0)
 
         # ----- Normal phase machine -----
@@ -962,7 +978,22 @@ class DispatcherFSM:
         if not self.breathing_assessed:
             self.verify_step = VerifyStep.Q_BREATHING
             return self._record(Intent.VERIFY_BREATHING, t0)
-        # Both confirmed.
+        # Cycle-2D13 LIFE-SAFETY: caller said "breathing normally".
+        # Patient is NOT in cardiac arrest. CPR would harm them.
+        # Un-latch is_cardiac_arrest, exit CRITICAL_VERIFY, route to
+        # KEY_QUESTIONS for the actual complaint (most often trauma
+        # in this context — the original "not breathing" cue was a
+        # caller mishear or panic). This is the safety gate that
+        # prevents compressions on a breathing patient.
+        if self.breathing_quality == "normal":
+            log.warning("fsm.cpr_blocked_normal_breathing",
+                        breathing_quality=self.breathing_quality,
+                        complaint=self.complaint)
+            self.is_cardiac_arrest = False
+            self.state = State.KEY_QUESTIONS
+            self.verify_step = VerifyStep.DONE
+            return self._intent_in_key_questions(f, t0)
+        # Both confirmed and quality is arrest-indicating.
         self.state = State.CRITICAL_CPR
         self.verify_step = VerifyStep.DONE
         return self._record(Intent.INSTRUCT_CPR_BEGIN, t0)

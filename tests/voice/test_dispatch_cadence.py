@@ -593,6 +593,101 @@ def test_cpr_coaching_alternates_with_closeout():
     assert i6 == Intent.CLOSEOUT  # alternation continues
 
 
+# ------------------------------------------------------------------
+# Cycle-2D13 LIFE-SAFETY — breathing_quality gate blocks CPR on
+#                          a breathing patient
+# ------------------------------------------------------------------
+
+
+def test_breathing_normally_blocks_cpr_LIFE_SAFETY():
+    """RED-FLAG bug from user attestation 2026-04-26 15:19: caller's
+    initial turn said "not breathing good" -> cardiac short-circuit
+    fired. Surface confirmed. Caller's breathing-verify answer was
+    "Breathing normally." FSM still emitted INSTRUCT_CPR_BEGIN
+    ("Push hard and fast..."), which would harm a breathing patient.
+
+    Cycle-2D13 fix: breathing_quality latch carries the answer's
+    content. Quality='normal' un-latches is_cardiac_arrest, exits
+    CRITICAL_VERIFY, and routes to KEY_QUESTIONS. cpr_safe() also
+    requires breathing_quality in ('absent', 'agonal').
+
+    THIS TEST IS A SAFETY GATE. DO NOT WEAKEN. Per CLAUDE.md §10,
+    physician sign-off (Brandon Dent, MD) on every life-safety code
+    path. Removing or weakening this assertion violates the gate.
+    """
+    from response_gate import ResponseGate
+    fsm = DispatcherFSM()
+    fsm.transition("100 main st")
+    fsm.transition(
+        "uh tornado came and something fell on my dad's chest "
+        "and he's not breathing good"
+    )
+    # Cardiac short-circuit fires.
+    assert fsm.state == State.CRITICAL_VERIFY
+    assert fsm.is_cardiac_arrest is True
+
+    # Caller confirms surface.
+    fsm.transition("yes on the floor on his back")
+    assert fsm.surface_confirmed is True
+
+    # Caller answers breathing-verify with "Breathing normally."
+    intent = fsm.transition("breathing normally")
+    assert fsm.breathing_quality == "normal", (
+        f"breathing_quality must latch 'normal' on the caller's answer. "
+        f"Got {fsm.breathing_quality!r}"
+    )
+    # CRITICAL: FSM must NOT advance to CRITICAL_CPR.
+    assert fsm.state != State.CRITICAL_CPR, (
+        f"FSM advanced to CRITICAL_CPR with breathing_quality=normal. "
+        f"This is a LIFE-SAFETY VIOLATION. Got state={fsm.state}"
+    )
+    assert intent != Intent.INSTRUCT_CPR_BEGIN, (
+        f"FSM emitted INSTRUCT_CPR_BEGIN on a breathing patient. "
+        f"This would cause harm. Got intent={intent}"
+    )
+    # is_cardiac_arrest must un-latch.
+    assert fsm.is_cardiac_arrest is False, (
+        f"is_cardiac_arrest must un-latch when breathing_quality='normal'. "
+        f"Got {fsm.is_cardiac_arrest}"
+    )
+    # Defense-in-depth: gate's cpr_safe() must also block.
+    gate = ResponseGate(fsm=fsm)
+    assert gate.cpr_safe() is False, (
+        "ResponseGate.cpr_safe() must return False when "
+        "breathing_quality='normal'. This is the LAST safety layer."
+    )
+
+
+def test_breathing_quality_agonal_permits_cpr():
+    """Agonal gasping IS an arrest indicator per AHA. CPR permitted."""
+    from response_gate import ResponseGate
+    fsm = DispatcherFSM()
+    fsm.is_cardiac_arrest = True
+    fsm.surface_confirmed = True
+    fsm.state = State.CRITICAL_VERIFY
+    fsm.last_intent = Intent.VERIFY_BREATHING
+
+    fsm.transition("only gasping")
+    assert fsm.breathing_quality == "agonal"
+    gate = ResponseGate(fsm=fsm)
+    assert gate.cpr_safe() is True
+
+
+def test_breathing_quality_absent_permits_cpr():
+    """'Not breathing' / bare-no answer to verify-breathing → CPR permitted."""
+    from response_gate import ResponseGate
+    fsm = DispatcherFSM()
+    fsm.is_cardiac_arrest = True
+    fsm.surface_confirmed = True
+    fsm.state = State.CRITICAL_VERIFY
+    fsm.last_intent = Intent.VERIFY_BREATHING
+
+    fsm.transition("no")  # bare-no on verify-breathing
+    assert fsm.breathing_quality == "absent"
+    gate = ResponseGate(fsm=fsm)
+    assert gate.cpr_safe() is True
+
+
 def test_e2e_user_repro_address_echoed_and_no_dead_air():
     """End-to-end: caller's screenshot scenario.
 

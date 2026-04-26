@@ -234,7 +234,18 @@ class ResponseGate:
         awake=False AND breathing=False. Mapped to FSM facts:
 
           awake=False     <-> is_cardiac_arrest=True AND surface_confirmed=True
-          breathing=False <-> breathing_assessed=True
+          breathing=False <-> breathing_assessed=True AND
+                              breathing_quality in {'absent', 'agonal'}
+
+        Cycle-2D13 LIFE-SAFETY: the original `breathing_assessed=True`
+        check was insufficient — it tracked that the question was
+        answered, not WHAT the answer was. A caller answering
+        "breathing normally" set breathing_assessed=True and would
+        falsely permit compressions on a breathing patient. The
+        breathing_quality latch carries the answer's content:
+          'normal'  -> patient is breathing -> CPR FORBIDDEN
+          'agonal'  -> agonal gasps -> CPR indicated (AHA)
+          'absent'  -> not breathing -> CPR indicated
 
         The FSM's own _intent_in_verify will ALSO route to verification
         when the latches are missing — the gate's cpr_safe() is defense
@@ -244,7 +255,17 @@ class ResponseGate:
         is_arrest = getattr(self.fsm, "is_cardiac_arrest", None) is True
         surface = getattr(self.fsm, "surface_confirmed", None) is True
         breathing_assessed = getattr(self.fsm, "breathing_assessed", None) is True
-        return is_arrest and surface and breathing_assessed
+        # Cycle-2D13: cpr_safe requires breathing_quality to be an arrest
+        # indicator. Default None (legacy) is treated as 'absent' for
+        # backward-compat, but the FSM now sets quality on every assess.
+        breathing_quality = getattr(self.fsm, "breathing_quality", None)
+        breathing_arrest = breathing_quality in ("absent", "agonal", None)
+        return (
+            is_arrest
+            and surface
+            and breathing_assessed
+            and breathing_arrest
+        )
 
     # ---- Routing -----------------------------------------------------
 
