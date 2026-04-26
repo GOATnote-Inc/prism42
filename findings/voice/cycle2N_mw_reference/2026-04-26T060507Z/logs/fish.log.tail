@@ -1,0 +1,201 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+2026-04-26 06:02:57.806 | INFO     | fish_speech.models.text2semantic.inference:generate_long:731 - GPU Memory used: 24.84 GB
+2026-04-26 06:02:57.807 | INFO     | fish_speech.inference_engine.vq_manager:decode_vq_tokens:17 - VQ features: torch.Size([10, 18])
+2026-04-26 06:02:58.039 | ERROR    | tools.server.views:tts:202 - Error in TTS generation: 
+INFO:     127.0.0.1:44162 - "POST /v1/tts HTTP/1.1" 500 Internal Server Error
+2026-04-26 06:02:58.041 | WARNING  | fish_speech.inference_engine:inference:62 - set seed: 42
+2026-04-26 06:02:58.042 | INFO     | fish_speech.models.text2semantic.inference:generate_long:611 - Split into 0 turns, grouped into 1 batches
+2026-04-26 06:02:58.042 | INFO     | fish_speech.models.text2semantic.inference:generate_long:623 - --- Sample 0, Batch 0 (12 bytes) ---
+2026-04-26 06:02:58.042 | INFO     | fish_speech.models.text2semantic.inference:generate_long:627 - Batch text: Hello world.
+2026-04-26 06:02:58.043 | INFO     | fish_speech.models.text2semantic.inference:generate_long:653 - Visualizing prompt structure:
+2026-04-26 06:02:58.043 | INFO     | fish_speech.models.text2semantic.inference:generate_long:664 - Encoded prompt shape: torch.Size([11, 23])
+[92m<|im_start|>[0m[32msystem[0m[92m
+[0m[32mconvert[0m[92m the[0m[32m provided[0m[92m text[0m[32m to[0m[92m speech[0m[32m<|im_end|>[0m[92m
+[0m[32m<|im_start|>[0m[92muser[0m[32m
+[0m[92mHello[0m[32m world[0m[92m.[0m[32m<|im_end|>[0m[92m
+[0m[32m<|im_start|>[0m[92massistant[0m[32m
+[0m[92m<|voice|>[0m
+  0%|          | 0/1023 [00:00<?, ?it/s]  0%|          | 4/1023 [00:00<00:30, 33.95it/s]  1%|          | 8/1023 [00:00<00:29, 34.01it/s]  1%|          | 12/1023 [00:00<00:29, 34.01it/s]  2%|▏         | 16/1023 [00:00<00:29, 34.02it/s]  2%|▏         | 19/1023 [00:00<00:31, 32.33it/s]
+2026-04-26 06:02:58.734 | INFO     | fish_speech.models.text2semantic.inference:generate_long:701 - Batch 0: Generated 21 tokens in 0.69 seconds, 30.38 tokens/sec
+2026-04-26 06:02:58.734 | INFO     | fish_speech.models.text2semantic.inference:generate_long:705 - Bandwidth achieved: 138.57 GB/s
+2026-04-26 06:02:58.734 | INFO     | fish_speech.models.text2semantic.inference:generate_long:731 - GPU Memory used: 24.84 GB
+2026-04-26 06:02:58.735 | INFO     | fish_speech.inference_engine.vq_manager:decode_vq_tokens:17 - VQ features: torch.Size([10, 20])
+2026-04-26 06:02:58.973 | ERROR    | tools.server.views:tts:202 - Error in TTS generation: 
+INFO:     127.0.0.1:44174 - "POST /v1/tts HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:55448 - "GET /v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60672 - "POST /v1/tts HTTP/1.1" 200 OK
+2026-04-26 06:04:10.276 | INFO     | fish_speech.inference_engine.reference_loader:load_by_id:94 - Use same references
+2026-04-26 06:04:10.277 | WARNING  | fish_speech.inference_engine:inference:62 - set seed: 42
+2026-04-26 06:04:10.279 | INFO     | fish_speech.models.text2semantic.inference:generate_long:611 - Split into 0 turns, grouped into 1 batches
+2026-04-26 06:04:10.279 | INFO     | fish_speech.models.text2semantic.inference:generate_long:623 - --- Sample 0, Batch 0 (12 bytes) ---
+2026-04-26 06:04:10.279 | INFO     | fish_speech.models.text2semantic.inference:generate_long:627 - Batch text: Hello world.
+2026-04-26 06:04:10.279 | INFO     | fish_speech.models.text2semantic.inference:generate_long:653 - Visualizing prompt structure:
+2026-04-26 06:04:10.282 | INFO     | fish_speech.models.text2semantic.inference:generate_long:664 - Encoded prompt shape: torch.Size([11, 347])
+[92m<|im_start|>[0m[32msystem[0m[92m
+[0m[32mconvert[0m[92m the[0m[32m provided[0m[92m text[0m[32m to[0m[92m speech[0m[32m reference[0m[92m to[0m[32m the[0m[92m following[0m[32m:
+
+[0m[92mText[0m[32m:
+[0m[92m<[0m[32m|[0m[92mspeaker[0m[32m:[0m[92m0[0m[32m|[0m[92m>[0m[32mNine[0m[92m one[0m[32m one[0m[92m,[0m[32m what[0m[92m is[0m[32m the[0m[92m address[0m[32m of[0m[92m your[0m[32m emergency[0m[92m.[0m[32m Stay[0m[92m on[0m[32m the[0m[92m line[0m[32m with[0m[92m me[0m[32m,[0m[92m help[0m[32m is[0m[92m on[0m[32m the[0m[92m way[0m[32m.[0m[92m Tell[0m[32m me[0m[92m exactly[0m[32m what[0m[92m happened[0m[32m and[0m[92m I[0m[32m will[0m[92m dispatch[0m[32m help[0m[92m immediately[0m[32m.[0m[92m Is[0m[32m the[0m[92m patient[0m[32m breathing[0m[92m normally[0m[32m right[0m[92m now[0m[32m.
+[0m[92m
+
+[0m[32mSpeech[0m[92m:
+[0m[32m[<|semantic|>x262][0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32muser[0m[92m
+[0m[32mHello[0m[92m world[0m[32m.[0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32massistant[0m[92m
+[0m[32m<|voice|>[0m
+  0%|          | 0/1023 [00:00<?, ?it/s]  0%|          | 4/1023 [00:00<00:30, 33.54it/s]  1%|          | 8/1023 [00:00<00:30, 33.62it/s]  1%|          | 12/1023 [00:00<00:30, 33.68it/s]  2%|▏         | 16/1023 [00:00<00:29, 33.70it/s]  2%|▏         | 17/1023 [00:00<00:31, 31.82it/s]
+2026-04-26 06:04:10.953 | INFO     | fish_speech.models.text2semantic.inference:generate_long:701 - Batch 0: Generated 19 tokens in 0.67 seconds, 28.21 tokens/sec
+2026-04-26 06:04:10.953 | INFO     | fish_speech.models.text2semantic.inference:generate_long:705 - Bandwidth achieved: 128.67 GB/s
+2026-04-26 06:04:10.953 | INFO     | fish_speech.models.text2semantic.inference:generate_long:731 - GPU Memory used: 24.84 GB
+2026-04-26 06:04:10.954 | INFO     | fish_speech.inference_engine.vq_manager:decode_vq_tokens:17 - VQ features: torch.Size([10, 18])
+INFO:     127.0.0.1:58432 - "POST /v1/tts HTTP/1.1" 200 OK
+2026-04-26 06:04:49.161 | INFO     | fish_speech.inference_engine.reference_loader:load_by_hash:129 - Use same references
+2026-04-26 06:04:49.162 | WARNING  | fish_speech.inference_engine:inference:62 - set seed: 42
+2026-04-26 06:04:49.165 | INFO     | fish_speech.models.text2semantic.inference:generate_long:611 - Split into 0 turns, grouped into 1 batches
+2026-04-26 06:04:49.166 | INFO     | fish_speech.models.text2semantic.inference:generate_long:623 - --- Sample 0, Batch 0 (12 bytes) ---
+2026-04-26 06:04:49.166 | INFO     | fish_speech.models.text2semantic.inference:generate_long:627 - Batch text: Hello world.
+2026-04-26 06:04:49.166 | INFO     | fish_speech.models.text2semantic.inference:generate_long:653 - Visualizing prompt structure:
+2026-04-26 06:04:49.170 | INFO     | fish_speech.models.text2semantic.inference:generate_long:664 - Encoded prompt shape: torch.Size([11, 404])
+[92m<|im_start|>[0m[32msystem[0m[92m
+[0m[32mconvert[0m[92m the[0m[32m provided[0m[92m text[0m[32m to[0m[92m speech[0m[32m reference[0m[92m to[0m[32m the[0m[92m following[0m[32m:
+
+[0m[92mText[0m[32m:
+[0m[92m<[0m[32m|[0m[92mspeaker[0m[32m:[0m[92m0[0m[32m|[0m[92m>[0m[32mB[0m[92mle[0m[32meding[0m[92m,[0m[32m choking[0m[92m,[0m[32m or[0m[92m trouble[0m[32m breathing[0m[92m?[0m[32m Help[0m[92m is[0m[32m being[0m[92m sent[0m[32m while[0m[92m I[0m[32m ask[0m[92m these[0m[32m questions[0m[92m.[0m[32m Listen[0m[92m carefully[0m[32m and[0m[92m follow[0m[32m my[0m[92m instructions[0m[32m.[0m[92m Are[0m[32m you[0m[92m safe[0m[32m where[0m[92m you[0m[32m are[0m[92m?[0m[32m Do[0m[92m you[0m[32m see[0m[92m smoke[0m[32m,[0m[92m fear[0m[32m?[0m[92m
+
+[0m[32mSpeech[0m[92m:
+[0m[32m[<|semantic|>x323][0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32muser[0m[92m
+[0m[32mHello[0m[92m world[0m[32m.[0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32massistant[0m[92m
+[0m[32m<|voice|>[0m
+  0%|          | 0/1023 [00:00<?, ?it/s]  0%|          | 4/1023 [00:00<00:30, 33.37it/s]  1%|          | 8/1023 [00:00<00:30, 33.55it/s]  1%|          | 12/1023 [00:00<00:30, 33.64it/s]  2%|▏         | 16/1023 [00:00<00:29, 33.67it/s]  2%|▏         | 20/1023 [00:00<00:29, 33.72it/s]  2%|▏         | 21/1023 [00:00<00:31, 32.15it/s]
+2026-04-26 06:04:49.961 | INFO     | fish_speech.models.text2semantic.inference:generate_long:701 - Batch 0: Generated 23 tokens in 0.80 seconds, 28.91 tokens/sec
+2026-04-26 06:04:49.961 | INFO     | fish_speech.models.text2semantic.inference:generate_long:705 - Bandwidth achieved: 131.89 GB/s
+2026-04-26 06:04:49.961 | INFO     | fish_speech.models.text2semantic.inference:generate_long:731 - GPU Memory used: 24.84 GB
+2026-04-26 06:04:49.963 | INFO     | fish_speech.inference_engine.vq_manager:decode_vq_tokens:17 - VQ features: torch.Size([10, 22])
+INFO:     127.0.0.1:58448 - "POST /v1/tts HTTP/1.1" 200 OK
+2026-04-26 06:04:50.215 | INFO     | fish_speech.inference_engine.reference_loader:load_by_hash:129 - Use same references
+2026-04-26 06:04:50.215 | WARNING  | fish_speech.inference_engine:inference:62 - set seed: 42
+2026-04-26 06:04:50.217 | INFO     | fish_speech.models.text2semantic.inference:generate_long:611 - Split into 0 turns, grouped into 1 batches
+2026-04-26 06:04:50.217 | INFO     | fish_speech.models.text2semantic.inference:generate_long:623 - --- Sample 0, Batch 0 (38 bytes) ---
+2026-04-26 06:04:50.217 | INFO     | fish_speech.models.text2semantic.inference:generate_long:627 - Batch text: Nine one one, where is your emergency?
+2026-04-26 06:04:50.217 | INFO     | fish_speech.models.text2semantic.inference:generate_long:653 - Visualizing prompt structure:
+2026-04-26 06:04:50.220 | INFO     | fish_speech.models.text2semantic.inference:generate_long:664 - Encoded prompt shape: torch.Size([11, 410])
+[92m<|im_start|>[0m[32msystem[0m[92m
+[0m[32mconvert[0m[92m the[0m[32m provided[0m[92m text[0m[32m to[0m[92m speech[0m[32m reference[0m[92m to[0m[32m the[0m[92m following[0m[32m:
+
+[0m[92mText[0m[32m:
+[0m[92m<[0m[32m|[0m[92mspeaker[0m[32m:[0m[92m0[0m[32m|[0m[92m>[0m[32mB[0m[92mle[0m[32meding[0m[92m,[0m[32m choking[0m[92m,[0m[32m or[0m[92m trouble[0m[32m breathing[0m[92m?[0m[32m Help[0m[92m is[0m[32m being[0m[92m sent[0m[32m while[0m[92m I[0m[32m ask[0m[92m these[0m[32m questions[0m[92m.[0m[32m Listen[0m[92m carefully[0m[32m and[0m[92m follow[0m[32m my[0m[92m instructions[0m[32m.[0m[92m Are[0m[32m you[0m[92m safe[0m[32m where[0m[92m you[0m[32m are[0m[92m?[0m[32m Do[0m[92m you[0m[32m see[0m[92m smoke[0m[32m,[0m[92m fear[0m[32m?[0m[92m
+
+[0m[32mSpeech[0m[92m:
+[0m[32m[<|semantic|>x323][0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32muser[0m[92m
+[0m[32mNine[0m[92m one[0m[32m one[0m[92m,[0m[32m where[0m[92m is[0m[32m your[0m[92m emergency[0m[32m?[0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32massistant[0m[92m
+[0m[32m<|voice|>[0m
+  0%|          | 0/1023 [00:00<?, ?it/s]  0%|          | 4/1023 [00:00<00:30, 33.40it/s]  1%|          | 8/1023 [00:00<00:30, 33.53it/s]  1%|          | 12/1023 [00:00<00:30, 33.57it/s]  2%|▏         | 16/1023 [00:00<00:29, 33.66it/s]  2%|▏         | 20/1023 [00:00<00:29, 33.76it/s]  2%|▏         | 24/1023 [00:00<00:29, 33.82it/s]  3%|▎         | 28/1023 [00:00<00:29, 33.83it/s]  3%|▎         | 32/1023 [00:00<00:29, 33.83it/s]  4%|▎         | 36/1023 [00:01<00:29, 33.78it/s]  4%|▍         | 40/1023 [00:01<00:29, 33.71it/s]  4%|▍         | 44/1023 [00:01<00:29, 33.61it/s]  5%|▍         | 48/1023 [00:01<00:29, 33.54it/s]  5%|▌         | 52/1023 [00:01<00:28, 33.57it/s]  5%|▌         | 56/1023 [00:01<00:28, 33.59it/s]  6%|▌         | 60/1023 [00:01<00:28, 33.62it/s]  6%|▋         | 64/1023 [00:01<00:28, 33.68it/s]  7%|▋         | 67/1023 [00:02<00:28, 33.19it/s]
+2026-04-26 06:04:52.375 | INFO     | fish_speech.models.text2semantic.inference:generate_long:701 - Batch 0: Generated 69 tokens in 2.16 seconds, 31.97 tokens/sec
+2026-04-26 06:04:52.375 | INFO     | fish_speech.models.text2semantic.inference:generate_long:705 - Bandwidth achieved: 145.85 GB/s
+2026-04-26 06:04:52.375 | INFO     | fish_speech.models.text2semantic.inference:generate_long:731 - GPU Memory used: 24.84 GB
+2026-04-26 06:04:52.377 | INFO     | fish_speech.inference_engine.vq_manager:decode_vq_tokens:17 - VQ features: torch.Size([10, 68])
+INFO:     127.0.0.1:58452 - "POST /v1/tts HTTP/1.1" 200 OK
+2026-04-26 06:04:52.658 | INFO     | fish_speech.inference_engine.reference_loader:load_by_hash:129 - Use same references
+2026-04-26 06:04:52.658 | WARNING  | fish_speech.inference_engine:inference:62 - set seed: 42
+2026-04-26 06:04:52.660 | INFO     | fish_speech.models.text2semantic.inference:generate_long:611 - Split into 0 turns, grouped into 1 batches
+2026-04-26 06:04:52.660 | INFO     | fish_speech.models.text2semantic.inference:generate_long:623 - --- Sample 0, Batch 0 (21 bytes) ---
+2026-04-26 06:04:52.660 | INFO     | fish_speech.models.text2semantic.inference:generate_long:627 - Batch text: What's your location?
+2026-04-26 06:04:52.660 | INFO     | fish_speech.models.text2semantic.inference:generate_long:653 - Visualizing prompt structure:
+2026-04-26 06:04:52.663 | INFO     | fish_speech.models.text2semantic.inference:generate_long:664 - Encoded prompt shape: torch.Size([11, 406])
+[92m<|im_start|>[0m[32msystem[0m[92m
+[0m[32mconvert[0m[92m the[0m[32m provided[0m[92m text[0m[32m to[0m[92m speech[0m[32m reference[0m[92m to[0m[32m the[0m[92m following[0m[32m:
+
+[0m[92mText[0m[32m:
+[0m[92m<[0m[32m|[0m[92mspeaker[0m[32m:[0m[92m0[0m[32m|[0m[92m>[0m[32mB[0m[92mle[0m[32meding[0m[92m,[0m[32m choking[0m[92m,[0m[32m or[0m[92m trouble[0m[32m breathing[0m[92m?[0m[32m Help[0m[92m is[0m[32m being[0m[92m sent[0m[32m while[0m[92m I[0m[32m ask[0m[92m these[0m[32m questions[0m[92m.[0m[32m Listen[0m[92m carefully[0m[32m and[0m[92m follow[0m[32m my[0m[92m instructions[0m[32m.[0m[92m Are[0m[32m you[0m[92m safe[0m[32m where[0m[92m you[0m[32m are[0m[92m?[0m[32m Do[0m[92m you[0m[32m see[0m[92m smoke[0m[32m,[0m[92m fear[0m[32m?[0m[92m
+
+[0m[32mSpeech[0m[92m:
+[0m[32m[<|semantic|>x323][0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32muser[0m[92m
+[0m[32mWhat[0m[92m's[0m[32m your[0m[92m location[0m[32m?[0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32massistant[0m[92m
+[0m[32m<|voice|>[0m
+  0%|          | 0/1023 [00:00<?, ?it/s]  0%|          | 4/1023 [00:00<00:30, 33.82it/s]  1%|          | 8/1023 [00:00<00:29, 33.83it/s]  1%|          | 12/1023 [00:00<00:29, 33.75it/s]  2%|▏         | 16/1023 [00:00<00:29, 33.69it/s]  2%|▏         | 20/1023 [00:00<00:29, 33.69it/s]  2%|▏         | 24/1023 [00:00<00:29, 33.71it/s]  2%|▏         | 25/1023 [00:00<00:30, 32.41it/s]
+2026-04-26 06:04:53.571 | INFO     | fish_speech.models.text2semantic.inference:generate_long:701 - Batch 0: Generated 27 tokens in 0.91 seconds, 29.63 tokens/sec
+2026-04-26 06:04:53.571 | INFO     | fish_speech.models.text2semantic.inference:generate_long:705 - Bandwidth achieved: 135.17 GB/s
+2026-04-26 06:04:53.572 | INFO     | fish_speech.models.text2semantic.inference:generate_long:731 - GPU Memory used: 24.84 GB
+2026-04-26 06:04:53.573 | INFO     | fish_speech.inference_engine.vq_manager:decode_vq_tokens:17 - VQ features: torch.Size([10, 26])
+INFO:     127.0.0.1:58464 - "POST /v1/tts HTTP/1.1" 200 OK
+2026-04-26 06:04:53.826 | INFO     | fish_speech.inference_engine.reference_loader:load_by_hash:129 - Use same references
+2026-04-26 06:04:53.827 | WARNING  | fish_speech.inference_engine:inference:62 - set seed: 42
+2026-04-26 06:04:53.830 | INFO     | fish_speech.models.text2semantic.inference:generate_long:611 - Split into 0 turns, grouped into 1 batches
+2026-04-26 06:04:53.830 | INFO     | fish_speech.models.text2semantic.inference:generate_long:623 - --- Sample 0, Batch 0 (19 bytes) ---
+2026-04-26 06:04:53.830 | INFO     | fish_speech.models.text2semantic.inference:generate_long:627 - Batch text: Are they breathing?
+2026-04-26 06:04:53.830 | INFO     | fish_speech.models.text2semantic.inference:generate_long:653 - Visualizing prompt structure:
+2026-04-26 06:04:53.833 | INFO     | fish_speech.models.text2semantic.inference:generate_long:664 - Encoded prompt shape: torch.Size([11, 405])
+[92m<|im_start|>[0m[32msystem[0m[92m
+[0m[32mconvert[0m[92m the[0m[32m provided[0m[92m text[0m[32m to[0m[92m speech[0m[32m reference[0m[92m to[0m[32m the[0m[92m following[0m[32m:
+
+[0m[92mText[0m[32m:
+[0m[92m<[0m[32m|[0m[92mspeaker[0m[32m:[0m[92m0[0m[32m|[0m[92m>[0m[32mB[0m[92mle[0m[32meding[0m[92m,[0m[32m choking[0m[92m,[0m[32m or[0m[92m trouble[0m[32m breathing[0m[92m?[0m[32m Help[0m[92m is[0m[32m being[0m[92m sent[0m[32m while[0m[92m I[0m[32m ask[0m[92m these[0m[32m questions[0m[92m.[0m[32m Listen[0m[92m carefully[0m[32m and[0m[92m follow[0m[32m my[0m[92m instructions[0m[32m.[0m[92m Are[0m[32m you[0m[92m safe[0m[32m where[0m[92m you[0m[32m are[0m[92m?[0m[32m Do[0m[92m you[0m[32m see[0m[92m smoke[0m[32m,[0m[92m fear[0m[32m?[0m[92m
+
+[0m[32mSpeech[0m[92m:
+[0m[32m[<|semantic|>x323][0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32muser[0m[92m
+[0m[32mAre[0m[92m they[0m[32m breathing[0m[92m?[0m[32m<|im_end|>[0m[92m
+[0m[32m<|im_start|>[0m[92massistant[0m[32m
+[0m[92m<|voice|>[0m
+  0%|          | 0/1023 [00:00<?, ?it/s]  0%|          | 4/1023 [00:00<00:30, 33.30it/s]  1%|          | 8/1023 [00:00<00:30, 33.34it/s]  1%|          | 12/1023 [00:00<00:30, 33.48it/s]  2%|▏         | 16/1023 [00:00<00:30, 33.54it/s]  2%|▏         | 19/1023 [00:00<00:31, 31.87it/s]
+2026-04-26 06:04:54.567 | INFO     | fish_speech.models.text2semantic.inference:generate_long:701 - Batch 0: Generated 21 tokens in 0.74 seconds, 28.47 tokens/sec
+2026-04-26 06:04:54.568 | INFO     | fish_speech.models.text2semantic.inference:generate_long:705 - Bandwidth achieved: 129.86 GB/s
+2026-04-26 06:04:54.568 | INFO     | fish_speech.models.text2semantic.inference:generate_long:731 - GPU Memory used: 24.84 GB
+2026-04-26 06:04:54.569 | INFO     | fish_speech.inference_engine.vq_manager:decode_vq_tokens:17 - VQ features: torch.Size([10, 20])
+INFO:     127.0.0.1:58468 - "POST /v1/tts HTTP/1.1" 200 OK
+2026-04-26 06:04:54.819 | INFO     | fish_speech.inference_engine.reference_loader:load_by_hash:129 - Use same references
+2026-04-26 06:04:54.819 | WARNING  | fish_speech.inference_engine:inference:62 - set seed: 42
+2026-04-26 06:04:54.822 | INFO     | fish_speech.models.text2semantic.inference:generate_long:611 - Split into 0 turns, grouped into 1 batches
+2026-04-26 06:04:54.822 | INFO     | fish_speech.models.text2semantic.inference:generate_long:623 - --- Sample 0, Batch 0 (13 bytes) ---
+2026-04-26 06:04:54.822 | INFO     | fish_speech.models.text2semantic.inference:generate_long:627 - Batch text: Stay with me.
+2026-04-26 06:04:54.822 | INFO     | fish_speech.models.text2semantic.inference:generate_long:653 - Visualizing prompt structure:
+2026-04-26 06:04:54.825 | INFO     | fish_speech.models.text2semantic.inference:generate_long:664 - Encoded prompt shape: torch.Size([11, 405])
+[92m<|im_start|>[0m[32msystem[0m[92m
+[0m[32mconvert[0m[92m the[0m[32m provided[0m[92m text[0m[32m to[0m[92m speech[0m[32m reference[0m[92m to[0m[32m the[0m[92m following[0m[32m:
+
+[0m[92mText[0m[32m:
+[0m[92m<[0m[32m|[0m[92mspeaker[0m[32m:[0m[92m0[0m[32m|[0m[92m>[0m[32mB[0m[92mle[0m[32meding[0m[92m,[0m[32m choking[0m[92m,[0m[32m or[0m[92m trouble[0m[32m breathing[0m[92m?[0m[32m Help[0m[92m is[0m[32m being[0m[92m sent[0m[32m while[0m[92m I[0m[32m ask[0m[92m these[0m[32m questions[0m[92m.[0m[32m Listen[0m[92m carefully[0m[32m and[0m[92m follow[0m[32m my[0m[92m instructions[0m[32m.[0m[92m Are[0m[32m you[0m[92m safe[0m[32m where[0m[92m you[0m[32m are[0m[92m?[0m[32m Do[0m[92m you[0m[32m see[0m[92m smoke[0m[32m,[0m[92m fear[0m[32m?[0m[92m
+
+[0m[32mSpeech[0m[92m:
+[0m[32m[<|semantic|>x323][0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32muser[0m[92m
+[0m[32mStay[0m[92m with[0m[32m me[0m[92m.[0m[32m<|im_end|>[0m[92m
+[0m[32m<|im_start|>[0m[92massistant[0m[32m
+[0m[92m<|voice|>[0m
+  0%|          | 0/1023 [00:00<?, ?it/s]  0%|          | 4/1023 [00:00<00:30, 33.52it/s]  1%|          | 8/1023 [00:00<00:30, 33.74it/s]  1%|          | 12/1023 [00:00<00:29, 33.80it/s]  2%|▏         | 16/1023 [00:00<00:29, 33.73it/s]  2%|▏         | 20/1023 [00:00<00:29, 33.69it/s]  2%|▏         | 21/1023 [00:00<00:31, 32.18it/s]
+2026-04-26 06:04:55.615 | INFO     | fish_speech.models.text2semantic.inference:generate_long:701 - Batch 0: Generated 23 tokens in 0.79 seconds, 29.00 tokens/sec
+2026-04-26 06:04:55.615 | INFO     | fish_speech.models.text2semantic.inference:generate_long:705 - Bandwidth achieved: 132.30 GB/s
+2026-04-26 06:04:55.615 | INFO     | fish_speech.models.text2semantic.inference:generate_long:731 - GPU Memory used: 24.84 GB
+2026-04-26 06:04:55.616 | INFO     | fish_speech.inference_engine.vq_manager:decode_vq_tokens:17 - VQ features: torch.Size([10, 22])
+INFO:     127.0.0.1:58472 - "POST /v1/tts HTTP/1.1" 200 OK
+2026-04-26 06:04:55.871 | INFO     | fish_speech.inference_engine.reference_loader:load_by_hash:129 - Use same references
+2026-04-26 06:04:55.871 | WARNING  | fish_speech.inference_engine:inference:62 - set seed: 42
+2026-04-26 06:04:55.873 | INFO     | fish_speech.models.text2semantic.inference:generate_long:611 - Split into 0 turns, grouped into 1 batches
+2026-04-26 06:04:55.873 | INFO     | fish_speech.models.text2semantic.inference:generate_long:623 - --- Sample 0, Batch 0 (19 bytes) ---
+2026-04-26 06:04:55.873 | INFO     | fish_speech.models.text2semantic.inference:generate_long:627 - Batch text: Help is on the way.
+2026-04-26 06:04:55.873 | INFO     | fish_speech.models.text2semantic.inference:generate_long:653 - Visualizing prompt structure:
+2026-04-26 06:04:55.876 | INFO     | fish_speech.models.text2semantic.inference:generate_long:664 - Encoded prompt shape: torch.Size([11, 407])
+[92m<|im_start|>[0m[32msystem[0m[92m
+[0m[32mconvert[0m[92m the[0m[32m provided[0m[92m text[0m[32m to[0m[92m speech[0m[32m reference[0m[92m to[0m[32m the[0m[92m following[0m[32m:
+
+[0m[92mText[0m[32m:
+[0m[92m<[0m[32m|[0m[92mspeaker[0m[32m:[0m[92m0[0m[32m|[0m[92m>[0m[32mB[0m[92mle[0m[32meding[0m[92m,[0m[32m choking[0m[92m,[0m[32m or[0m[92m trouble[0m[32m breathing[0m[92m?[0m[32m Help[0m[92m is[0m[32m being[0m[92m sent[0m[32m while[0m[92m I[0m[32m ask[0m[92m these[0m[32m questions[0m[92m.[0m[32m Listen[0m[92m carefully[0m[32m and[0m[92m follow[0m[32m my[0m[92m instructions[0m[32m.[0m[92m Are[0m[32m you[0m[92m safe[0m[32m where[0m[92m you[0m[32m are[0m[92m?[0m[32m Do[0m[92m you[0m[32m see[0m[92m smoke[0m[32m,[0m[92m fear[0m[32m?[0m[92m
+
+[0m[32mSpeech[0m[92m:
+[0m[32m[<|semantic|>x323][0m[92m<|im_end|>[0m[32m
+[0m[92m<|im_start|>[0m[32muser[0m[92m
+[0m[32mHelp[0m[92m is[0m[32m on[0m[92m the[0m[32m way[0m[92m.[0m[32m<|im_end|>[0m[92m
+[0m[32m<|im_start|>[0m[92massistant[0m[32m
+[0m[92m<|voice|>[0m
+  0%|          | 0/1023 [00:00<?, ?it/s]  0%|          | 4/1023 [00:00<00:30, 33.84it/s]  1%|          | 8/1023 [00:00<00:30, 33.83it/s]  1%|          | 12/1023 [00:00<00:29, 33.81it/s]  2%|▏         | 16/1023 [00:00<00:29, 33.73it/s]  2%|▏         | 20/1023 [00:00<00:29, 33.73it/s]  2%|▏         | 24/1023 [00:00<00:29, 33.71it/s]  2%|▏         | 25/1023 [00:00<00:30, 32.44it/s]
+2026-04-26 06:04:56.783 | INFO     | fish_speech.models.text2semantic.inference:generate_long:701 - Batch 0: Generated 27 tokens in 0.91 seconds, 29.66 tokens/sec
+2026-04-26 06:04:56.784 | INFO     | fish_speech.models.text2semantic.inference:generate_long:705 - Bandwidth achieved: 135.30 GB/s
+2026-04-26 06:04:56.784 | INFO     | fish_speech.models.text2semantic.inference:generate_long:731 - GPU Memory used: 24.84 GB
+2026-04-26 06:04:56.785 | INFO     | fish_speech.inference_engine.vq_manager:decode_vq_tokens:17 - VQ features: torch.Size([10, 26])

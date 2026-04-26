@@ -1,0 +1,50 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+fish-ad-hoc.log
+fish.log
+parakeet.log
+sessions
+turns
+vllm.log
+worker.log
+worker-starter.log
+worker-starter-smoke.log
+    05:29:10.647 DEBUG    asyncio            Using selector: EpollSelector  
+    05:29:10.650 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.6", "rtc-version": 
+"1.1.5"}
+                 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.silero", 
+"version": "1.5.6"}
+    05:29:10.651 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.silero",
+"av"]}
+    05:29:10.652 INFO     livekit.agents     HTTP server listening on :36939  
+    05:29:10.806 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_MKf6RubM6Bbr", "url": "wss://ai-therapy-v3svfd9o.livekit.cloud", "region": 
+"Germany 2", "protocol": 17}
+    05:29:41.796 INFO     livekit.agents     shutting down worker  
+                                         {"id": "AW_MKf6RubM6Bbr"}
+    05:29:41.796 WARNING  watchfiles.main    received signal 15, raising        
+                                             KeyboardInterrupt                  
+    05:29:41.797 WARNING  livekit.agents     exiting forcefully  
+2026-04-26 05:29:42 [info     ] worker.cycle2f_prosody_init    cycle2f_prosody=disabled filler_count=5 fillers_variant=plain
+    05:29:42.367 DEBUG    asyncio            Using selector: EpollSelector  
+    05:29:42.368 DEV      livekit.agents     Watching                           
+                                             /opt/prism42/agents/livekit        
+2026-04-26 05:29:42 [info     ] worker.cycle2f_prosody_init    cycle2f_prosody=disabled filler_count=5 fillers_variant=plain
+    05:29:42.952 DEBUG    asyncio            Using selector: EpollSelector  
+    05:29:42.955 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.6", "rtc-version": 
+"1.1.5"}
+                 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.silero", 
+"version": "1.5.6"}
+    05:29:42.956 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.silero",
+"av"]}
+    05:29:42.957 INFO     livekit.agents     HTTP server listening on :42475  
+    05:29:43.118 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_DAh6Kh2ZzWL3", "url": "wss://ai-therapy-v3svfd9o.livekit.cloud", "region": 
+"Germany 2", "protocol": 17}

@@ -1,0 +1,196 @@
+{
+  "cycle": "2N",
+  "purpose": "Validate user-provided MW reference voice as a Fish reference, compare to cycle-2L psap-fast (current best empirical lever).",
+  "ts_utc": "2026-04-26T060507Z",
+  "decision": "REJECT_MW",
+  "decision_rationale": "REJECT: MW PASS_loose 1/5 < 3 AND MW mean f0_std 35.7 > psap-fast 28.6",
+  "phrases_count": 5,
+  "synth_calls": 5,
+  "synth_successes": 5,
+  "reference": {
+    "source_path": "/Users/kiteboard/prism42/assets/MW voice sample.mp3",
+    "trim_window_s": "35..50",
+    "trim_path": "/opt/prism42/voice-refs/mw_sample.wav",
+    "duration_s": 15.0,
+    "f0_mean_hz": 173.1,
+    "f0_std_hz": 38.3,
+    "f0_range_hz": 296.5,
+    "peak_amplitude": 0.6067,
+    "rms_energy": 0.085,
+    "clipping_samples": 0,
+    "transcript": "Bleeding, choking, or trouble breathing? Help is being sent while I ask these questions. Listen carefully and follow my instructions. Are you safe where you are? Do you see smoke, fear?",
+    "transcript_source": "Parakeet POST /transcribe on 16kHz-resampled trim",
+    "validity_gate": "PASS"
+  },
+  "comparison": [
+    {
+      "phrase_id": "p1",
+      "text": "Nine one one, where is your emergency?",
+      "words": 7,
+      "MW": {
+        "f0_std_hz": 29.6,
+        "f0_range_hz": 146.3,
+        "f0_mean_hz": 158.7,
+        "duration_s": 3.158,
+        "wpm": 133.0,
+        "peak_amp": 0.8547,
+        "pass_loose": false,
+        "pass_strict": false
+      },
+      "psap_fast": {
+        "f0_std_hz": 33.0,
+        "f0_range_hz": 227.2,
+        "f0_mean_hz": 166.2,
+        "duration_s": 1.997,
+        "wpm": 210.3,
+        "peak_amp": 0.8547,
+        "pass_loose": false,
+        "pass_strict": false
+      }
+    },
+    {
+      "phrase_id": "p2",
+      "text": "What's your location?",
+      "words": 3,
+      "MW": {
+        "f0_std_hz": 31.7,
+        "f0_range_hz": 123.8,
+        "f0_mean_hz": 154.8,
+        "duration_s": 1.208,
+        "wpm": 149.0,
+        "peak_amp": 0.8547,
+        "pass_loose": true,
+        "pass_strict": false
+      },
+      "psap_fast": {
+        "f0_std_hz": 27.0,
+        "f0_range_hz": 135.5,
+        "f0_mean_hz": 169.9,
+        "duration_s": 0.976,
+        "wpm": 184.4,
+        "peak_amp": 0.8547,
+        "pass_loose": false,
+        "pass_strict": false
+      }
+    },
+    {
+      "phrase_id": "p3",
+      "text": "Are they breathing?",
+      "words": 3,
+      "MW": {
+        "f0_std_hz": 33.1,
+        "f0_range_hz": 256.1,
+        "f0_mean_hz": 152.4,
+        "duration_s": 0.929,
+        "wpm": 193.8,
+        "peak_amp": 0.8547,
+        "pass_loose": false,
+        "pass_strict": false
+      },
+      "psap_fast": {
+        "f0_std_hz": 12.8,
+        "f0_range_hz": 49.4,
+        "f0_mean_hz": 179.0,
+        "duration_s": 0.697,
+        "wpm": 258.2,
+        "peak_amp": 0.8547,
+        "pass_loose": true,
+        "pass_strict": true
+      }
+    },
+    {
+      "phrase_id": "p4",
+      "text": "Stay with me.",
+      "words": 3,
+      "MW": {
+        "f0_std_hz": 44.2,
+        "f0_range_hz": 277.0,
+        "f0_mean_hz": 169.4,
+        "duration_s": 1.022,
+        "wpm": 176.1,
+        "peak_amp": 0.8547,
+        "pass_loose": false,
+        "pass_strict": false
+      },
+      "psap_fast": {
+        "f0_std_hz": 38.4,
+        "f0_range_hz": 148.3,
+        "f0_mean_hz": 165.4,
+        "duration_s": 0.697,
+        "wpm": 258.2,
+        "peak_amp": 0.8547,
+        "pass_loose": false,
+        "pass_strict": false
+      }
+    },
+    {
+      "phrase_id": "p5",
+      "text": "Help is on the way.",
+      "words": 5,
+      "MW": {
+        "f0_std_hz": 39.9,
+        "f0_range_hz": 208.2,
+        "f0_mean_hz": 192.9,
+        "duration_s": 1.208,
+        "wpm": 248.3,
+        "peak_amp": 0.8547,
+        "pass_loose": false,
+        "pass_strict": false
+      },
+      "psap_fast": {
+        "f0_std_hz": 31.7,
+        "f0_range_hz": 103.8,
+        "f0_mean_hz": 167.1,
+        "duration_s": 0.976,
+        "wpm": 307.4,
+        "peak_amp": 0.8547,
+        "pass_loose": true,
+        "pass_strict": false
+      }
+    }
+  ],
+  "aggregates": {
+    "MW": {
+      "mean_f0_std_hz": 35.7,
+      "mean_f0_range_hz": 202.3,
+      "pass_loose_count": 1,
+      "pass_strict_count": 0,
+      "median_wpm": 176.1,
+      "audio_peak_band_min": 0.8547,
+      "audio_peak_band_max": 0.8547,
+      "duration_band_min_s": 0.929,
+      "duration_band_max_s": 3.158
+    },
+    "psap_fast_anchor": {
+      "mean_f0_std_hz": 28.6,
+      "mean_f0_range_hz": 132.8,
+      "pass_loose_count": 2,
+      "pass_strict_count": 1,
+      "median_wpm": 258.2,
+      "audio_peak_band_min": 0.8547,
+      "audio_peak_band_max": 0.8547
+    },
+    "cycle_2M_M2_anchor": {
+      "mean_f0_std_hz": 46.8,
+      "mean_f0_range_hz": 288.4,
+      "pass_loose_count": 1,
+      "pass_strict_count": 0,
+      "median_wpm": 176.1,
+      "source": "findings/voice/cycle2M_steadiness/2026-04-26T051841Z/result.json"
+    }
+  },
+  "l1_hypothesis_check": {
+    "reference_f0_std_hz": 38.3,
+    "mw_output_mean_f0_std_hz": 35.7,
+    "psap_fast_output_mean_f0_std_hz": 28.6,
+    "ratio_output_to_reference": 0.932,
+    "hypothesis_status": "PARTIAL_INHERITANCE",
+    "note": "L1 hypothesized 1:1 inheritance: steady reference -> steady output. Observed: output mean f0_std is ~93% of reference (35.7 / 38.3)."
+  },
+  "ttfb_ms_p50": 1,
+  "ttfb_ms_p95": 1,
+  "total_render_ms_p50": 1156,
+  "total_render_ms_p95": 2442,
+  "tracker_used": "team_mv_analyze.py from cycle2M_steadiness/2026-04-26T051841Z",
+  "go_criterion": "L1 strict: f0_std<=30 AND f0_range<=130 ; loose: f0_std<=39 AND f0_range<=128"
+}
