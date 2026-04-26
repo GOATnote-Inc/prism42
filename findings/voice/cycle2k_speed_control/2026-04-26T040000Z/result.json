@@ -1,0 +1,429 @@
+{
+  "conditions": {
+    "baseline": {
+      "tag": "",
+      "phrases": {
+        "p1": {
+          "ok": true,
+          "ttfb_ms": 4,
+          "total_ms": 2680,
+          "wav_bytes": 315436,
+          "pcm_bytes": 315392,
+          "duration_ms": 3575,
+          "peak": 8304,
+          "text_sent": "Nine one one, where is your emergency?",
+          "text_orig": "Nine one one, where is your emergency?",
+          "wav_path": "/tmp/cycle2k_bench/audio/baseline/p1.wav"
+        },
+        "p2": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1305,
+          "wav_bytes": 131116,
+          "pcm_bytes": 131072,
+          "duration_ms": 1486,
+          "peak": 31088,
+          "text_sent": "What's your location?",
+          "text_orig": "What's your location?",
+          "wav_path": "/tmp/cycle2k_bench/audio/baseline/p2.wav"
+        },
+        "p3": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 977,
+          "wav_bytes": 86060,
+          "pcm_bytes": 86016,
+          "duration_ms": 975,
+          "peak": 17584,
+          "text_sent": "Are they breathing?",
+          "text_orig": "Are they breathing?",
+          "wav_path": "/tmp/cycle2k_bench/audio/baseline/p3.wav"
+        },
+        "p4": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1109,
+          "wav_bytes": 102444,
+          "pcm_bytes": 102400,
+          "duration_ms": 1160,
+          "peak": 7892,
+          "text_sent": "Stay with me.",
+          "text_orig": "Stay with me.",
+          "wav_path": "/tmp/cycle2k_bench/audio/baseline/p4.wav"
+        },
+        "p5": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1215,
+          "wav_bytes": 118828,
+          "pcm_bytes": 118784,
+          "duration_ms": 1346,
+          "peak": 30832,
+          "text_sent": "Help is on the way.",
+          "text_orig": "Help is on the way.",
+          "wav_path": "/tmp/cycle2k_bench/audio/baseline/p5.wav"
+        }
+      }
+    },
+    "T1": {
+      "tag": "[urgent dispatcher pace]",
+      "phrases": {
+        "p1": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 2016,
+          "wav_bytes": 225324,
+          "pcm_bytes": 225280,
+          "duration_ms": 2554,
+          "peak": 9936,
+          "text_sent": "[urgent dispatcher pace] Nine one one, where is your emergency?",
+          "text_orig": "Nine one one, where is your emergency?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T1/p1.wav"
+        },
+        "p2": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1188,
+          "wav_bytes": 114732,
+          "pcm_bytes": 114688,
+          "duration_ms": 1300,
+          "peak": 27264,
+          "text_sent": "[urgent dispatcher pace] What's your location?",
+          "text_orig": "What's your location?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T1/p2.wav"
+        },
+        "p3": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1077,
+          "wav_bytes": 98348,
+          "pcm_bytes": 98304,
+          "duration_ms": 1114,
+          "peak": 31200,
+          "text_sent": "[urgent dispatcher pace] Are they breathing?",
+          "text_orig": "Are they breathing?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T1/p3.wav"
+        },
+        "p4": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1100,
+          "wav_bytes": 102444,
+          "pcm_bytes": 102400,
+          "duration_ms": 1160,
+          "peak": 10464,
+          "text_sent": "[urgent dispatcher pace] Stay with me.",
+          "text_orig": "Stay with me.",
+          "wav_path": "/tmp/cycle2k_bench/audio/T1/p4.wav"
+        },
+        "p5": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1221,
+          "wav_bytes": 118828,
+          "pcm_bytes": 118784,
+          "duration_ms": 1346,
+          "peak": 27200,
+          "text_sent": "[urgent dispatcher pace] Help is on the way.",
+          "text_orig": "Help is on the way.",
+          "wav_path": "/tmp/cycle2k_bench/audio/T1/p5.wav"
+        }
+      }
+    },
+    "T2": {
+      "tag": "[fast clear]",
+      "phrases": {
+        "p1": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 2488,
+          "wav_bytes": 290860,
+          "pcm_bytes": 290816,
+          "duration_ms": 3297,
+          "peak": 26640,
+          "text_sent": "[fast clear] Nine one one, where is your emergency?",
+          "text_orig": "Nine one one, where is your emergency?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T2/p1.wav"
+        },
+        "p2": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1373,
+          "wav_bytes": 139308,
+          "pcm_bytes": 139264,
+          "duration_ms": 1578,
+          "peak": 28176,
+          "text_sent": "[fast clear] What's your location?",
+          "text_orig": "What's your location?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T2/p2.wav"
+        },
+        "p3": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 892,
+          "wav_bytes": 73772,
+          "pcm_bytes": 73728,
+          "duration_ms": 835,
+          "peak": 11936,
+          "text_sent": "[fast clear] Are they breathing?",
+          "text_orig": "Are they breathing?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T2/p3.wav"
+        },
+        "p4": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 947,
+          "wav_bytes": 81964,
+          "pcm_bytes": 81920,
+          "duration_ms": 928,
+          "peak": 16672,
+          "text_sent": "[fast clear] Stay with me.",
+          "text_orig": "Stay with me.",
+          "wav_path": "/tmp/cycle2k_bench/audio/T2/p4.wav"
+        },
+        "p5": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1308,
+          "wav_bytes": 131116,
+          "pcm_bytes": 131072,
+          "duration_ms": 1486,
+          "peak": 31168,
+          "text_sent": "[fast clear] Help is on the way.",
+          "text_orig": "Help is on the way.",
+          "wav_path": "/tmp/cycle2k_bench/audio/T2/p5.wav"
+        }
+      }
+    },
+    "T3": {
+      "tag": "[news anchor pace]",
+      "phrases": {
+        "p1": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 2312,
+          "wav_bytes": 266284,
+          "pcm_bytes": 266240,
+          "duration_ms": 3018,
+          "peak": 11256,
+          "text_sent": "[news anchor pace] Nine one one, where is your emergency?",
+          "text_orig": "Nine one one, where is your emergency?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T3/p1.wav"
+        },
+        "p2": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1309,
+          "wav_bytes": 131116,
+          "pcm_bytes": 131072,
+          "duration_ms": 1486,
+          "peak": 30800,
+          "text_sent": "[news anchor pace] What's your location?",
+          "text_orig": "What's your location?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T3/p2.wav"
+        },
+        "p3": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 983,
+          "wav_bytes": 86060,
+          "pcm_bytes": 86016,
+          "duration_ms": 975,
+          "peak": 29744,
+          "text_sent": "[news anchor pace] Are they breathing?",
+          "text_orig": "Are they breathing?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T3/p3.wav"
+        },
+        "p4": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1014,
+          "wav_bytes": 90156,
+          "pcm_bytes": 90112,
+          "duration_ms": 1021,
+          "peak": 11200,
+          "text_sent": "[news anchor pace] Stay with me.",
+          "text_orig": "Stay with me.",
+          "wav_path": "/tmp/cycle2k_bench/audio/T3/p4.wav"
+        },
+        "p5": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1492,
+          "wav_bytes": 155692,
+          "pcm_bytes": 155648,
+          "duration_ms": 1764,
+          "peak": 31536,
+          "text_sent": "[news anchor pace] Help is on the way.",
+          "text_orig": "Help is on the way.",
+          "wav_path": "/tmp/cycle2k_bench/audio/T3/p5.wav"
+        }
+      }
+    },
+    "T4": {
+      "tag": "[brisk professional]",
+      "phrases": {
+        "p1": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 2308,
+          "wav_bytes": 266284,
+          "pcm_bytes": 266240,
+          "duration_ms": 3018,
+          "peak": 31616,
+          "text_sent": "[brisk professional] Nine one one, where is your emergency?",
+          "text_orig": "Nine one one, where is your emergency?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T4/p1.wav"
+        },
+        "p2": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1342,
+          "wav_bytes": 135212,
+          "pcm_bytes": 135168,
+          "duration_ms": 1532,
+          "peak": 30624,
+          "text_sent": "[brisk professional] What's your location?",
+          "text_orig": "What's your location?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T4/p2.wav"
+        },
+        "p3": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 990,
+          "wav_bytes": 86060,
+          "pcm_bytes": 86016,
+          "duration_ms": 975,
+          "peak": 30624,
+          "text_sent": "[brisk professional] Are they breathing?",
+          "text_orig": "Are they breathing?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T4/p3.wav"
+        },
+        "p4": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1049,
+          "wav_bytes": 94252,
+          "pcm_bytes": 94208,
+          "duration_ms": 1068,
+          "peak": 31024,
+          "text_sent": "[brisk professional] Stay with me.",
+          "text_orig": "Stay with me.",
+          "wav_path": "/tmp/cycle2k_bench/audio/T4/p4.wav"
+        },
+        "p5": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1163,
+          "wav_bytes": 110636,
+          "pcm_bytes": 110592,
+          "duration_ms": 1253,
+          "peak": 31344,
+          "text_sent": "[brisk professional] Help is on the way.",
+          "text_orig": "Help is on the way.",
+          "wav_path": "/tmp/cycle2k_bench/audio/T4/p5.wav"
+        }
+      }
+    },
+    "T5": {
+      "tag": "[911 dispatcher voice]",
+      "phrases": {
+        "p1": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1842,
+          "wav_bytes": 200748,
+          "pcm_bytes": 200704,
+          "duration_ms": 2275,
+          "peak": 20720,
+          "text_sent": "[911 dispatcher voice] Nine one one, where is your emergency?",
+          "text_orig": "Nine one one, where is your emergency?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T5/p1.wav"
+        },
+        "p2": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1183,
+          "wav_bytes": 110636,
+          "pcm_bytes": 110592,
+          "duration_ms": 1253,
+          "peak": 15272,
+          "text_sent": "[911 dispatcher voice] What's your location?",
+          "text_orig": "What's your location?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T5/p2.wav"
+        },
+        "p3": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1047,
+          "wav_bytes": 94252,
+          "pcm_bytes": 94208,
+          "duration_ms": 1068,
+          "peak": 12872,
+          "text_sent": "[911 dispatcher voice] Are they breathing?",
+          "text_orig": "Are they breathing?",
+          "wav_path": "/tmp/cycle2k_bench/audio/T5/p3.wav"
+        },
+        "p4": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 955,
+          "wav_bytes": 81964,
+          "pcm_bytes": 81920,
+          "duration_ms": 928,
+          "peak": 9768,
+          "text_sent": "[911 dispatcher voice] Stay with me.",
+          "text_orig": "Stay with me.",
+          "wav_path": "/tmp/cycle2k_bench/audio/T5/p4.wav"
+        },
+        "p5": {
+          "ok": true,
+          "ttfb_ms": 3,
+          "total_ms": 1230,
+          "wav_bytes": 118828,
+          "pcm_bytes": 118784,
+          "duration_ms": 1346,
+          "peak": 18800,
+          "text_sent": "[911 dispatcher voice] Help is on the way.",
+          "text_orig": "Help is on the way.",
+          "wav_path": "/tmp/cycle2k_bench/audio/T5/p5.wav"
+        }
+      }
+    }
+  },
+  "bench_metadata": {
+    "run_iso": "2026-04-26T04:00:00Z",
+    "cycle": "cycle-2k",
+    "patch_sites": [
+      "fish_speech_tts.py: PRISM42_FISH_PACE_TAG env wrap at synth-call site (req-time read)",
+      "orchestrator.py: comma-discouragement directive in HARD RULES of FAST_DISPATCHER_SYSTEM_PROMPT",
+      "systemd: removed 40-cycle2f.conf, added 70-cycle2k-pacetag.conf (PACE_TAG=\"\" for baseline)"
+    ],
+    "pod_paths_canonical": {
+      "adapter": "/opt/prism42/agents/livekit/fish_speech_tts.py",
+      "orchestrator": "/opt/prism42/agents/livekit/orchestrator.py",
+      "pace_tag_dropin": "/etc/systemd/system/prism42-worker.service.d/70-cycle2k-pacetag.conf",
+      "backups": [
+        "/opt/prism42/agents/livekit/fish_speech_tts.py.pre-cycle2k",
+        "/opt/prism42/agents/livekit/orchestrator.py.pre-cycle2k",
+        "/tmp/40-cycle2f.conf.bak"
+      ]
+    },
+    "health_at_bench_start": "ALL_4_GREEN_HTTP (worker=active, fish=active+200, parakeet=200, vllm=200, pid 389310 alive)",
+    "health_at_bench_end": "ALL_4_GREEN_HTTP (post-bench verified)",
+    "fish_request_shape": "mirror of fish_speech_tts.py:184-205 (chunk_length=200, normalize=True, streaming=True, max_new_tokens=1024, top_p=0.7, repetition_penalty=1.1, temperature=0.1, use_memory_cache=on, seed=911, references=[])",
+    "phrase_distinct_path": "all 5 phrases synthesized via direct Fish HTTP (no greeting cache used; bench is apples-to-apples with adapter behavior under PRISM42_FISH_PACE_TAG=<tag>)"
+  },
+  "rollback_instructions": {
+    "time_to_recover_s": 60,
+    "steps": [
+      "1. ssh prism-mla-b300-h4h5",
+      "2. sudo rm /etc/systemd/system/prism42-worker.service.d/70-cycle2k-pacetag.conf",
+      "3. (optional, restores cycle-2f-on state) sudo cp /tmp/40-cycle2f.conf.bak /etc/systemd/system/prism42-worker.service.d/40-cycle2f.conf  -- OR -- leave cycle-2f off (K2 recommendation)",
+      "4. sudo cp /opt/prism42/agents/livekit/fish_speech_tts.py.pre-cycle2k /opt/prism42/agents/livekit/fish_speech_tts.py",
+      "5. sudo cp /opt/prism42/agents/livekit/orchestrator.py.pre-cycle2k /opt/prism42/agents/livekit/orchestrator.py",
+      "6. sudo systemctl daemon-reload && sudo systemctl restart prism42-worker",
+      "7. Run findings/b300_bench/cycle2_guard/2026-04-25T13-56-50Z/health_check.sh (HTTP-only mode; vllm.pid hardcoded check is stale - safe to ignore)"
+    ]
+  }
+}

@@ -1,0 +1,88 @@
+CYCLE2K_INCONCLUSIVE_PENDING_LISTENING_PASS
+
+# Empirical winner (machine-decidable)
+recommended_tag: [urgent dispatcher pace]
+recommended_condition: T1
+empirical_basis:
+  - target wpm 175-200 (trained 911 dispatcher pace)
+  - P1 (slow phrase, the K1-binding case) wpm:
+      baseline=160.7, T1=193.5 (in target), T5=195.7 (in target),
+      T2=160.7, T3=159.3, T4=146.9 (got worse)
+  - T1 mean_sps 5.35 (mid conversational range 4-6)
+  - T5 mean_sps 6.33 (upper edge of conversational range,
+    risk of perceived rush on short phrases like P3 "Are they breathing")
+  - all 6 conditions: 5/5 success, min audio peak >= 7892
+    (well above silent threshold 5000)
+  - TTFB no regression: T1 = 88ms, baseline = 90ms
+
+alt_winner: [911 dispatcher voice] (T5)
+alt_rationale: same P1 wpm gain (+35.0 vs +32.8 for T1), but pushes short
+  phrases ~10% faster than T1 (mean_sps 6.33 vs 5.35). Safer if user
+  listens and decides T1 is too slow on P3/P5.
+
+# Why decision is held INCONCLUSIVE rather than auto-deployed
+1. Agent cannot listen. The audible-tag failure mode (K1 §Anticipated-
+   failure-mode) is not auto-detectable: a tag like "[urgent dispatcher
+   pace]" might be SPOKEN as words by Fish S2-Pro instead of consumed as
+   voice direction. wpm metric alone cannot distinguish "fast natural
+   speech" from "fast speech that begins with the literal phrase 'urgent
+   dispatcher pace'." Listener must confirm bracket tokens are silent.
+2. Voice-identity drift risk. A tag may shift the speaker character
+   (different person sounding voice). Detectable only by ear.
+3. Comma cadence on P1. Even at 193.5 wpm the comma may still produce
+   an awkward micro-pause in T1; user may prefer T5 if the pause sounds
+   more natural at higher pace.
+
+# How to lock the decision (integrator)
+After human walks through listening_checklist.md and signs off:
+
+  IF user picks T1:
+    sudo tee /etc/systemd/system/prism42-worker.service.d/70-cycle2k-pacetag.conf <<EOF
+    [Service]
+    Environment=PRISM42_FISH_PACE_TAG=[urgent dispatcher pace]
+    EOF
+    sudo systemctl daemon-reload && sudo systemctl restart prism42-worker
+    Final state: CYCLE2K_DEPLOYED_T1
+
+  IF user picks T5:
+    same as above with PRISM42_FISH_PACE_TAG=[911 dispatcher voice]
+    Final state: CYCLE2K_DEPLOYED_T5
+
+  IF user rejects all tags (audible-tag bug or quality regression):
+    follow rollback below
+    Final state: CYCLE2K_ROLLED_BACK
+
+# Rollback (in result.json["rollback_instructions"] too)
+1. sudo rm /etc/systemd/system/prism42-worker.service.d/70-cycle2k-pacetag.conf
+2. echo -e "[Service]\nEnvironment=PRISM42_ENABLE_TTS_PROSODY_TAGS=1" \
+     | sudo tee /etc/systemd/system/prism42-worker.service.d/40-cycle2f.conf
+   (restores the pre-cycle2k cycle-2f-on state)
+   OR leave cycle-2f off if K2's recommendation stands.
+3. sudo cp /opt/prism42/agents/livekit/fish_speech_tts.py.pre-cycle2k \
+     /opt/prism42/agents/livekit/fish_speech_tts.py
+4. sudo cp /opt/prism42/agents/livekit/orchestrator.py.pre-cycle2k \
+     /opt/prism42/agents/livekit/orchestrator.py
+5. sudo systemctl daemon-reload && sudo systemctl restart prism42-worker
+6. Run findings/b300_bench/cycle2_guard/2026-04-25T13-56-50Z/health_check.sh
+   (HTTP-only mode — pid-check is stale, ignore).
+
+Time-to-recover: ~60s (one restart).
+
+# Current pod state at decision time
+- 70-cycle2k-pacetag.conf installed, PRISM42_FISH_PACE_TAG="" (empty,
+  baseline behavior — adapter pace-tag wrap is a no-op until tag is set)
+- 40-cycle2f.conf REMOVED (cycle-2f flag is OFF; orchestrator emits the
+  cycle-2d/2e baseline prompt with the new comma-discouragement directive
+  appended to HARD RULES)
+- 50-cycle2i-greeting.conf preserved (greeting cache still warms)
+- 10-vllm-model.conf, 20-vllm-max-tokens.conf preserved
+- fish_speech_tts.py + orchestrator.py: cycle-2k patched, .pre-cycle2k
+  backups in place
+- All 4 services GREEN post-bench (worker active, fish active + 200,
+  parakeet 200, vllm 200, vllm pid 389310 alive)
+
+# Sign-off
+Empirical recommendation: T1 [urgent dispatcher pace]
+Confidence: high on speed metric, UNKNOWN on audible-tag-as-words risk
+Listening pass required: yes — listening_checklist.md
+Ship-by: 75min budget held; bench complete at 2026-04-26T03:42Z

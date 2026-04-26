@@ -36,6 +36,16 @@ DEFAULT_REFERENCE_ID = os.environ.get("FISH_SPEECH_REFERENCE_ID", "")
 # Site-3 below skips inline assembly when reference_id is truthy.
 DEFAULT_REFERENCE_AUDIO_PATH = os.environ.get("PRISM42_FISH_REFERENCE_AUDIO", "").strip() or None
 DEFAULT_REFERENCE_AUDIO_TEXT = os.environ.get("PRISM42_FISH_REFERENCE_TEXT", "").strip() or None
+# Cycle-2k (2026-04-26): inline natural-language pace-tag prefix.
+# Fish S2-Pro accepts free-form `[tag]` directives inside the text
+# (vendor/fish-speech/README.md:111-115 — "15,000+ unique tags supported").
+# When PRISM42_FISH_PACE_TAG is non-empty, the adapter prepends the tag
+# string + space to every utterance before sending to Fish. Empty (default)
+# = no-op; the request body's text field is byte-for-byte identical to
+# the cycle-2j baseline. Bench-evaluated tag candidates per K1 §"Ranked
+# fix candidates" item 1: "[urgent dispatcher pace]", "[fast clear]",
+# "[news anchor pace]", "[brisk professional]", "[911 dispatcher voice]".
+DEFAULT_PACE_TAG = os.environ.get("PRISM42_FISH_PACE_TAG", "").strip()
 SAMPLE_RATE = 44_100
 CHANNELS = 1
 
@@ -181,8 +191,13 @@ class _FishSpeechStream(tts.ChunkedStream):
                     error=str(e)[:200],
                 )
                 references_payload = []
+        # Cycle-2k: read pace-tag at request time so a systemd drop-in
+        # change + worker restart applies without re-import. Empty
+        # string = no prefix (preserves cycle-2j baseline byte-for-byte).
+        _pace_tag = os.environ.get("PRISM42_FISH_PACE_TAG", "").strip()
+        text_with_tag = f"{_pace_tag} {self._text}" if _pace_tag else self._text
         body = {
-            "text": self._text,
+            "text": text_with_tag,
             # Fish Speech upstream rejects "pcm" with 500 "Unknown format"; only
             # accepts "wav" or "mp3" at /v1/tts. Under streaming=True the WAV
             # branch returns RAW 16-bit PCM samples at SAMPLE_RATE/CHANNELS
