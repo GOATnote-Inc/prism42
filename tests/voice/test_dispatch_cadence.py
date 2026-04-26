@@ -517,6 +517,82 @@ def test_collapse_cue_variants():
         assert not m, f"Should NOT match {utterance!r}, got {m.group(0)!r}"
 
 
+# ------------------------------------------------------------------
+# Cycle-2D11 — cardiac short-circuit on "my <relation> passed out"
+# Cycle-2D12 — CPR coaching anti-repeat (alternate with CLOSEOUT)
+# ------------------------------------------------------------------
+
+
+def test_cardiac_short_circuit_my_friend_passed_out():
+    """Repro from user attestation 2026-04-26 15:06: caller's turn 2
+    was 'My friend passed out.' Dispatcher repeated 'What is happening
+    at that location?' instead of jumping to CRITICAL_VERIFY because
+    the inline regex required (he|she|they|the patient) subject and
+    didn't match 'my friend.'
+
+    Cycle-2D11 extends subject set to '(he|she|they|the patient|my \\w+)'
+    with up to 2-word filler between subject and verb."""
+    fsm = DispatcherFSM()
+    fsm.transition("100 river drive")
+    intent = fsm.transition("my friend passed out")
+    assert fsm.is_cardiac_arrest is True
+    assert fsm.state == State.CRITICAL_VERIFY
+
+
+def test_cardiac_short_circuit_my_relation_variants():
+    """All common relation nouns work: husband, wife, mom, dad, etc."""
+    cases = [
+        "my husband collapsed",
+        "my wife fainted",
+        "my mom went down",
+        "my dad just passed out",
+        "my son fell",
+        "my daughter has just collapsed",  # 2-word filler
+        "my friend went unconscious",
+    ]
+    for utterance in cases:
+        fsm = DispatcherFSM()
+        fsm.transition("100 main st")
+        fsm.transition(utterance)
+        assert fsm.is_cardiac_arrest is True, (
+            f"{utterance!r} should trigger cardiac short-circuit, "
+            f"got is_cardiac_arrest={fsm.is_cardiac_arrest}"
+        )
+
+
+def test_cpr_coaching_alternates_with_closeout():
+    """Cycle-2D12: in CRITICAL_CPR, two consecutive INSTRUCT_CPR_BEGIN
+    emits then CLOSEOUT, then back to INSTRUCT_CPR_BEGIN.
+
+    Repro from user attestation 2026-04-26 15:07: dispatcher emitted
+    'Push hard and fast on the center of the chest, twice per second.'
+    FOUR times in a row across turns 5-8. Cycle-2D12 caps at 2 then
+    alternates with 'Stay on the line until they get there.'"""
+    fsm = DispatcherFSM()
+    # Force into CRITICAL_CPR with all latches set.
+    fsm.is_cardiac_arrest = True
+    fsm.surface_confirmed = True
+    fsm.breathing_assessed = True
+    fsm.state = State.CRITICAL_CPR
+
+    i1 = fsm.transition("okay")
+    i2 = fsm.transition("he is doing weird breathing")
+    i3 = fsm.transition("it is hard")
+    i4 = fsm.transition("continuing")
+    i5 = fsm.transition("still going")
+    i6 = fsm.transition("almost there")
+
+    assert i1 == Intent.INSTRUCT_CPR_BEGIN
+    assert i2 == Intent.INSTRUCT_CPR_BEGIN
+    assert i3 == Intent.CLOSEOUT, (
+        f"After 2 INSTRUCT_CPR_BEGIN emits, FSM must alternate to "
+        f"CLOSEOUT. Got {i3}"
+    )
+    assert i4 == Intent.INSTRUCT_CPR_BEGIN  # back to compressions
+    assert i5 == Intent.INSTRUCT_CPR_BEGIN
+    assert i6 == Intent.CLOSEOUT  # alternation continues
+
+
 def test_e2e_user_repro_address_echoed_and_no_dead_air():
     """End-to-end: caller's screenshot scenario.
 

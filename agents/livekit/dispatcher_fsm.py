@@ -702,8 +702,17 @@ class DispatcherFSM:
                 r"breathing at all|"
                 # Cycle-2D10: sudden collapse cues (3rd-person only;
                 # 1st-person fainting is NOT an arrest indicator).
-                r"(?:he|she|they|the patient) (?:fell|collapsed|"
-                r"passed out|fainted|went down|dropped)|"
+                # Cycle-2D11: extended subject set to catch "my friend
+                # passed out", "my husband collapsed", etc. Caller's
+                # reported relation is the canonical 3rd-person subject
+                # in 911 calls; previous regex required pronoun.
+                # Up-to-2-word filler between subject and verb so
+                # "my friend just passed out" / "my mom suddenly fainted"
+                # also match.
+                r"(?:he|she|they|the patient|my \w+) "
+                r"(?:\w+\s+){0,2}"
+                r"(?:fell|collapsed|passed out|fainted|"
+                r"went (?:down|out|unconscious)|dropped)|"
                 r"unconscious)\b",
                 utterance, re.IGNORECASE,
             )
@@ -964,6 +973,23 @@ class DispatcherFSM:
         q = self._direct_question_intent(f)
         if q is not None:
             return self._record(q, t0)
+        # Cycle-2D12: anti-repeat for CPR coaching. After 2 verbatim
+        # emits of "Push hard and fast on the center of the chest,
+        # twice per second," alternate with CLOSEOUT ("Stay on the
+        # line until they get there.") so the caller gets variation.
+        # CPR continues — the FSM keeps coming back to compressions —
+        # but words don't drone verbatim. Reset counter on alternation
+        # so the pattern is PUSH PUSH STAY PUSH PUSH STAY...
+        if (self._instruction_emits >= 2
+                and self.last_intent == Intent.INSTRUCT_CPR_BEGIN):
+            log.info("fsm.cpr_loop_alternate_closeout",
+                     instruction_emits=self._instruction_emits)
+            self._instruction_emits = 0
+            return self._record(Intent.CLOSEOUT, t0)
+        if self.last_intent == Intent.INSTRUCT_CPR_BEGIN:
+            self._instruction_emits += 1
+        else:
+            self._instruction_emits = 1
         return self._record(Intent.INSTRUCT_CPR_BEGIN, t0)
 
     # ---- direct-question router ---------------------------------------
