@@ -489,6 +489,12 @@ class DispatcherFSM:
           breathing or gasping (both confirm cardiac arrest).
         - Both confirmed -> jump to CRITICAL_CPR with INSTRUCT_CPR_BEGIN.
         """
+        # Cycle-2P2 (Team P A3): direct caller questions ("Should I move
+        # him?", "How long until they get here?") take priority over
+        # re-emitting the verify question. Mirrors _intent_in_cpr.
+        q = self._direct_question_intent(f)
+        if q is not None:
+            return self._record(q, t0)
         if not self.surface_confirmed:
             self.verify_step = VerifyStep.Q_SURFACE
             return self._record(Intent.VERIFY_SURFACE, t0)
