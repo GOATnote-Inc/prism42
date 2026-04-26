@@ -217,6 +217,15 @@ TEMPLATES: dict[str, TemplateSpec] = {
         text="Responders are close, so tell me if anything changes.",
         notes="ANSWER 'will they make it?'. NEVER promise.",
     ),
+    # Cycle-2R3 (B1-A): caller asking "did you hear my address?" /
+    # "where are you sending them?" — re-confirm the address was captured
+    # and units are en route. Only fires when address_known is already
+    # True (FSM never routes here in INTAKE).
+    "answer_heard_address": TemplateSpec(
+        # 11 words. Single sentence. Reassures caller dispatch is real.
+        text="Yes, I have your address and units are on the way.",
+        notes="ANSWER 'did you hear my address?' — reassures caller their address was captured.",
+    ),
 
     # ----- Defaults / fallback (2 intents) ---------------------------
     # REPROMPT can also be a fixed template — we do that here for
