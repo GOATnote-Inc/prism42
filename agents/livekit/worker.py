@@ -767,15 +767,32 @@ async def entrypoint(ctx: JobContext) -> None:
     #     warms Fish for a latency win; max_speech_duration=12 covers
     #     longer 911 utterances.
     session = AgentSession(
-        vad=silero.VAD.load(),
+        # Cycle-2I: raise min_silence_duration above the 0.55 s default
+        # so caller pauses between street number, street name, and
+        # apartment do not register as end-of-speech. Silero FAQ
+        # explicitly recommends raising this for dictation scenarios.
+        # Tunable via PRISM42_VAD_MIN_SILENCE_S (default 0.9 s).
+        vad=silero.VAD.load(
+            min_silence_duration=float(
+                os.environ.get("PRISM42_VAD_MIN_SILENCE_S", "0.9")
+            ),
+        ),
         stt=ParakeetSTT(ParakeetOptions()),
         llm=_llm,
         tts=_tts,
         turn_handling={
             "endpointing": {
                 "mode": "dynamic",
-                "min_delay": 0.6,
-                "max_delay": 4.0,
+                # Cycle-2I: raise min_delay floor to 1.0 s so address-
+                # dictation mid-pauses (0.6-0.9 s typical) do not fire
+                # end-of-speech. Dynamic-EMA pulls effective delay back
+                # down for fluent callers. max_delay=4.0 preserved.
+                "min_delay": float(os.environ.get(
+                    "PRISM42_ENDPOINT_MIN_DELAY_S", "1.0"
+                )),
+                "max_delay": float(os.environ.get(
+                    "PRISM42_ENDPOINT_MAX_DELAY_S", "4.0"
+                )),
             },
             "interruption": {
                 "enabled": True,
@@ -1292,6 +1309,26 @@ async def entrypoint(ctx: JobContext) -> None:
         filler_state["turns_seen"] += 1
         if filler_state["turns_seen"] <= 1:
             return
+        # Cycle-2I: do NOT fire fillers during INTAKE phase. Address
+        # dictation has natural intra-utterance pauses (0.6-0.9 s
+        # between digit groups + street name + apt) that VAD reads as
+        # end-of-speech. Filler audio talks over the caller's resume.
+        # The cycle-2T response_gate template path renders intake
+        # confirmation in <50 ms — no Fish-latency mask needed here.
+        # PRISM42_FILLER_INTAKE_DISABLE=0 reverts to cycle-2Q behavior.
+        if os.environ.get("PRISM42_FILLER_INTAKE_DISABLE", "1") == "1":
+            try:
+                fsm = getattr(orchestrator, "fsm", None)
+                phase = getattr(getattr(fsm, "state", None), "value", "")
+                if phase in ("intake", "address_confirmed"):
+                    log.info(
+                        "filler.suppressed_intake",
+                        session_id=session_id,
+                        phase=phase,
+                    )
+                    return
+            except Exception:  # noqa: BLE001
+                pass  # fall through to default behavior on error
         prev = filler_state["pending_task"]
         if prev is not None and not prev.done():
             prev.cancel()
