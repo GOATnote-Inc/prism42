@@ -12,7 +12,7 @@ system — see [`docs/pipeline-narrative.md`](docs/pipeline-narrative.md)
 for the full thesis.
 
 No speculative findings. No benchmark numbers we didn't measure
-ourselves. No AI-slop. Every claim on the landing page traces to a
+ourselves. Every claim on the landing page traces to a
 session ID; every session ID reproduces with a shell command; every
 agent the public talks to has an auditor running the same dialectic
 that found the kernel bugs.
