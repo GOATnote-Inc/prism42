@@ -1,0 +1,64 @@
+{
+  "vercel_env": {
+    "production": {
+      "NEXT_PUBLIC_LIVEKIT_URL": "wss://ai-therapy-v3svfd9o.livekit.cloud (Encrypted in `vercel env list`, decoded by deployed runtime to wss URL)"
+    },
+    "development": {
+      "NEXT_PUBLIC_LIVEKIT_URL": "wss://ai-therapy-v3svfd9o.livekit.cloud (unchanged)"
+    },
+    "preview": {
+      "NEXT_PUBLIC_LIVEKIT_URL": "<not added; CLI required interactive flag combination not available in this session — production was the priority>"
+    }
+  },
+  "vercel_redeploy": {
+    "trigger": "vercel redeploy https://prism42-console-dfx6l3fft-goatnote.vercel.app --target=production --scope goatnote",
+    "new_production_url": "https://prism42-console-20p69xsx1-goatnote.vercel.app",
+    "aliased_to": "prism42-console.vercel.app",
+    "build_duration": "41s",
+    "status": "Ready"
+  },
+  "browser_to_worker_url_check": {
+    "method": "POST https://prism42-console.vercel.app/prism42/api/livekit-token",
+    "response_livekit_url": "wss://ai-therapy-v3svfd9o.livekit.cloud",
+    "matches_worker_dial": true
+  },
+  "pod_env_dot_env_line_11": "# FISH_SPEECH_REFERENCE_ID=psap  # cycle-2N-fix: removed for MW reference; restore via uncomment if rollback",
+  "pod_processes": {
+    "prism42-worker.MainPID": 468115,
+    "prism42-fish.MainPID": 466599,
+    "prism42-vllm_pid_observed_in_pgrep": 389310,
+    "prism42-fish.systemctl_is_active": "active",
+    "prism42-worker.systemctl_is_active": "active"
+  },
+  "pod_health_probes": {
+    "fish_127.0.0.1:9200_v1_health": "HTTP 200",
+    "vllm_127.0.0.1:8001_v1_models": "HTTP 200"
+  },
+  "worker_proc_env_relevant": {
+    "PRISM42_FISH_REFERENCE_AUDIO": "/opt/prism42/voice-refs/mw_sample.wav",
+    "PRISM42_FISH_REFERENCE_TEXT": "Bleeding, choking, or trouble breathing? Help is being sent while I ask these questions. Listen carefully and follow my instructions. Are you safe where you are? Do you see smoke, fear?",
+    "FISH_SPEECH_REFERENCE_ID": "(empty)",
+    "Q1_fix_verified": "FISH_SPEECH_REFERENCE_ID is empty (was =psap pre-fix)"
+  },
+  "worker_log_events_post_fix": {
+    "greeting.911.reference_voice_loaded": {
+      "fired": true,
+      "first_at": "2026-04-26 07:17:03",
+      "bytes": 1323044,
+      "path": "/opt/prism42/voice-refs/mw_sample.wav",
+      "text_chars": 185
+    },
+    "greeting.911.cache_warmed_post_patch": {
+      "at": "2026-04-26 07:17:15",
+      "wav_bytes": 319532,
+      "pcm_bytes": 315756,
+      "duration_ms": 3580,
+      "note": "Different size from psap-voice cache (380972/331820 bytes pre-fix), confirming new MW voice render"
+    },
+    "greeting_cache_file_mtime": "Apr 26 07:17 — new MW-voice render"
+  },
+  "synthetic_caller_smoke": {
+    "verdict_post_q1_fix": "PASS — full turn round-trip works (07:13)",
+    "verdict_post_q4b_patch": "PASS — full turn round-trip works (07:17)"
+  }
+}

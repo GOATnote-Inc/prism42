@@ -1,0 +1,38 @@
+{
+  "vercel_env": {
+    "production": {
+      "NEXT_PUBLIC_LIVEKIT_URL": "\"\""
+    },
+    "development": {
+      "NEXT_PUBLIC_LIVEKIT_URL": "wss://ai-therapy-v3svfd9o.livekit.cloud"
+    },
+    "preview": {
+      "NEXT_PUBLIC_LIVEKIT_URL": "<not set>"
+    }
+  },
+  "pod_env_dot_env_line_11": "FISH_SPEECH_REFERENCE_ID=psap",
+  "pod_systemd_dropins": {
+    "/etc/systemd/system/prism42-worker.service.d/100-cycle2N-mwref.conf": {
+      "lines": [
+        "Environment=\"PRISM42_FISH_REFERENCE_AUDIO=/opt/prism42/voice-refs/mw_sample.wav\"",
+        "Environment=\"PRISM42_FISH_REFERENCE_TEXT=Bleeding, choking, or trouble breathing? Help is being sent while I ask these questions. Listen carefully and follow my instructions. Are you safe where you are? Do you see smoke, fear?\"",
+        "Environment=FISH_SPEECH_REFERENCE_ID="
+      ],
+      "note": "Empty Environment= is no-op in systemd; .env line 11 still wins. UnsetEnvironment is the canonical clear."
+    }
+  },
+  "pod_processes": {
+    "prism42-worker.MainPID": 462080,
+    "prism42-fish.MainPID": 383030,
+    "prism42-vllm_pid_observed_in_pgrep": 389310
+  },
+  "worker_proc_env_relevant": {
+    "PRISM42_FISH_REFERENCE_AUDIO": "/opt/prism42/voice-refs/mw_sample.wav",
+    "PRISM42_FISH_REFERENCE_TEXT": "Bleeding, choking, or trouble breathing? Help is being sent while I ask these questions. Listen carefully and follow my instructions. Are you safe where you are? Do you see smoke, fear?",
+    "FISH_SPEECH_REFERENCE_ID": "psap",
+    "bug_confirmed": "FISH_SPEECH_REFERENCE_ID=psap (Q1 root cause confirmed)"
+  },
+  "vercel_project": "prism42-console",
+  "vercel_project_id": "prj_UCqQGmKnXhmqeQgwIHWJ9zzfX4vP",
+  "vercel_production_url": "https://prism42-console.vercel.app"
+}

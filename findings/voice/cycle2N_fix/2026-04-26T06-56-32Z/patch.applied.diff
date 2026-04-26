@@ -1,0 +1,51 @@
+diff --git a/agents/livekit/worker.py b/agents/livekit/worker.py
+index e07a9f3..ebc49c0 100644
+--- a/agents/livekit/worker.py
++++ b/agents/livekit/worker.py
+@@ -218,6 +218,34 @@ def _warm_greeting_cache_blocking(fish_url: str) -> bool:
+     back to NOT firing the greeting rather than hanging the session).
+     """
+     global _GREETING_PCM_BYTES, _GREETING_AUDIO_DURATION_MS, _GREETING_WARM_FAILED
++    # Cycle-2N Q4-B fix (2026-04-26): the greeting was bypassing the
++    # FishSpeechTTS adapter's references_payload logic and rendering in
++    # Fish's untrained stock voice. Mirror the cycle-2j adapter pattern
++    # here so the greeting uses the MW reference voice when env is set.
++    # Engine semantics (vendor/.../inference_engine/__init__.py:48-57):
++    # when reference_id is non-None, `references` is silently dropped.
++    _ref_path = os.environ.get("PRISM42_FISH_REFERENCE_AUDIO", "").strip() or None
++    _ref_text = os.environ.get("PRISM42_FISH_REFERENCE_TEXT", "").strip() or None
++    _ref_id = os.environ.get("FISH_SPEECH_REFERENCE_ID", "").strip() or None
++    references_payload: list[dict] = []
++    if not _ref_id and _ref_path and _ref_text:
++        try:
++            with open(_ref_path, "rb") as f:
++                _audio_bytes = f.read()
++            references_payload = [{"audio": _audio_bytes, "text": _ref_text}]
++            log.info(
++                "greeting.911.reference_voice_loaded",
++                path=_ref_path,
++                bytes=len(_audio_bytes),
++                text_chars=len(_ref_text),
++            )
++        except OSError as e:
++            log.warning(
++                "greeting.911.reference_voice_load_failed",
++                path=_ref_path,
++                error=str(e)[:200],
++            )
++            references_payload = []
+     body = {
+         "text": GREETING_TEXT,
+         "format": "wav",
+@@ -233,8 +261,10 @@ def _warm_greeting_cache_blocking(fish_url: str) -> bool:
+         "temperature": 0.1,
+         "use_memory_cache": "on",
+         "seed": 911,
+-        "references": [],
++        "references": references_payload,
+     }
++    if _ref_id:
++        body["reference_id"] = _ref_id
+     try:
+         with httpx.Client(timeout=30.0) as client:
+             with client.stream(
