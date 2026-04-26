@@ -1,0 +1,81 @@
+{
+  "condition": "M2",
+  "wav": "/opt/prism42/voice-refs/wav_M2.wav",
+  "phrases": [
+    {
+      "phrase_id": "p1",
+      "phrase_text": "Nine one one, where is your emergency?",
+      "ttfb_ms": 5,
+      "total_ms": 2754,
+      "wav_path": "/tmp/cycle2M_out/M2/p1.wav",
+      "wav_bytes": 319576,
+      "samples": 159766,
+      "duration_s": 3.623,
+      "peak": 28006,
+      "rms": 1788.0,
+      "all_zeros": false,
+      "wpm_proxy": 115.9,
+      "success": true
+    },
+    {
+      "phrase_id": "p2",
+      "phrase_text": "What's your location?",
+      "ttfb_ms": 5,
+      "total_ms": 1211,
+      "wav_path": "/tmp/cycle2M_out/M2/p2.wav",
+      "wav_bytes": 110680,
+      "samples": 55318,
+      "duration_s": 1.254,
+      "peak": 28006,
+      "rms": 2652.3,
+      "all_zeros": false,
+      "wpm_proxy": 143.5,
+      "success": true
+    },
+    {
+      "phrase_id": "p3",
+      "phrase_text": "Are they breathing?",
+      "ttfb_ms": 5,
+      "total_ms": 969,
+      "wav_path": "/tmp/cycle2M_out/M2/p3.wav",
+      "wav_bytes": 77912,
+      "samples": 38934,
+      "duration_s": 0.883,
+      "peak": 28006,
+      "rms": 2052.7,
+      "all_zeros": false,
+      "wpm_proxy": 203.9,
+      "success": true
+    },
+    {
+      "phrase_id": "p4",
+      "phrase_text": "Stay with me.",
+      "ttfb_ms": 5,
+      "total_ms": 1061,
+      "wav_path": "/tmp/cycle2M_out/M2/p4.wav",
+      "wav_bytes": 90200,
+      "samples": 45078,
+      "duration_s": 1.022,
+      "peak": 28006,
+      "rms": 1283.8,
+      "all_zeros": false,
+      "wpm_proxy": 176.1,
+      "success": true
+    },
+    {
+      "phrase_id": "p5",
+      "phrase_text": "Help is on the way.",
+      "ttfb_ms": 5,
+      "total_ms": 1148,
+      "wav_path": "/tmp/cycle2M_out/M2/p5.wav",
+      "wav_bytes": 102488,
+      "samples": 51222,
+      "duration_s": 1.161,
+      "peak": 28006,
+      "rms": 1527.1,
+      "all_zeros": false,
+      "wpm_proxy": 258.4,
+      "success": true
+    }
+  ]
+}
