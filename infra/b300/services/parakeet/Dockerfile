@@ -35,7 +35,7 @@ WORKDIR /app
 # Blackwell datacentre (B200 sm_100, B300 sm_103), and Blackwell
 # GeForce (sm_120/sm_121) with +PTX fallback for forward-compat.
 # Needed whenever a pip install inside this image compiles CUDA
-# kernels from source (e.g. flash-attn, torch-scatter). See
+# kernels from source (e.g. attention kernels, torch-scatter). See
 # CLAUDE.md "Recent best-practice synthesis" → B300 section.
 ENV TORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0 10.0 10.3 12.0 12.1+PTX"
 

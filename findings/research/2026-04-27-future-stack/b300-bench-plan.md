@@ -167,8 +167,8 @@ phase); Team D runs locally (doc only).
   the Hopper-rail reference (the dominant production GPU today) but
   not as a Blackwell-roadmap preview.
 - **Inputs:** `mla/` package (`/Users/kiteboard/prism42/mla/`), the
-  evolutionary search runners, golden test set, FlashAttention-class
-  reference kernels for SM 9.0.
+  evolutionary search runners, golden test set, production attention
+  kernel implementations for SM 9.0.
 - **Success criteria:**
   - JSON artifacts under `findings/private/h200-bench-2026-04-27/
     team-c/` capturing: ref-impl correctness pass on H200, p50/p99
