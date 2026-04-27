@@ -45,7 +45,7 @@ os.environ.setdefault("PRISM42_ENABLE_FSM", "1")
 os.environ.setdefault("PRISM42_ENABLE_RESPONSE_GATE", "1")
 os.environ.setdefault("PRISM42_FILLER_DELAY_S", "0.3")
 os.environ.setdefault("STT_BACKEND", "parakeet")
-os.environ.setdefault("TTS_BACKEND", "elevenlabs")
+os.environ.setdefault("TTS_BACKEND", "nvidia_magpie")
 os.environ.setdefault("LLM_BACKEND", "vllm-local")
 os.environ.setdefault("VLLM_BASE_URL", "http://127.0.0.1:8000/v1")
 os.environ.setdefault(
