@@ -275,9 +275,24 @@ class ResponseGate:
     # ---- Routing -----------------------------------------------------
 
     def should_use_template(self, intent_value: str) -> bool:
-        """Return True when this intent renders deterministically."""
+        """Return True when this intent renders deterministically.
+
+        Cycle-2Q3 (2026-04-27): direct-answer intents always route to LLM
+        so the caller's specific question gets a context-aware response,
+        not a fixed template. Templates were producing reassurance-flavored
+        loops on "where are you sending help?" / "did you hear me?" turns.
+        Safety-template intents (CPR / cardiac-arrest gates) still
+        force-template via _SAFETY_TEMPLATE_ONLY above.
+        """
         if intent_value in _SAFETY_TEMPLATE_ONLY:
             return True
+        if intent_value in (
+            "answer_do_not_move",
+            "answer_how_long",
+            "answer_outcome_uncertain",
+            "answer_heard_address",
+        ):
+            return False
         return intent_value in TEMPLATES
 
     def render_template_for(self, intent_value: str) -> str | None:

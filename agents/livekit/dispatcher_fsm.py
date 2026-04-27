@@ -1198,8 +1198,10 @@ class DispatcherFSM:
             "Do NOT promise an outcome. Tell the caller responders are "
             "close and to tell you if anything changes.",
         Intent.ANSWER_HEARD_ADDRESS:
-            "Reassure the caller: yes, you have their address and units "
-            "are on the way.",
+            "Confirm directly: yes, you have the address. State the address "
+            "back in 5-7 words. Then ask the next key question (responsive? "
+            "breathing? bleeding?). Do NOT add reassurance phrasing — no "
+            "'stay with me', no 'I'm with you', no 'units are on the way'.",
         Intent.REPROMPT:
             "Ask the caller to repeat what they just said.",
         Intent.CLOSEOUT:
@@ -1239,8 +1241,15 @@ class DispatcherFSM:
         latched_lines = []
         if self.reassurance_done:
             latched_lines.append(
-                "  - Reassurance ALREADY DELIVERED. Do NOT say 'help is on "
-                "the way' / 'help's coming' / 'units are en route' again."
+                "  - Reassurance ALREADY DELIVERED. Do NOT emit ANY of the "
+                "following phrasings or close synonyms: 'help is on the way' "
+                "/ 'help's coming' / 'units are en route' / 'stay with me' / "
+                "'stay on the line' / 'I'm with you' / 'I hear you' / "
+                "'I'm right here' / 'hold with me' / 'don't hang up' / "
+                "'keep talking to me'. Reassurance phrasing is BANNED for "
+                "the rest of the call. Answer the caller's specific "
+                "question, or ask the next key question, with NO co-presence "
+                "or encouragement language attached."
             )
         if self.is_cardiac_arrest and self.state == State.CRITICAL_VERIFY:
             latched_lines.append(
