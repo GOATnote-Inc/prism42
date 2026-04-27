@@ -47,7 +47,10 @@ region and is research-scope.
 — 5 pods failed across `verda_B300`, `verda_B200`, `verda_H200x2`.
 Brev's own error message: *"retry on a different cloud."* Pivoted
 to Hyperstack/Montreal — first attempt at 2× H100 (`amazing-coral-
-bee`) also failed; eventually got an H200 (`warm-lavender-narwhal`).
+bee`) also failed. Final landing: **Nebius eu-north-1** (a third
+cloud) on a single H200 141 GiB (`warm-lavender-narwhal`). The
+parallel session's `prism-mla-h100` (1× H100, Hyperstack/Montreal)
+is independent and stays with them for live-demo restoration.
 
 **This changes the measurement matrix.** Hopper is SM 9.0 with FP8-
 native tensor cores; B300 is Blackwell Ultra SM 10.3 with **NVFP4-
@@ -62,7 +65,7 @@ TP=2 needed, the "do I need 2 GPUs" question dissolves.
 
 | Pod | Hardware | State | Owner | Use |
 |---|---|---|---|---|
-| `warm-lavender-narwhal` | 1× **H200 141 GiB HBM3e**, 16 vCPU, 200 GiB RAM | Deploying / syncing | **THIS session** | All 4 bench teams |
+| `warm-lavender-narwhal` (`pdlpt96nl`) | 1× **H200 141 GiB HBM3e**, 16 vCPU, 200 GiB RAM, 256 GiB storage, **Nebius eu-north-1**, $4.24/hr | **Running / Built (READY)** | **THIS session** | All 4 bench teams |
 | `prism-mla-h100` (`x3rytha2l`) | 1× H100 80 GB, 28 vCPU, 180 GiB RAM | Running / Building | Parallel session | Live-demo restore (Parakeet + Fish + voice). DO NOT touch. |
 | `amazing-coral-bee` (`f5ubt2usb`) | 2× H100 (FAILURE) | Failed, $0/hr | — | Slot-blocking; deletable |
 

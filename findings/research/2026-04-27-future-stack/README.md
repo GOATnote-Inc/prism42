@@ -16,7 +16,8 @@ the work scoped here. Adoption decisions stay with the user.
 | [`cosmos-reason2-2b.md`](cosmos-reason2-2b.md) | 🟡 Yellow — RadSlice yes, prism42 voice no | Cosmos is general-purpose physical AI; **vLLM is NVIDIA's official serving path**, not TRT-LLM. Best slot is RadSlice DICOM eval |
 | [`karpathy-autoresearch.md`](karpathy-autoresearch.md) | ⚠️ Attribution correction | `karpathy/autoresearch` optimizes LLM-training `val_bpb`, not RAG. Diagram dual-credits "Karpathy autoresearch · DSPy GEPA" — Karpathy named the pattern, DSPy GEPA is the maintained RAG implementation |
 | [`medical-fine-tune-plan.md`](medical-fine-tune-plan.md) | 📋 User-led, post-corpus | User's chosen path over BioNeMo or MedGemma: build a curated medical corpus (no Claude outputs), fine-tune Nemotron-Nano. Anthropic AUP-clean. Sketch only — assistant scopes, user owns execution |
-| [`b300-bench-plan.md`](b300-bench-plan.md) | 🛠️ OODA + 4 agent teams | Operating plan for the `final-gold-ox` research pod (Verda/Helsinki). Cost ceiling $50/session, halt-and-report on anomaly. No prod touch |
+| [`b300-bench-plan.md`](b300-bench-plan.md) | 🛠️ OODA + 4 agent teams | Operating plan for the `warm-lavender-narwhal` research pod (1× H200 141 GiB, Nebius/eu-north-1, $4.24/hr). Cost ceiling $50/session, halt-and-report on anomaly. No prod touch |
+| [`medical-corpus-skeleton.md`](medical-corpus-skeleton.md) | 📂 Team D delivered | Directory tree + manifest schema + AUP-gate + eval-quarantine + physician-review log shape for the user-led medical fine-tune corpus. Hardware-agnostic; $0 to land |
 | [`stack-diagram.md`](stack-diagram.md) | — | Mermaid mirror of the hero diagram with attribution corrections + runtime split notes |
 
 ## What changed 2026-04-27 (since the first commit)
