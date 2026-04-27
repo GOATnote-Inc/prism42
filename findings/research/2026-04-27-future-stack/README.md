@@ -20,6 +20,7 @@ the work scoped here. Adoption decisions stay with the user.
 | [`medical-corpus-skeleton.md`](medical-corpus-skeleton.md) | 📂 Team D delivered | Directory tree + manifest schema + AUP-gate + eval-quarantine + physician-review log shape for the user-led medical fine-tune corpus. Hardware-agnostic; $0 to land |
 | [`stack-diagram.md`](stack-diagram.md) | — | Mermaid mirror of the hero diagram with attribution corrections + runtime split notes |
 | [`h200-bench-team-a.md`](h200-bench-team-a.md) | 🟢 Team A complete | Nemotron-Nano-30B-A3B BF16 on H200: cold-load 621 s, steady-state 186 ms / 50-tok @ conc=1 (~269 tok/s). NVFP4 attempt blocked on vLLM 0.20.0 FlashInfer MoE backend gap; pivoted to BF16 sibling. Apples-to-apples baseline for future B300 NVFP4 run |
+| [`nvidia-voice-stack-architecture.md`](nvidia-voice-stack-architecture.md) | 🟢 Architecture lock | Synthesis of 4 research agents (Riva 2.15, Guardrails 0.21, nx-cugraph for medical KG, CUDA 13.2 reality). Aligns to `NVIDIA-AI-Blueprints/nemotron-voice-agent` reference. p95 < 1.1 s end-to-end achievable on H200 single-GPU. 2-phase plan: ship Riva NIMs today (50 min once `NVIDIA_API_KEY` populated); sequence Guardrails + KG when corpus lands |
 
 ## What changed 2026-04-27 (since the first commit)
 
