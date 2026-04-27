@@ -104,6 +104,59 @@ Operator rotated `NVIDIA_API_KEY` after a value-leak from the right session's de
 
 **Status update 2026-04-27 21:05 UTC (left): operator confirmed new key is set.** Either pod can now make NIM-auth calls again — but per Finding 6 below, the canonical sovereign TTS path no longer routes through NIM, so the practical demand for the new key is reduced.
 
+### Finding 6.5 — Operator architectural correction: NVIDIA-first ≠ Riva-first (operator, 2026-04-27 21:45 UTC)
+
+**The operator (Brandon Dent, MD) read the upstream docs himself and corrected the architectural framing both sessions had been working from.** Verbatim paste — do not edit, this is the contract:
+
+```text
+Magpie is NOT too heavy — the model is ~357M params and runs easily on H100/H200.
+
+The issue is the deployment path (NIM/Riva), not the model.
+
+Do NOT use NIM/Riva as the primary path.
+
+Instead:
+- Run Magpie via NeMo checkpoint (HF or local weights)
+- Avoid NGC login dependency at runtime
+- Keep it fully local + offline
+
+Fallback stack:
+Magpie → FastPitch/HiFiGAN → Piper
+
+Goal:
+NVIDIA-optimized inference without NGC-gated deployment.
+```
+
+```text
+Stay NVIDIA-first, but not Riva-first.
+
+Requirement: open/local/offline survivability.
+
+Proceed in this order:
+1. Try NVIDIA NeMo Magpie TTS locally from source / HF weights if available.
+2. If Magpie build is too heavy, use NVIDIA NeMo FastPitch + HiFiGAN as the NVIDIA-native open fallback.
+3. Add Piper only as last-resort CPU failsafe, not as the primary brand story.
+
+Do not choose Riva if it introduces paid/licensed or NGC-gated deployment. The contest story should be:
+"NVIDIA-optimized local voice stack on NVIDIA GPUs, with offline survivability."
+```
+
+**Sources the operator cited:**
+- https://docs.nvidia.com/nemo-framework/user-guide/latest/nemotoolkit/tts/magpietts.html — Magpie-TTS NeMo Framework page (357 M params, ~16 GB VRAM)
+- https://docs.nvidia.com/nim/speech/latest/reference/support-matrix/tts.html — NIM TTS support matrix (H100 in matrix; H200 missing — confirmed gap)
+- https://www.daily.co/blog/building-voice-agents-with-nvidia-open-models/ — 300-600 ms / sentence on modern GPUs
+- https://build.nvidia.com/nvidia/magpie-tts-multilingual/deploy — confirms NIM path requires NGC login + ~30 min first startup
+- https://build.nvidia.com/nvidia/magpie-tts-multilingual/modelcard — Magpie model card
+
+**Implications for the right session's three-ways-fork (A: Fish-from-GitHub / B: Riva 2.15 NIM / C: Coqui-XTTS or Piper):**
+
+- **A (Fish from `git+https://github.com/fishaudio/fish-speech`)** — the previous canonical was Fish Speech S2-Pro per the repo's `fish_speech_tts.py`, but the operator's update reframes Fish as outside the NVIDIA-first hierarchy. Fish stays as an *existing-code asset* but is no longer the primary brand story.
+- **B (Riva 2.15 NIM)** — explicitly OUT per the new policy. "Do NOT use NIM/Riva as the primary path."
+- **C (Coqui XTTS-v2 / Piper)** — Piper is acceptable ONLY as the CPU disaster-mode failsafe, not the primary path. Coqui XTTS is not in the NVIDIA-native hierarchy.
+- **D (NEW, recommended)** — NeMo Magpie from HF weights (`nvidia/magpie-tts-multilingual` on HuggingFace), loaded via `nemo.collections.tts.models.MagpieTTSModel.from_pretrained(...)` or equivalent. No NIM, no Riva server, no NGC auth at runtime. ~16 GB VRAM on H200 (fits comfortably alongside Parakeet 2.5 GB + Nemotron 30B BF16 ~60 GB; total ~80 GB of 141 GB on H200).
+
+**Right session: please confirm receipt of this in your next pull, drop the Riva 2.15 path (option B), and pivot to Option D — NeMo Magpie from HF weights.** If you've already started the Fish container build (per `findings/voice/where-are-we-going.md` your watcher is armed on it), let the build complete in case Fish is needed as a fallback, but TTS_BACKEND should target Magpie-via-NeMo as the new primary.
+
 ### Finding 6 — Magpie NIM × H200 compatibility gap; sovereign TTS = Fish Speech S2-Pro (right session, commit `0a4ed22`)
 
 The local Magpie NIM (`nvcr.io/nim/nvidia/magpie-tts-multilingual:latest` per the brief) has a manifest with profiles for `a100 / h100 / l40s / dgx_spark` only — **no H200 profile**. The NIM auto-selects `rmir-bs8` (generic) and compiles TRT engines that produce `audio_duration=0.0` on H200's `2335:10de` device. 138/138 requests returned silent audio. Not a config bug — a NIM × H200 compatibility gap that operator can't fix client-side.
