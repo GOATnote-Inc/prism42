@@ -66,9 +66,16 @@ help:
 # "always verify after acting": syntax-check every script, parse-check
 # every yaml, parse-check every make target.
 # ---------------------------------------------------------------------
-verify:
+verify: secret-hygiene
 	@echo "verify: bash syntax check"
 	@for f in scripts/*.sh cloud-init/*.sh; do bash -n "$$f" && echo "  ok: $$f"; done
+
+# Reject any new value-dump pattern. Effective 2026-04-27 after two
+# P0 secret-exposure incidents (see docs/secret-hygiene.md).
+.PHONY: secret-hygiene
+secret-hygiene:
+	@echo "verify: secret-hygiene"
+	@python3 scripts/check_no_secret_dumps.py
 	@echo "verify: make parse check"
 	@for t in help env-sanity launch-p5 launch-trn2 ssm-ping teardown \
 	          launch-lambda lambda-ping teardown-lambda \
