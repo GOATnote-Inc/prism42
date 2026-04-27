@@ -440,6 +440,11 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
             # runs as fire-and-forget so it never blocks speech. Output is
             # logged + relayed to the UI via dispatch_publisher; the FSM
             # is unaware. Phase 1 = observe-only. No fusion.
+            # Hoisted so the 5-role dispatches below can reference it even
+            # when the shadow-classifier branch is skipped (flag OFF).
+            turn_index_for_perception = (
+                getattr(_dp, "_turn_index", 0) if _dp is not None else 0
+            )
             try:
                 _shadow_client = getattr(self, "_shadow_classifier_client", None)
                 if (
@@ -447,9 +452,6 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
                     and _shadow_classify_async is not None
                     and _shadow_client is not None
                 ):
-                    turn_index_for_perception = (
-                        getattr(_dp, "_turn_index", 0) if _dp is not None else 0
-                    )
                     asyncio.create_task(
                         _run_shadow_classifier(
                             client=_shadow_client,
