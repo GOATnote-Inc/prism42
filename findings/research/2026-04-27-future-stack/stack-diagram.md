@@ -21,7 +21,7 @@ flowchart TD
 
     RAG --> Graph[nx-cugraph 26.04.00<br/>Medical Knowledge Graph<br/>GPU-resident]
 
-    Graph --> LLM[Nemotron Nano 30B-A3B NVFP4<br/>+ Cosmos-Reason2-2B<br/>vision companion]
+    Graph --> LLM[Nemotron Nano 30B-A3B NVFP4<br/>via TensorRT-LLM 1.2.1<br/>+ Cosmos-Reason2-2B<br/>via vLLM ≥ 0.12]
 
     LLM --> Five[Five Adversarial Roles<br/>Defender · Attacker · Synthesizer<br/>Executor · Adjudicator]
 
@@ -46,9 +46,10 @@ flowchart TD
 | CUDA driver (host) | 13.2.1 | NVIDIA Blackwell Compatibility Guide |
 | RAPIDS | 26.04 | rapids.ai |
 | nx-cugraph | 26.04.00 (April 9, 2026) | rapidsai/nx-cugraph |
-| vLLM | latest stable (v0.19.x line + B300 NVFP4 fixes) | vllm-project/vllm |
+| Nemotron serving | **TensorRT-LLM 1.2.1** (NGC `release:1.2.1`) | github.com/NVIDIA/TensorRT-LLM |
+| Cosmos serving | **vLLM ≥ 0.12** (Qwen3-VL stack) | github.com/vllm-project/vllm |
 | Nemotron Nano | `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4` | huggingface.co/nvidia |
-| Cosmos-Reason | `nvidia/Cosmos-Reason2-2B` (general-purpose; medical fine-tune planned, not public) | huggingface.co/nvidia |
+| Cosmos-Reason | `nvidia/Cosmos-Reason2-2B` (general-purpose; medical fine-tune is user-led work, not public) | huggingface.co/nvidia |
 | RAG framework | NVIDIA `GenerativeAIExamples/knowledge_graph_rag` | github.com/NVIDIA/GenerativeAIExamples |
 | Nightly optimizer | DSPy GEPA | dspy.ai/api/optimizers/GEPA |
 
@@ -59,12 +60,16 @@ flowchart TD
   acceleration. See `nx-cugraph-26.04.md`.
 - **Cosmos-Reason2-2B medical fine-tune does not exist publicly.** Planned
   work, not a checkpoint. See `cosmos-reason2-2b.md`.
-- **vLLM upgrade requires sandbox-first cutover** (NVFP4 CUDA-Graph
-  regression at batch > 1 is a known risk on Blackwell). See
-  `vllm-cuda-13.2.1.md`.
-- **DSPy GEPA replaces "Karpathy Autoresearch" as the nightly RAG
-  optimizer.** Karpathy's autoresearch optimizes language-model training,
-  not retrieval. See `karpathy-autoresearch.md`.
+- **Two-runtime serving on B300.** TRT-LLM 1.2.1 for Nemotron-Nano
+  (NVIDIA cookbook AutoDeploy path); vLLM ≥ 0.12 for Cosmos-Reason2-2B
+  (NVIDIA's official Qwen3-VL serving runtime). Sandbox-first
+  cutover for the Nemotron migration. See `tensorrt-llm-on-b300.md`
+  and `cosmos-reason2-2b.md`.
+- **DSPy GEPA + Karpathy autoresearch — dual-credit.** The hero
+  diagram caption reads "DSPy GEPA · tweaks retrieval, ranking,
+  subgraph logic. Runs nightly." Karpathy's autoresearch named the
+  *pattern* (LLM-training reference impl); DSPy GEPA is the
+  maintained RAG implementation. See `karpathy-autoresearch.md`.
 
 ## What's already deployed (do not confuse with the diagram)
 

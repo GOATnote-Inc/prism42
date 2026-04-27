@@ -54,15 +54,24 @@ The current production surface is the four stages above. The
 forward-looking architecture under research lives in
 [`findings/research/2026-04-27-future-stack/`](findings/research/2026-04-27-future-stack/):
 NVIDIA knowledge-graph RAG → nx-cugraph 26.04.00 medical graph →
-Nemotron-Nano-30B-A3B-NVFP4 + Cosmos-Reason2-2B on B300 (CUDA 13.2.1) →
-five-role dialectic → DSPy GEPA as the nightly RAG optimizer.
+Nemotron-Nano-30B-A3B-NVFP4 (TensorRT-LLM 1.2.1) + Cosmos-Reason2-2B
+(vLLM ≥ 0.12) on B300 (CUDA 13.2.1) → five-role dialectic → DSPy GEPA
+as the nightly RAG optimizer (named for Karpathy's autoresearch
+pattern).
 
 Each component has a written verdict (green / yellow / red) with cited
-sources; nothing in that directory is deployed. Two attribution
-corrections worth reading the briefs for: **Cosmos-Reason2-2B is
-general-purpose physical AI** (no public medical fine-tune yet), and
-**Karpathy's `autoresearch` optimizes LLM training, not RAG** — the
-nightly RAG optimizer of record is DSPy GEPA.
+sources; nothing in that directory is deployed. Notable corrections in
+the briefs: **two-runtime serving on B300** (TRT-LLM for Nemotron,
+vLLM for Cosmos — NVIDIA's official runtimes for each); **medical
+accuracy** is being addressed via a user-led Nemotron fine-tune on a
+curated medical corpus (BioNeMo dropped — biomolecular, not clinical-
+encounter); **Karpathy autoresearch dual-credited with DSPy GEPA** in
+the diagram caption (Karpathy named the pattern; GEPA is the
+maintained RAG implementation).
+
+The fresh research B300 (`final-gold-ox`, Verda/Helsinki) and its
+agent-team operating plan live at
+[`findings/research/2026-04-27-future-stack/b300-bench-plan.md`](findings/research/2026-04-27-future-stack/b300-bench-plan.md).
 
 ## The continuity claim
 
