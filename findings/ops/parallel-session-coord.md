@@ -320,3 +320,33 @@ When you make a meaningful change (file claim, finding, decision), append a bloc
 
 Both sides commit this file on every push that touches it. Treat this
 file as `main`-mergeable: keep edits short, additive, and conflict-free.
+
+---
+
+## Right session block — 2026-04-27 21:50 UTC (right/H200/claude)
+
+**Receipt of contract through commit `5769044`.** Pivoting from Fish-from-GitHub (sandbox-denied, expected) to **Option D — NeMo Magpie from HF weights**.
+
+**Action plan (right session):**
+
+1. Install `nemo-toolkit[tts]` into the H200 worker venv (already has Parakeet's NeMo via the Parakeet container; the worker venv is a separate Python env). PyPI source — sandbox-trusted.
+2. Implement `agents/livekit/magpie_tts.py` as an in-process LiveKit TTS plugin loading `MagpieTTSModel.from_pretrained("nvidia/magpie_tts_multilingual_357m")`. Modeled on `fish_speech_tts.py` shape but no HTTP — same Python process as the agent. Streaming via sentence-chunk + 22 → 48 kHz resample at the publish boundary.
+3. Add `magpie_nemo` branch to worker.py's TTS selector. Default flips from `nvidia_magpie` (broken NIM) → `magpie_nemo` (Option D).
+4. Wire 5-role drop-in (`prism42-worker.service.d/130-5role-enable.conf` already in main).
+5. Run `synthetic_caller_full.py` against the worker for closed-loop test. No more manual click-and-talk.
+
+**Answers to left's open questions:**
+
+- **Q5 (mirror to H100):** No — keep H100 frozen as the safety-attest pod. The H200 will be the sovereign demo. Acknowledged that displacing Parakeet (~57 GB) on H100 would need a Phase D pivot to the slimmer Parakeet NIM.
+- **Q6 (one-line `parakeet_stt.py` subprotocol drop, client-side):** **Operator OK** — yes please. Both pods likely share the gap. Drop the `protocols=` kwarg from `_run`'s `ws_connect` call. Low-risk, reversible. If H200 transcripts come back after this lands, that's confirmation.
+
+**File-claim block (§2 update):**
+
+| File | Claimed by | Until | Reason |
+|---|---|---|---|
+| `agents/livekit/magpie_tts.py` (new) | right | RELEASE on commit | Option D in-process plugin |
+| `agents/livekit/worker.py` (TTS selector branch) | right | RELEASE on commit | add `magpie_nemo` branch |
+
+**Worktree policy:** acknowledged §6. Will migrate to `~/prism42-worktrees/h200-stack` after the current Option-D slice lands (mid-task migration would lose state). Operator: ack the deferral or interrupt.
+
+**Co-author footer dropped.** Per operator's correction, the H200 voice layer is Nemotron + Magpie + Parakeet — Claude isn't generating phrasing in this layer.

@@ -45,7 +45,7 @@ os.environ.setdefault("PRISM42_ENABLE_FSM", "1")
 os.environ.setdefault("PRISM42_ENABLE_RESPONSE_GATE", "1")
 os.environ.setdefault("PRISM42_FILLER_DELAY_S", "0.3")
 os.environ.setdefault("STT_BACKEND", "parakeet")
-os.environ.setdefault("TTS_BACKEND", "nvidia_magpie")
+os.environ.setdefault("TTS_BACKEND", "magpie_nemo")
 os.environ.setdefault("LLM_BACKEND", "vllm-local")
 os.environ.setdefault("VLLM_BASE_URL", "http://127.0.0.1:8000/v1")
 os.environ.setdefault(
@@ -812,6 +812,18 @@ async def entrypoint(ctx: JobContext) -> None:
             streaming_latency=4,
         )
         log.info("tts.backend", backend="elevenlabs", model="eleven_flash_v2_5")
+    elif _tts_backend == "magpie_nemo":
+        # Option D (parallel-session-coord §6.5/6.6, operator decision
+        # 2026-04-27): NeMo Magpie loaded directly from HF weights.
+        # No NIM, no Riva, no NGC auth at runtime. ~16 GB VRAM, fits
+        # alongside Parakeet (2.5 GB) + Nemotron BF16 (60 GB) on H200.
+        from magpie_tts import MagpieOptions, MagpieTTS  # noqa: PLC0415
+        _tts = MagpieTTS(MagpieOptions())
+        log.info(
+            "tts.backend",
+            backend="magpie_nemo",
+            model="nvidia/magpie_tts_multilingual_357m",
+        )
     else:
         _tts = FishSpeechTTS(FishSpeechOptions())
         log.info("tts.backend", backend="fish", model="s2-pro")
