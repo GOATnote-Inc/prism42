@@ -286,13 +286,13 @@ class ResponseGate:
         """
         if intent_value in _SAFETY_TEMPLATE_ONLY:
             return True
-        if intent_value in (
-            "answer_do_not_move",
-            "answer_how_long",
-            "answer_outcome_uncertain",
-            "answer_heard_address",
-        ):
-            return False
+        # Cycle-2Q3 (rev 2026-04-27): keep direct-answer intents on the
+        # TEMPLATE path. Routing them to LLM produced hallucinated
+        # reassurance loops ("we have it logged, I am with you, I hear you")
+        # instead of the deterministic address echo ("Yes, I have you at
+        # <addr>, and units are on the way."). Templates render with
+        # address_text substitution from the FSM, which is what the caller
+        # asks for when they say "where are you sending help?".
         return intent_value in TEMPLATES
 
     def render_template_for(self, intent_value: str) -> str | None:

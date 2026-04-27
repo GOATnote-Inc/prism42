@@ -920,6 +920,25 @@ class DispatcherFSM:
         return self._record(kq, t0)
 
     def _intent_in_pre_arrival(self, f: Features, t0: float) -> Intent:
+        # P0 SAFETY (cycle-2Q4 2026-04-27): if the caller signals a FRESH
+        # cardiac arrest mid-pre-arrival ("I think he stopped breathing",
+        # "no pulse now", "he just collapsed"), un-latch breathing_assessed
+        # and re-enter CRITICAL_VERIFY. Without this guard, the FSM stays
+        # in pre_arrival emitting CLOSEOUT ("Stay on the line until they
+        # get there.") even after the patient deteriorates. Live-call
+        # incident logged in findings/clinical-log.jsonl 2026-04-27T19:53Z.
+        if (f.not_breathing or f.gasping) and not self.is_cardiac_arrest:
+            log.info(
+                "fsm.pre_arrival_to_critical_verify_on_late_cardiac_signal",
+                turns=self.turn_count,
+                f_not_breathing=f.not_breathing,
+                f_gasping=f.gasping,
+            )
+            self.is_cardiac_arrest = True
+            self.breathing_assessed = False
+            self.surface_confirmed = False
+            self.state = State.CRITICAL_VERIFY
+            return self._intent_in_verify(f, t0)
         q = self._direct_question_intent(f)
         if q is not None:
             return self._record(q, t0)
