@@ -43,7 +43,7 @@ import time
 # ---------------------------------------------------------------------
 os.environ.setdefault("PRISM42_ENABLE_FSM", "1")
 os.environ.setdefault("PRISM42_ENABLE_RESPONSE_GATE", "1")
-os.environ.setdefault("PRISM42_FILLER_DELAY_S", "99")
+os.environ.setdefault("PRISM42_FILLER_DELAY_S", "0.3")
 os.environ.setdefault("STT_BACKEND", "parakeet")
 os.environ.setdefault("TTS_BACKEND", "nvidia_magpie")
 os.environ.setdefault("LLM_BACKEND", "vllm-local")
@@ -1704,4 +1704,14 @@ if __name__ == "__main__":
     if missing:
         raise SystemExit(f"missing required env vars: {missing}")
 
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+    # Optional explicit-dispatch scoping for deterministic attestation
+    # (2026-04-27). When PRISM42_AGENT_NAME is set, the worker only
+    # accepts jobs that explicitly request that agent_name — prevents
+    # round-robin drift across pods that share a LiveKit Cloud project.
+    # Empty / unset preserves the default-dispatch behavior.
+    _agent_name = os.environ.get("PRISM42_AGENT_NAME", "").strip()
+    _wopts: dict[str, object] = {"entrypoint_fnc": entrypoint}
+    if _agent_name:
+        _wopts["agent_name"] = _agent_name
+
+    cli.run_app(WorkerOptions(**_wopts))
