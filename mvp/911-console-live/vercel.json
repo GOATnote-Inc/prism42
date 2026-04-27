@@ -18,16 +18,8 @@
   },
   "redirects": [
     {
-      "source": "/",
-      "destination": "/prism42/livekit",
-      "permanent": false,
-      "has": [
-        { "type": "host", "value": "prism42-app.thegoatnote.com" }
-      ]
-    },
-    {
-      "source": "/prism42",
-      "destination": "/prism42/livekit",
+      "source": "/(.*)",
+      "destination": "https://prism42-console.vercel.app/prism42-v3",
       "permanent": false,
       "has": [
         { "type": "host", "value": "prism42-app.thegoatnote.com" }
