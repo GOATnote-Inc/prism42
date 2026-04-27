@@ -109,6 +109,45 @@ Three places where user-stated pins didn't match April 2026 reality:
 
 None of this changes the strategic answer (align to NVIDIA's reference). It just means we sequence: ship Riva today, sequence Guardrails 0.21.0 + KG when the corpus is ready, and re-pin to 0.23+ / CUDA-13.2-native containers when those land.
 
+## 8. Sovereign-stack thesis (2026-04-27 update)
+
+The product is a 911 dispatch backup that **must keep working when Cloudflare / AWS / cloud-SaaS layers fail.** That elevates "follow NVIDIA's reference architecture" from a preference to a hard rule: NVIDIA is the trust anchor at the bottom of the stack. Cloud STT / TTS / LLM are acceptable as *fallbacks*; they cannot be the canonical path.
+
+### 8.1 H100 PCIe 80 GB fit (the substitute for the lost B300)
+
+The production target is B300; the working substitute today is the H100 PCIe pod (`prism-mla-h100`, 62.169.159.15). The same NVIDIA-blessed components fit:
+
+| Component | VRAM on H100 PCIe | Notes |
+|---|---|---|
+| Parakeet 1.1B CTC (NIM) | ~2.5 GB | gRPC streaming, telephony-tuned. **Upgrade from `parakeet-tdt-0.6b-v3` (3.3 GB) currently running.** |
+| Magpie TTS Multilingual (NIM) | ~5 GB | gRPC, 200-400 ms TTFB. Replaces ElevenLabs / StyleTTS2+BigVGAN as the canonical sovereign TTS. |
+| Nemotron-Nano-30B-A3B **FP8** (vLLM 0.12+) | ~32 GB | NVIDIA's blessed quantization for Hopper SM 9.0 (NVFP4 is Blackwell-only). 1-2% accuracy delta vs BF16 for ~2× throughput. |
+| Headroom for KV cache + cudagraph | ~40 GB | comfortable |
+
+Total resident: ~40 GB out of 80 GB. Leaves the BF16 fallback (60 GB) accessible if FP8 accuracy regresses on a clinical eval.
+
+### 8.2 Cloudflare + Tailscale dual-stack ingress
+
+Cloudflare-down resilience requires more than CF Tunnel. Three-tier ingress that degrades gracefully:
+
+| Tier | Path | Latency | Survives "CF down"? |
+|---|---|---|---|
+| 1 (primary) | CF Tunnel: `cloudflared tunnel run prism42-h100` → `prism42-h100.thegoatnote.com` | 30-100 ms | no |
+| 2 (secondary) | Tailscale Funnel: `tailscale serve http://localhost:7880` | 10-50 ms | yes (Tailscale's coordination plane is independent) |
+| 3 (on-site fallback) | Direct UDP WebRTC over the pod's static IPv4 (62.169.159.15:7880) | 0-20 ms | yes (no internet intermediary) |
+
+Tier 3 is the canonical 911 dispatch deployment — local fiber from the dispatch console to the pod, no internet at all between caller and AI. Tiers 1 and 2 are public demo / remote-test paths. Worker config publishes both as alternatives the LiveKit room can negotiate.
+
+### 8.3 What's still BLOCKED on the medical-corpus build
+
+The retrieval lane is the half of the architecture that requires real data, not just real runtime:
+
+- nx-cugraph 26.04 substrate is fine, but the graph it traverses is empty. Seed-graph-of-100-nodes (top-50 911 chief complaints + top-30 MPDS-9 protocol references + top-20 ICD-10 codes + 150 edges) is the minimum-viable demonstration that lands TODAY without the full SNOMED/StatPearls/ICD-10 license trail. See `data/seed_kg/` (this commit cycle).
+- NV-Embed-QA + NV-Rerank-QA NIMs are on standby — wire-able now, but they only earn their VRAM cost once the corpus has indexable mass.
+- NeMo Guardrails *retrieval* rail (medical fact-check) is blocked on the corpus too; the input + output rails (jailbreak / off-topic / unsafe medical advice) ship now via `agents/livekit/guardrails_wrapper.py`.
+
+Sequence stays: corpus → KG → retrieval rail → fact-check Guardrails rail. Input/output rails do not wait.
+
 ## 7. References
 
 - [NVIDIA-AI-Blueprints/nemotron-voice-agent](https://github.com/NVIDIA-AI-Blueprints/nemotron-voice-agent)

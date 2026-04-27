@@ -1,0 +1,32 @@
+mpds9_id,mpds9_name,key_rule,source_url
+mpds9-01,ABDOMINAL Pain/Problems,Determine if patient is alert and not vomiting blood,https://www.emergencydispatch.org
+mpds9-02,ALLERGIES Reactions Envenomations,Identify breathing difficulty or facial swelling early,https://www.emergencydispatch.org
+mpds9-03,ANIMAL Bites/Attacks,Determine animal type and severity of bleeding,https://www.emergencydispatch.org
+mpds9-04,ASSAULT Sexual Assault Stun Gun,Confirm scene is safe before EMS arrival,https://www.emergencydispatch.org
+mpds9-05,BACK Pain Non-Traumatic,Rule out aortic / cardiac referral patterns,https://www.emergencydispatch.org
+mpds9-06,BREATHING Problems,Differentiate ineffective breathing from agonal,https://www.emergencydispatch.org
+mpds9-07,BURNS Scalds Explosion,Estimate total body surface area and inhalation injury risk,https://www.emergencydispatch.org
+mpds9-08,CARBON MONOXIDE Inhalation HAZMAT CBRN,Get all occupants out of structure before further questions,https://www.emergencydispatch.org
+mpds9-09,CARDIAC or Respiratory ARREST Death,Begin telephone CPR if breathing absent or agonal,https://www.cdc.gov/heart-disease/data-research
+mpds9-10,CHEST Pain Non-Traumatic,Treat as STEMI risk until proven otherwise,https://www.heart.org
+mpds9-11,CHOKING,Distinguish complete vs partial airway obstruction,https://www.heart.org
+mpds9-12,CONVULSIONS Seizures,Position on side after seizure if not breathing well,https://www.epilepsy.com
+mpds9-13,DIABETIC Problems,Confirm caller can swallow before any oral glucose,https://www.diabetes.org
+mpds9-14,DROWNING Near Diving SCUBA,Begin rescue breathing as first priority,https://www.heart.org
+mpds9-15,ELECTROCUTION Lightning,Ensure power source disconnected before approach,https://www.cdc.gov
+mpds9-16,EYE Problems Injuries,Do not allow rubbing irrigate with water if chemical,https://www.aao.org
+mpds9-17,FALLS,Screen for cervical spine concern in elderly or height,https://www.cdc.gov/falls
+mpds9-18,HEADACHE,Identify thunderclap or worst-ever pattern as time critical,https://www.ninds.nih.gov
+mpds9-19,HEART Problems AICD,Distinguish cardiac symptoms from device discharge events,https://www.heart.org
+mpds9-20,HEAT COLD Exposure,Move to temperature-neutral environment before assessment,https://www.cdc.gov
+mpds9-21,HEMORRHAGE Lacerations,Direct pressure with clean cloth tourniquet for limb only,https://www.stopthebleed.org
+mpds9-22,INACCESSIBLE Incident Other Entrapments,Confirm patient airway position if conscious,https://www.emergencydispatch.org
+mpds9-23,OVERDOSE Poisoning Ingestion,Identify substance dose and time of ingestion,https://www.poison.org
+mpds9-24,PREGNANCY Childbirth Miscarriage,Distinguish imminent delivery from labor complications,https://www.acog.org
+mpds9-25,PSYCHIATRIC Abnormal Behavior Suicide Attempt,Confirm scene safety and weapon status before approach,https://988lifeline.org
+mpds9-26,SICK Person Specific Diagnosis,Stratify by alteration of consciousness and breathing,https://www.emergencydispatch.org
+mpds9-27,STAB GUNSHOT Penetrating Trauma,Apply direct pressure not removal of impaling object,https://www.stopthebleed.org
+mpds9-28,STROKE CVA TIA,Use FAST exam Face Arm Speech Time,https://www.stroke.org
+mpds9-29,TRANSFER Interfacility Palliative,Capture sending facility and receiving destination,https://www.emergencydispatch.org
+mpds9-30,TRAUMATIC Injuries Specific,Identify mechanism and number of casualties,https://www.emergencydispatch.org
+mpds9-31,UNCONSCIOUS Fainting Near,Confirm breathing and pulse status before further questions,https://www.heart.org/en/cpr
