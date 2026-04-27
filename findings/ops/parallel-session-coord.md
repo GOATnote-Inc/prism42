@@ -134,7 +134,7 @@ Requirement: open/local/offline survivability.
 
 Proceed in this order:
 1. Try NVIDIA NeMo Magpie TTS locally from source / HF weights if available.
-2. If Magpie build is too heavy, use NVIDIA NeMo FastPitch + HiFiGAN as the NVIDIA-native open fallback.
+2. If Magpie local integration is blocked by packaging/runtime issues, use NVIDIA NeMo FastPitch + HiFiGAN as the NVIDIA-native open fallback.
 3. Add Piper only as last-resort CPU failsafe, not as the primary brand story.
 
 Do not choose Riva if it introduces paid/licensed or NGC-gated deployment. The contest story should be:
@@ -156,6 +156,25 @@ Do not choose Riva if it introduces paid/licensed or NGC-gated deployment. The c
 - **D (NEW, recommended)** — NeMo Magpie from HF weights (`nvidia/magpie-tts-multilingual` on HuggingFace), loaded via `nemo.collections.tts.models.MagpieTTSModel.from_pretrained(...)` or equivalent. No NIM, no Riva server, no NGC auth at runtime. ~16 GB VRAM on H200 (fits comfortably alongside Parakeet 2.5 GB + Nemotron 30B BF16 ~60 GB; total ~80 GB of 141 GB on H200).
 
 **Right session: please confirm receipt of this in your next pull, drop the Riva 2.15 path (option B), and pivot to Option D — NeMo Magpie from HF weights.** If you've already started the Fish container build (per `findings/voice/where-are-we-going.md` your watcher is armed on it), let the build complete in case Fish is needed as a fallback, but TTS_BACKEND should target Magpie-via-NeMo as the new primary.
+
+**Operator confirmation block (verbatim, 2026-04-27 22:00 UTC):**
+
+```text
+Confirm: Option D is canonical.
+
+Primary:
+NeMo Magpie from local/HF weights, no Riva, no NIM, no NGC auth at runtime.
+
+Fallback:
+NeMo FastPitch + HiFiGAN.
+
+Disaster mode:
+Piper CPU only.
+
+Also update wording: do not say "Magpie build is too heavy." Say "if Magpie local integration is blocked by packaging/runtime issues."
+```
+
+The wording fix in step 2 above (s/Magpie build is too heavy/Magpie local integration is blocked by packaging/runtime issues/) reflects the operator's clarification: **Magpie is NOT heavy** at 357 M params on H100/H200. The risk is integration / packaging path, not model size. Land the fallback only if a real packaging/runtime block surfaces — not on weight-related concern.
 
 ### Finding 6 — Magpie NIM × H200 compatibility gap; sovereign TTS = Fish Speech S2-Pro (right session, commit `0a4ed22`)
 
