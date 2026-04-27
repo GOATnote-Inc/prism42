@@ -3,3 +3,4 @@ markers = [
     "integration: requires live B300 pod via SSH (brev.pem + network)",
 ]
 testpaths = ["tests"]
+asyncio_mode = "auto"
