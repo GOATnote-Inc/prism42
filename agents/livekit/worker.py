@@ -28,6 +28,33 @@ import os
 import random
 import threading
 import time
+
+# ---------------------------------------------------------------------
+# Cycle-2Q5 (2026-04-27) — hard env defaults for the H200 sovereign
+# stack. Belt-and-suspenders: livekit-agents `start` mode pre-forks
+# child workers via multiprocessing-spawn; on this pod some children
+# observed empty /proc/PID/environ (env-inheritance gap, see worker
+# log session h200-5hdx8g77jp 20:10:56Z which had no fsm.transition
+# lines). Setting via `os.environ.setdefault` here means every
+# Python process — parent and child — picks up the same defaults at
+# module import time, regardless of how the process was forked.
+# Operator can still override with `KEY=value` in the .env file
+# because setdefault only acts when the key is unset.
+# ---------------------------------------------------------------------
+os.environ.setdefault("PRISM42_ENABLE_FSM", "1")
+os.environ.setdefault("PRISM42_ENABLE_RESPONSE_GATE", "1")
+os.environ.setdefault("PRISM42_FILLER_DELAY_S", "99")
+os.environ.setdefault("STT_BACKEND", "parakeet")
+os.environ.setdefault("TTS_BACKEND", "nvidia_magpie")
+os.environ.setdefault("LLM_BACKEND", "vllm-local")
+os.environ.setdefault("VLLM_BASE_URL", "http://127.0.0.1:8000/v1")
+os.environ.setdefault(
+    "VLLM_MODEL", "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
+)
+os.environ.setdefault("PARAKEET_URL", "http://127.0.0.1:9100")
+os.environ.setdefault("NVIDIA_TTS_SERVER", "127.0.0.1:50051")
+os.environ.setdefault("NVIDIA_TTS_USE_SSL", "false")
+os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:6379")
 from typing import Any, AsyncIterator
 
 import httpx
