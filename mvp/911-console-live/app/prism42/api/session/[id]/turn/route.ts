@@ -7,12 +7,11 @@
 // dispatcher reply) here, and the same `recordTurn` → publish chain
 // fans the event out to subscribers of `/api/session/:id/stream`.
 //
-// Auth: minimal — accepts a shared-secret header `x-prism42-worker-key`
-// when set, otherwise relies on the LiveKit room being closed scope.
-// The session id is the LiveKit room name (already known to the
-// worker), so an attacker would need to know an active room id AND
-// the body schema to inject. Worth tightening later but not the
-// hot-path blocker tonight.
+// Auth: shared-secret header `x-prism42-worker-key`. In production
+// (VERCEL_ENV === "production") this env var MUST be set — the route
+// fails closed (503) if not, so a forgotten env on a prod deploy can't
+// silently open the route. In preview/dev, missing env still means
+// "open" so local iteration isn't gated on secrets.
 //
 // Body: minimal PsapTurn shape. The worker sends `{ role: "user" |
 // "assistant", content: string, turn_id?: string }` and we fill the
@@ -40,20 +39,39 @@ interface WorkerTurnPayload {
   debug?: PsapTurn["debug"];
 }
 
-function ensureWorkerKey(req: NextRequest): boolean {
+type WorkerKeyResult =
+  | { ok: true }
+  | { ok: false; status: 401 | 503; reason: string };
+
+function ensureWorkerKey(req: NextRequest): WorkerKeyResult {
   const expected = process.env.PRISM42_WORKER_KEY;
-  if (!expected) return true; // unset = open (dev / private demo)
+  if (!expected) {
+    if (process.env.VERCEL_ENV === "production") {
+      // Fail-closed: a prod deploy without the worker key is a
+      // misconfiguration, not a "demo mode". Refuse the request.
+      return {
+        ok: false,
+        status: 503,
+        reason: "PRISM42_WORKER_KEY missing in production",
+      };
+    }
+    return { ok: true }; // dev / preview / private demo
+  }
   const provided = req.headers.get("x-prism42-worker-key");
-  return provided === expected;
+  if (provided !== expected) {
+    return { ok: false, status: 401, reason: "unauthorized" };
+  }
+  return { ok: true };
 }
 
 export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  if (!ensureWorkerKey(req)) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401,
+  const auth = ensureWorkerKey(req);
+  if (!auth.ok) {
+    return new Response(JSON.stringify({ error: auth.reason }), {
+      status: auth.status,
       headers: { "Content-Type": "application/json" },
     });
   }

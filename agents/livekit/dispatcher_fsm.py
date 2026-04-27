@@ -65,18 +65,35 @@ log = structlog.get_logger()
 
 
 # ---------------------------------------------------------------------
-# Env flag — default OFF until cycle-2Q ship confidence is reached.
+# Env flag — default ON (2026-04-27). FSM owns safety-critical intent
+# handling (CPR latch, pronoun discipline, anti-repetition); making it
+# opt-in undermines the deterministic-dispatcher claim. Opt-out via
+# PRISM42_DISABLE_FSM=1 or PRISM42_ENABLE_FSM=0.
 # ---------------------------------------------------------------------
 
 def should_use_fsm() -> bool:
-    """Return True when the operator has set PRISM42_ENABLE_FSM=1.
+    """Return True unless the operator has explicitly opted out.
 
-    Single source of truth — orchestrator.py + worker.py both call this
-    so the gate cannot drift. When False the FSM module is imported but
-    its `transition` / `next_prompt` are never invoked, leaving the
-    cycle-2P system-prompt-only path byte-equivalent.
+    Default flipped to ON (2026-04-27 polarity-fix branch). Without the
+    FSM the worker is just an LLM voice demo — the deterministic
+    dispatcher claim collapses. Safety-critical intents (CPR latch,
+    pronoun discipline, anti-repetition) live here, so making the safety
+    rail opt-in was a polarity bug. Operators can still opt out
+    explicitly:
+
+        PRISM42_ENABLE_FSM=0     -> FSM disabled (legacy explicit-off)
+        PRISM42_DISABLE_FSM=1    -> FSM disabled (new explicit-off)
+
+    Anything else (unset, or "1") -> FSM enabled. The live B300 pod
+    already sets PRISM42_ENABLE_FSM=1, so its behavior is unchanged;
+    the flip only affects deployments that forgot to set the flag.
     """
-    return os.environ.get("PRISM42_ENABLE_FSM", "0") == "1"
+    if os.environ.get("PRISM42_DISABLE_FSM", "0") == "1":
+        return False
+    enable = os.environ.get("PRISM42_ENABLE_FSM")
+    if enable is None:
+        return True  # default ON
+    return enable != "0"
 
 
 # ---------------------------------------------------------------------

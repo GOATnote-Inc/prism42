@@ -51,33 +51,56 @@ export const maxDuration = 60; // seconds — Vercel Node cap.
 // Secret:         ELEVENLABS_SIGNING_SECRET env var
 // Stale window:   reject if |now - timestamp| > 300 seconds
 //
-// Dev escape hatch: if ELEVENLABS_SIGNING_SECRET is unset, OR if
-// NEXT_PUBLIC_VERCEL_ENV === "preview" AND PRISM42_SKIP_HMAC_PREVIEW === "1",
-// verification is skipped with a console warning. NEVER set either in prod.
+// Escape-hatch policy:
+//  - In production (VERCEL_ENV === "production") both escape hatches
+//    are FAIL-CLOSED. Missing secret = 503; preview-skip flag is
+//    ignored. A prod deploy without the secret cannot accept
+//    callbacks.
+//  - In preview/dev, missing secret skips verification with a
+//    console warning so local iteration isn't gated on secrets.
+//  - PRISM42_SKIP_HMAC_PREVIEW=1 only takes effect when
+//    NEXT_PUBLIC_VERCEL_ENV === "preview" (never on production).
 
 const HMAC_STALE_SECONDS = 300;
 
 type HmacVerifyResult =
   | { ok: true }
-  | { ok: false; status: 401; reason: string };
+  | { ok: false; status: 401 | 503; reason: string };
 
 function verifyElevenLabsSignature(
   rawBody: string,
   signatureHeader: string | null,
 ): HmacVerifyResult {
   const secret = process.env.ELEVENLABS_SIGNING_SECRET;
+  const isProd = process.env.VERCEL_ENV === "production";
 
-  // Dev escape: no secret configured.
+  // No secret configured.
   if (!secret) {
+    if (isProd) {
+      // Fail-closed: a prod deploy without the signing secret is a
+      // misconfiguration. Refuse the callback rather than silently
+      // accepting unsigned traffic.
+      console.error(
+        "[prism42/hmac] ELEVENLABS_SIGNING_SECRET missing in production — " +
+          "rejecting callback.",
+      );
+      return {
+        ok: false,
+        status: 503,
+        reason: "signing secret missing in production",
+      };
+    }
     console.warn(
-      "[prism42/hmac] ELEVENLABS_SIGNING_SECRET is not set — " +
+      "[prism42/hmac] ELEVENLABS_SIGNING_SECRET is not set (preview/dev) — " +
         "HMAC verification SKIPPED. Set this env var on Vercel before going live.",
     );
     return { ok: true };
   }
 
   // Preview escape: explicit opt-out for CI preview deployments.
+  // Hard-blocked in production regardless of the flag.
   if (
+    !isProd &&
     process.env.NEXT_PUBLIC_VERCEL_ENV === "preview" &&
     process.env.PRISM42_SKIP_HMAC_PREVIEW === "1"
   ) {

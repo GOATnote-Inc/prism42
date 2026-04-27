@@ -119,8 +119,11 @@ echo "==> [10/10] open firewall ports"
 ufw allow 22/tcp                              # ssh
 ufw allow 80/tcp                              # caddy http -> redirect + LE
 ufw allow 443/tcp                             # caddy https / wss
-ufw allow 7880/tcp                            # livekit signal (loopback only via Caddy, but allow for direct testing)
-ufw allow 7881/tcp                            # livekit webrtc tcp fallback
+# LiveKit signaling (7880/tcp) is intentionally NOT exposed: Caddy
+# terminates TLS in front of 127.0.0.1:7880. Opening it publicly would
+# let attackers bypass TLS and hit the signaling WebSocket directly.
+# 7881/tcp (WebRTC TCP fallback) is also kept loopback-only; rely on
+# 7882/udp for media. Re-open only with an explicit threat-model review.
 ufw allow 7882/udp                            # livekit webrtc media
 ufw allow 5349/tcp                            # livekit TURN/TLS
 ufw allow 443/udp                             # livekit TURN/UDP (shares port with HTTPS)

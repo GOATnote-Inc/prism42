@@ -116,5 +116,7 @@ jobs:
       - name: Run tests
         run: |
           # Tests that require corpus/kernel_bugs.yaml auto-skip via conftest.py
-          # when the corpus file is absent (private).
-          python -m pytest tests/ -q || true
+          # when the corpus file is absent (private). Failures here are real
+          # — `|| true` was masking regressions and undermining the
+          # `make verify-all` discipline (CLAUDE.md §4).
+          python -m pytest tests/ -q

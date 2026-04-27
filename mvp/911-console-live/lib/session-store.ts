@@ -3,6 +3,7 @@
 // Upstash Redis (list per session + pub/sub channel per session).
 // Callers see the same interface.
 
+import crypto from "node:crypto";
 import type {
   PsapAlert,
   PsapPhase,
@@ -19,15 +20,13 @@ const SESSIONS = new Map<string, SessionRecord>();
 const LISTENERS = new Map<string, Set<Listener>>();
 const SESSION_TTL_MS = 60 * 60 * 1000; // 1 h
 
-// Cheap hand-rolled UUIDv4-ish — good enough for public demo session
-// routing, not used for any cryptographic purpose. Keeps the bundle
-// small (no `crypto.randomUUID` polyfill story in edge runtime).
+// Session IDs gate access to /api/session/:id/{stream,turn,end}, so they
+// MUST come from a CSPRNG. Math.random() is V8 XorShift128+ — predictable
+// from a few sequential outputs. We're on the Node runtime here (see
+// runtime exports in routes that mint sessions), so crypto.randomUUID()
+// is available without a polyfill.
 function newSessionId(): string {
-  const hex = () =>
-    Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .slice(1);
-  return `${hex()}${hex()}-${hex()}-${hex()}-${hex()}-${hex()}${hex()}${hex()}`;
+  return crypto.randomUUID();
 }
 
 export function createSession(): SessionRecord {
