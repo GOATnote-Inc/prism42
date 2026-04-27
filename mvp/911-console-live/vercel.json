@@ -19,7 +19,7 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "/prism42/livekit",
+      "destination": "/prism42-v3",
       "permanent": false,
       "has": [
         { "type": "host", "value": "prism42-app.thegoatnote.com" }
@@ -27,7 +27,7 @@
     },
     {
       "source": "/prism42",
-      "destination": "/prism42/livekit",
+      "destination": "/prism42-v3",
       "permanent": false,
       "has": [
         { "type": "host", "value": "prism42-app.thegoatnote.com" }
