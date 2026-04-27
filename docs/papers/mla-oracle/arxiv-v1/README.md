@@ -52,7 +52,7 @@ arxiv update is planned when capacity materializes.
 - **Endorsement:** required if the author has no prior arXiv
   submissions in `cs.PF` / `cs.LG` / `cs.DC`.
 - **Companion artifact:** the live repo at
-  <https://github.com/GOATnote-Inc/prism> (tree/main/corpus/mla).
+  <https://github.com/GOATnote-Inc/prism42> (tree/main/corpus/mla).
   Reviewers can clone, run `reproduction.sh`, and verify everything
   offline that doesn't require rented hardware.
 

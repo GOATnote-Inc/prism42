@@ -46,7 +46,7 @@ that holds up live and is "genuinely cool to watch" (Demo = 25% of score).
 ### 2:40 – 2:55 · Close
 - Full-screen:
   > "Prism. MIT licensed. Built in 5 days with Opus 4.7.
-  > github.com/GOATnote-Inc/prism/tree/main/music-video"
+  > github.com/GOATnote-Inc/prism42/tree/main/music-video"
 - Beat lands on the final BPM hit of the song.
 
 ## Tools

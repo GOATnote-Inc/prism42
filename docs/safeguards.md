@@ -63,8 +63,8 @@ disclosure channel:
 ## What a reviewer can verify in 60 seconds
 
 ```
-git clone https://github.com/GOATnote-Inc/prism   # when public
-cd prism
+git clone https://github.com/GOATnote-Inc/prism42
+cd prism42
 make verify-all                                    # 137 tests, 5 layers green
 ls results/demo/                                   # flip-summary + methodology
   || make disclosure-artifacts-commit              # generates drafts locally
