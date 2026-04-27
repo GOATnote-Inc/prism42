@@ -176,6 +176,54 @@ Also update wording: do not say "Magpie build is too heavy." Say "if Magpie loca
 
 The wording fix in step 2 above (s/Magpie build is too heavy/Magpie local integration is blocked by packaging/runtime issues/) reflects the operator's clarification: **Magpie is NOT heavy** at 357 M params on H100/H200. The risk is integration / packaging path, not model size. Land the fallback only if a real packaging/runtime block surfaces — not on weight-related concern.
 
+### Finding 6.6 — Option D verification (left session, 2026-04-27 22:25 UTC)
+
+I verified the operator's "NeMo Magpie via HF weights" path against upstream docs (HuggingFace + NeMo) so the right session doesn't lose 30 min on a wrong slug or a non-existent API. Three corrections + one resamp-at-publish-boundary note:
+
+**Slug correction (important):**
+
+  - Operator said: `nvidia/magpie-tts-multilingual` (hyphens). That URL returns HTTP 401.
+  - Actual HF slug: **`nvidia/magpie_tts_multilingual_357m`** (underscores + `_357m` size suffix). Verified freely downloadable, NVIDIA Open Model License, no gating / access request.
+
+**Confirmed loading API:**
+
+```python
+from nemo.collections.tts.models import MagpieTTSModel
+
+# Either pull from HF (recommended for fresh setup):
+model = MagpieTTSModel.from_pretrained("nvidia/magpie_tts_multilingual_357m")
+# OR restore from a downloaded .nemo file (if you cache it locally):
+# model = MagpieTTSModel.restore_from("/opt/prism42/models/magpie_tts_multilingual_357m.nemo")
+
+model.eval(); model.cuda()
+
+audio, audio_len = model.do_tts(
+    transcript="Nine one one, what is the address of your emergency?",
+    language="en",
+    apply_TN=False,
+    speaker_index=0,
+)
+```
+
+**Output specs (need at the LiveKit publish boundary):**
+
+  - Sample rate: **22 kHz mono** (codec is `nemo-nano-codec-22khz-1.89kbps-21.5fps`).
+  - Max duration per `do_tts()` call in standard mode: **20 s**. Use longform mode (`magpietts-longform.html` per NeMo docs) for longer outputs — chunks at sentence boundaries with prosodic continuity.
+  - Output is PCM WAV. Resample 22 kHz → 48 kHz at the LiveKit `AudioSource` boundary (LiveKit standard is 48 kHz mono int16). The existing `synthetic_caller_full.py` has a `_resample()` helper using `numpy.interp` that's the right shape.
+
+**Hardware compatibility:**
+
+  - HF model card lists supported test hardware: A10, A30, A100, **H100**. No H200 explicit mention but H200 shares H100's SM 9.0 — same kernels, same PyTorch path.
+
+**No external dependencies beyond NeMo itself** (no ffmpeg requirement, no special CUDA kernel build). The NeMo container already has everything needed.
+
+**Sources verified:**
+- https://huggingface.co/nvidia/magpie_tts_multilingual_357m (HF model card with the loading code)
+- https://docs.nvidia.com/nemo-framework/user-guide/latest/nemotoolkit/tts/magpietts.html (NeMo docs, `examples/tts/magpietts_inference.py` CLI form)
+- https://docs.nvidia.com/nemo-framework/user-guide/latest/nemotoolkit/tts/magpietts-longform.html (long-form chunking — relevant for >20 s replies)
+
+**Right session implementation note:** the existing `agents/livekit/fish_speech_tts.py` is a TTS-plugin shape that wraps a localhost HTTP service. For NeMo Magpie, the cleanest mirror is to load the model in-process within `worker.py` (no separate HTTP service — Magpie runs in the same Python process as the agent). Same pattern as `parakeet_stt.py:ParakeetSTT` for the STT side. New file `agents/livekit/magpie_tts.py` modeled on `fish_speech_tts.py` but in-process; called from worker.py's `_tts_backend == "magpie"` branch.
+
 ### Finding 6 — Magpie NIM × H200 compatibility gap; sovereign TTS = Fish Speech S2-Pro (right session, commit `0a4ed22`)
 
 The local Magpie NIM (`nvcr.io/nim/nvidia/magpie-tts-multilingual:latest` per the brief) has a manifest with profiles for `a100 / h100 / l40s / dgx_spark` only — **no H200 profile**. The NIM auto-selects `rmir-bs8` (generic) and compiles TRT engines that produce `audio_duration=0.0` on H200's `2335:10de` device. 138/138 requests returned silent audio. Not a config bug — a NIM × H200 compatibility gap that operator can't fix client-side.
