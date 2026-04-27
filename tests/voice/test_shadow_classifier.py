@@ -285,6 +285,7 @@ async def test_publish_perception_called_on_valid_result():
     """The orchestrator hook calls dispatch_publisher.publish_perception
     after a successful classify_async. Use the helper from orchestrator.py
     directly — it's the contract."""
+    pytest.importorskip("livekit.agents")
     import orchestrator as orch
 
     client = _make_mock_client(content=json.dumps(_VALID_PAYLOAD))
@@ -311,6 +312,7 @@ async def test_publish_perception_called_on_valid_result():
 @pytest.mark.asyncio
 async def test_publish_perception_skipped_on_classifier_failure():
     """When classify_async returns None, we MUST NOT publish a perception."""
+    pytest.importorskip("livekit.agents")
     import orchestrator as orch
 
     client = _make_mock_client(content="garbage not json")
@@ -330,6 +332,7 @@ async def test_publish_perception_skipped_on_classifier_failure():
 @pytest.mark.asyncio
 async def test_publish_perception_skipped_when_no_publisher():
     """If dispatch_publisher is None, the helper exits silently."""
+    pytest.importorskip("livekit.agents")
     import orchestrator as orch
 
     client = _make_mock_client(content=json.dumps(_VALID_PAYLOAD))
