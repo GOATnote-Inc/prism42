@@ -465,6 +465,48 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
                     err=str(e)[:200],
                 )
 
+            # 5-role activation (2026-04-27): Guardrails input rail + Attacker
+            # adversarial probe — both fire-and-forget, structlog-only
+            # observability. Each wrapper is env-flag-gated default OFF
+            # (PRISM42_ENABLE_GUARDRAILS, PRISM42_ENABLE_ATTACKER) — when
+            # disabled the dispatch returns None immediately without
+            # importing the SDK, hitting the network, or mutating any
+            # FSM / chat_ctx state. Output flows ONLY to structlog; the
+            # audio path is unaffected.
+            # Refs:
+            #   findings/research/2026-04-27-future-stack/voice-5role-design.md §1, §3
+            #   findings/research/2026-04-27-future-stack/nvidia-voice-stack-architecture.md §1
+            try:
+                from guardrails_wrapper import check_input as _guardrails_check_input  # noqa: PLC0415
+                asyncio.create_task(
+                    _guardrails_check_input(
+                        utterance,
+                        session_id=self._session_id,
+                        turn_idx=turn_index_for_perception,
+                    )
+                )
+            except Exception as e:  # noqa: BLE001
+                local_log.debug(
+                    "orchestrator.guardrails_input_dispatch_failed",
+                    err=str(e)[:200],
+                )
+
+            try:
+                from attacker import probe as _attacker_probe  # noqa: PLC0415
+                asyncio.create_task(
+                    _attacker_probe(
+                        caller_utterance=utterance,
+                        dispatcher_reply=getattr(intent, "value", str(intent)),
+                        session_id=self._session_id,
+                        turn_idx=turn_index_for_perception,
+                    )
+                )
+            except Exception as e:  # noqa: BLE001
+                local_log.debug(
+                    "orchestrator.attacker_dispatch_failed",
+                    err=str(e)[:200],
+                )
+
             # Cycle-2T: deterministic response gate between FSM and TTS.
             # When the gate elects a template, we emit directly to TTS via
             # session.say() and SHORT-CIRCUIT the LLM call — voice path is
