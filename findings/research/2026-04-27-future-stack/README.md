@@ -19,6 +19,7 @@ the work scoped here. Adoption decisions stay with the user.
 | [`b300-bench-plan.md`](b300-bench-plan.md) | 🛠️ OODA + 4 agent teams | Operating plan for the `warm-lavender-narwhal` research pod (1× H200 141 GiB, Nebius/eu-north-1, $4.24/hr). Cost ceiling $50/session, halt-and-report on anomaly. No prod touch |
 | [`medical-corpus-skeleton.md`](medical-corpus-skeleton.md) | 📂 Team D delivered | Directory tree + manifest schema + AUP-gate + eval-quarantine + physician-review log shape for the user-led medical fine-tune corpus. Hardware-agnostic; $0 to land |
 | [`stack-diagram.md`](stack-diagram.md) | — | Mermaid mirror of the hero diagram with attribution corrections + runtime split notes |
+| [`h200-bench-team-a.md`](h200-bench-team-a.md) | 🟢 Team A complete | Nemotron-Nano-30B-A3B BF16 on H200: cold-load 621 s, steady-state 186 ms / 50-tok @ conc=1 (~269 tok/s). NVFP4 attempt blocked on vLLM 0.20.0 FlashInfer MoE backend gap; pivoted to BF16 sibling. Apples-to-apples baseline for future B300 NVFP4 run |
 
 ## What changed 2026-04-27 (since the first commit)
 
