@@ -199,7 +199,11 @@ function V3Inner() {
           <div className="v3-voice-body">
             <h1 className="v3-title">Live 911 Dispatcher Simulation</h1>
             <p className="v3-subtitle">
-              native claude sonnet-4.6 running inside elevenlabs convai ·
+              cloud backup · canonical opus 4.7 demo at{" "}
+              <a href="/prism42/livekit" className="v3-subtitle-link">/prism42/livekit</a>
+            </p>
+            <p className="v3-subtitle v3-subtitle-dim">
+              this page: sonnet-4.6 inside elevenlabs convai (convai does not yet expose opus 4.7) ·
               single voice · zero custom-llm hop · sub-second ttft
             </p>
 
@@ -266,7 +270,7 @@ function V3Inner() {
       {/* Footer */}
       <footer className="v3-footer">
         <div>
-          plan-c · elevenlabs native-claude ·
+          cloud backup (plan-c) · canonical opus 4.7 at /prism42/livekit · elevenlabs native-claude ·
           {agentId ? ` ${agentId.slice(0, 20)}…` : " (not configured)"}
         </div>
         <div>
@@ -500,6 +504,16 @@ function V3Inner() {
           letter-spacing: 0.03em;
           line-height: 1.55;
         }
+        .v3-subtitle-dim {
+          opacity: 0.6;
+          margin-top: 4px;
+        }
+        .v3-subtitle-link {
+          color: var(--hot);
+          text-decoration: none;
+          border-bottom: 1px dotted var(--hot);
+        }
+        .v3-subtitle-link:hover { text-decoration: none; border-bottom-style: solid; }
         .v3-button {
           align-self: flex-start;
           margin-top: 4px;
