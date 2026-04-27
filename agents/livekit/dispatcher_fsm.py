@@ -840,6 +840,15 @@ class DispatcherFSM:
         return self._record(Intent.REQUEST_LOCATION_AND_EMERGENCY, t0)
 
     def _intent_in_address_confirmed(self, f: Features, t0: float) -> Intent:
+        # FSM-routing-bug fix (2026-04-27, see
+        # findings/research/2026-04-27-future-stack/fsm-routing-bug-diagnosis.md §7):
+        # if reassurance_done is already latched, do NOT re-enter the
+        # reassurance path. Defer to the after-reassurance helper, which
+        # handles direct-question routing + advancement to KEY_QUESTIONS
+        # without re-emitting any DELIVER_REASSURANCE_* intent.
+        if self.reassurance_done:
+            self.state = State.REASSURANCE_DELIVERED
+            return self._intent_in_after_reassurance(f, t0)
         # Special-case: caller asks a direct question right after
         # confirmation. Answer-the-question rule beats reassurance.
         q = self._direct_question_intent(f)
