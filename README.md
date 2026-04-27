@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/prism42-medical-rag.png" alt="prism42 medical RAG · all-GPU runtime — Refract complexity. Ship the answer. User medical inquiry → NVIDIA knowledge-graph RAG → B300 all-GPU native (nx-cugraph in-VRAM graph + Nemotron Nano 30B + Cosmos vision) → five adversarial roles → safe final response, with a Karpathy autoresearch nightly feedback loop on retrieval/ranking/subgraph logic." width="100%">
+</p>
+
 # Prism42
 
 **A full-stack trust-and-performance pipeline for high-stakes voice AI.
