@@ -142,14 +142,51 @@ To activate on H200: `git pull origin main` on the pod (or whatever sync mechani
 
 ---
 
-## 6. Recommended-but-not-yet-adopted setup
+## 6. Adopted setup — git worktrees as the hard isolation layer
 
-For a future cycle (not blocking now):
+**Policy locked 2026-04-27 21:30 UTC (operator decision):**
 
-- Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` on both sessions and pick one as the team lead. The team lead distributes tasks; teammates work independently. Built-in conflict resolution.
-- OR: run each session in its own git worktree (`claude --worktree h100-stack` and `claude --worktree h200-stack`) so each lives on its own branch. Merge to `main` deliberately via PR.
+> Use git worktrees as the hard isolation layer, and Agent Teams inside a worktree
+> only when the task decomposes cleanly.
 
-Operator picks; both sides agree to migrate together when picked.
+**Why this and not the alternatives** (per the deep-dive in `findings/ops/parallel-session-deep-dive-research.md` if it lands; otherwise summarized inline):
+
+- Our parallelism is at the *session boundary* (two humans, two pods), not within one session. Agent Teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) is built for "one human delegates to N teammates" and doesn't map to "two humans owning one pod each".
+- The current contract-file pattern is fragile: 9 of the last 15 commits hit safety-critical files (`worker.py` 4×, `dispatcher_fsm.py` 3×, `orchestrator.py` 2×); two of those pairs landed minutes apart on the same file. We've been getting away with it on luck. Worktrees make every collision visible at merge time instead of silent at push time.
+
+**Mapping:**
+
+| Worktree | Branch | Owner session | Pod | Merge cadence |
+|---|---|---|---|---|
+| `~/prism42-worktrees/h100-stack` | `worktree-h100-stack` | left | `prism-mla-h100` | merge to main only when freeze is lifted |
+| `~/prism42-worktrees/h200-stack` | `worktree-h200-stack` | right | `warm-lavender-narwhal` | merge to main per slice (Fish, Riva, Cloudflare Tunnel, etc.) |
+
+**Migration commands** (operator runs once, both sessions restart):
+
+```bash
+cd ~/prism42
+git fetch origin && git status -sb
+mkdir -p ~/prism42-worktrees
+git worktree add ~/prism42-worktrees/h100-stack worktree-h100-stack
+git worktree add ~/prism42-worktrees/h200-stack worktree-h200-stack
+git worktree list
+
+# Left: cd ~/prism42-worktrees/h100-stack && claude
+# Right: cd ~/prism42-worktrees/h200-stack && claude
+```
+
+**Path choice (`~/prism42-worktrees/` not `.claude/worktrees/`)** is intentional — the in-repo `.claude/worktrees/` is already used by Claude Code's own Agent tool (4 active locked entries as of this writing); using a sibling directory avoids collisions with the agent-spawned worktrees.
+
+**Risk callout (the one the research agent flagged):** worktrees fix git divergence; they do NOT fix *pod-state divergence*. If main merges a `worker.py` change but only H200 gets redeployed (not H100), the pods run different code. Mitigation: a new `DEPLOYMENTS.md` ledger that records "commit X affects pod Y; redeployed at time Z". Cheap, eliminates the asymmetry surprise.
+
+**New ritual after migration:**
+
+1. Each session pushes to its worktree branch on origin (NOT main directly).
+2. When a session has a coherent slice ready (e.g., "Fish container green on H200"), the operator (or that session) merges the worktree branch into main. Run `make verify-all` after.
+3. Document the merge in §3 (commits map) of this file AND in `DEPLOYMENTS.md` with the affected pods.
+4. The OTHER session pulls main, sees the new state, decides whether to redeploy its pod (governed by per-pod freeze status).
+
+**Agent Teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) policy:** scope-limited use only. A session may spawn an Agent Teams group *inside its own worktree* when a task decomposes cleanly into independent subtasks (e.g., "build Fish container" + "wire worker.py to Fish gRPC client" + "smoke-test against synthetic caller"). Do not use Agent Teams as a cross-session coordination layer — that's what worktrees + the contract file are for.
 
 ---
 
