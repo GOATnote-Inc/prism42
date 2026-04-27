@@ -21,6 +21,14 @@ dependencies = [
     "pydantic>=2.5.0",
     "pyyaml>=6.0",
     "structlog>=24.0.0",
+    # Input/output rails for the voice loop (jailbreak/off-topic + medical safety).
+    # 0.21.0 is the March 2026 stable; 0.23 not GA as of April 2026 per
+    # findings/research/2026-04-27-future-stack/nvidia-voice-stack-architecture.md §2.
+    "nemoguardrails==0.21.0",
+    # ormsgpack/orjson are imported by worker.py + livekit-agents internals;
+    # explicit-listing avoids surprises when uv resolves a fresh venv.
+    "ormsgpack>=1.0.0",
+    "orjson>=3.10.0",
 ]
 
 [project.optional-dependencies]
