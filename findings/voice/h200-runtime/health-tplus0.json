@@ -1,0 +1,38 @@
+{
+  "snapshot_ts_utc": "2026-04-27T13:54:16Z",
+  "tag": "",
+  "host": "warm-lavender-narwhal",
+  "ip": "89.169.123.251",
+  "worker": {
+    "status": "running",
+    "pid": "113944",
+    "agent_id": "AW_2DkgDCpZLWVM",
+    "agent_name": "prism42-h200",
+    "lk_url": "wss://ai-therapy-v3svfd9o.livekit.cloud",
+    "region": ""
+  },
+  "backends": {
+    "stt": "nvidia_parakeet",
+    "tts": "nvidia_magpie",
+    "llm": "vllm-local",
+    "vllm_model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
+  },
+  "containers": {
+    "vllm_nemotron": "Up 57 minutes",
+    "redis": "Up 30 minutes"
+  },
+  "gpu": {
+    "name": "NVIDIA H200",
+    "mem_used_mib": 123125,
+    "mem_total_mib": 143771,
+    "util_pct": 0,
+    "driver": "580.126.09",
+    "cuda_runtime": "13.0"
+  },
+  "log_signals": {
+    "sessions_total": 0,
+    "errors_total": 0,
+    "last_5_info_lines_pipe_separated": "    13:41:12.012 INFO     livekit.agents     registered worker  "
+  },
+  "disk_root_used_pct": 56
+}
