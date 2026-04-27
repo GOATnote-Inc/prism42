@@ -44,6 +44,22 @@ that found the kernel bugs.
    transcript for the physician-readable QI summary. Packaged as a
    public 911 call-center simulation at `www.thegoatnote.com/prism42`.
 
+## Future stack — North Star (research, not deployed)
+
+The current production surface is the four stages above. The
+forward-looking architecture under research lives in
+[`findings/research/2026-04-27-future-stack/`](findings/research/2026-04-27-future-stack/):
+NVIDIA knowledge-graph RAG → nx-cugraph 26.04.00 medical graph →
+Nemotron-Nano-30B-A3B-NVFP4 + Cosmos-Reason2-2B on B300 (CUDA 13.2.1) →
+five-role dialectic → DSPy GEPA as the nightly RAG optimizer.
+
+Each component has a written verdict (green / yellow / red) with cited
+sources; nothing in that directory is deployed. Two attribution
+corrections worth reading the briefs for: **Cosmos-Reason2-2B is
+general-purpose physical AI** (no public medical fine-tune yet), and
+**Karpathy's `autoresearch` optimizes LLM training, not RAG** — the
+nightly RAG optimizer of record is DSPy GEPA.
+
 ## The continuity claim
 
 The agents visitors interact with at `www.thegoatnote.com/prism42` are
