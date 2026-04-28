@@ -151,5 +151,22 @@ references:
     authors:
       - name: "Anthropic"
     url: "https://code.claude.com/docs/en/agent-teams"
-    notes: "Experimental agent-team primitive; the discipline playbook the user formalized at prism42/.claude/skills/glasswing-discipline/ draws on this."
+    notes: "Experimental agent-team primitive."
+
+  - type: article
+    title: "Project Glasswing — Securing critical software for the AI era"
+    authors:
+      - name: "Anthropic"
+    year: 2026
+    url: "https://www.anthropic.com/glasswing"
+    notes: >-
+      Cross-industry initiative announced 2026 with AWS, Apple, Broadcom,
+      Cisco, CrowdStrike, Google, JPMorganChase, the Linux Foundation,
+      Microsoft, NVIDIA, and Palo Alto Networks. Its defenders-first
+      posture is the spiritual model for this lane's isolation contract
+      (CLAUDE.md §1), cloud-LLM-key-leak pre-commit hooks, and
+      freeze-verify-on-every-commit discipline. The user's agent-team
+      playbook at prism42/.claude/skills/glasswing-discipline/ is named
+      in tribute, sharing the butterfly metaphor (Greta oto's
+      transparent wings).
 
