@@ -1,0 +1,87 @@
+# HealthBench Hard — canonical 1000-example pin
+#
+# Provenance for the HealthBench Hard subset prism42 measures Opus 4.7
+# against on the clinical-reasoning rail. This file is the SOURCE OF
+# TRUTH for which rows the benchmark uses; runners regenerate the JSONL
+# at runtime via `datasets.load_dataset(...)` and verify against the
+# SHA256 below before any score is logged.
+#
+# The JSONL itself is not tracked (63 MB; upstream is public; we do
+# not re-distribute). The stratified 30-example subset actually scored
+# per run is built from this pin via scripts/sample_clinical_subset.py
+# (seed 42) → corpus/clinical_subset.yaml.
+#
+# Why pin and not ship: HealthBench Hard is Apache-2.0 via OpenAI
+# simple-evals (vendored at third_party/simple-evals/) but the upstream
+# dataset mirror on Hugging Face is the authoritative source. Pinning
+# by dataset_id + split + SHA256 keeps reproducibility without taking
+# a redistribution posture on the data.
+
+version: 0.1.0
+pin_kind: dataset
+name: healthbench-hard-1000
+
+upstream:
+  host: huggingface
+  dataset_id: Tonic/Health-Bench-Eval-OSS-2025-07
+  split: hard
+  access_mode: anonymous
+  generation_method: datasets.load_dataset
+  license: apache-2.0    # via OpenAI simple-evals; verify per fetch-date
+  fetch_date: 2026-04-22
+
+shape:
+  n: 1000
+  fields_retained:
+    - prompt_id
+    - prompt
+    - rubrics
+  fields_excluded:
+    - outputs
+    - scores
+    - metadata
+
+integrity:
+  sha256: 8bfd3aa9f327f121134a41d647050bf0f9b09d7b3e3f1532d7f7c66b2794505e
+  deterministic_regeneration: verified
+  verify_command: |
+    python -c "
+    from datasets import load_dataset
+    import hashlib, json
+    ds = load_dataset('Tonic/Health-Bench-Eval-OSS-2025-07', split='hard')
+    h = hashlib.sha256()
+    for row in ds:
+        h.update(json.dumps(
+            {k: row[k] for k in ['prompt_id', 'prompt', 'rubrics']},
+            sort_keys=True
+        ).encode())
+    print(h.hexdigest())
+    "
+
+downstream:
+  stratified_subset:
+    path: corpus/clinical_subset.yaml
+    sampler: scripts/sample_clinical_subset.py
+    seed: 42
+    n: 30
+    strata:
+      emergency: 10
+      pediatrics: 5
+      obgyn: 5
+      psychiatry: 5
+      general: 5
+
+usage:
+  grader: third_party/simple-evals/ (vendored; pinned per simple-evals commit)
+  scoring: rubric; mean ± 95% CI over N ≥ 3 runs per CLAUDE.md §4
+  harness_delta: paired design; CI-excludes-zero gate
+  baseline_card: docs/opus47-baseline-card.md
+
+notes:
+  - Subset field selection ({prompt_id, prompt, rubrics}) excludes any
+    upstream model outputs or scores so prism42 never inherits external
+    grading decisions. All grades are produced by simple-evals locally.
+  - If the upstream dataset revision changes, the SHA256 will drift and
+    the verify_command above will fail; bump this pin's `fetch_date` +
+    `sha256` in a new commit and document the revision in the commit
+    message. Do not silently update.

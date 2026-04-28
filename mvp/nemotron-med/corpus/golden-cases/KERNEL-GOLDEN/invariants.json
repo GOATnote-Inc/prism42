@@ -1,0 +1,27 @@
+{
+  "case_id": "KERNEL-GOLDEN",
+  "round": 1,
+  "invariants": [
+    {
+      "id": "INV-001",
+      "class": "numerical",
+      "statement": "In the online-softmax accumulator, the running row-max m_i must be finite before any exp(x - m_i) evaluation; if m_i == -inf while any x is finite, exp(x - m_i) overflows to +inf and poisons the denominator l_i for the remainder of the tile sweep.",
+      "source_lines": [142, 143, 144, 168, 169],
+      "confidence": 0.94
+    },
+    {
+      "id": "INV-002",
+      "class": "precision",
+      "statement": "Under fp8 (E4M3) K/V tiles, the rescale step l_new = l_prev * exp(m_prev - m_new) + row_sum_new must not underflow l_prev to zero when exp(m_prev - m_new) is within 2 ULP of the E4M3 subnormal boundary (2^-9 ~ 1.95e-3). Underflow here silently discards the prior tile's probability mass and biases the final softmax toward the current tile.",
+      "source_lines": [201, 202, 203, 204, 205, 210],
+      "confidence": 0.91
+    },
+    {
+      "id": "INV-003",
+      "class": "numerical",
+      "statement": "The final normalization o_i /= l_i requires l_i > 0; a zero denominator -- reachable when every tile contributes subnormal-flushed partials (see INV-002) -- yields inf/NaN in the output tensor.",
+      "source_lines": [241, 242],
+      "confidence": 0.88
+    }
+  ]
+}

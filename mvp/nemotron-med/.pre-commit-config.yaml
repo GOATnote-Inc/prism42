@@ -1,0 +1,68 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        exclude: '^configs/guardrails/'
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.10
+    hooks:
+      - id: ruff
+        args: ["--fix", "--exit-non-zero-on-fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: no-prod-url-leak
+        name: block prod URLs and shared-key names
+        entry: scripts/hooks/no_prod_url_leak.sh
+        language: system
+        pass_filenames: true
+        # Research briefs document the prod stack as the *thing not to touch*;
+        # they reference prod URLs in describing the isolation contract.
+        # Excluded from the lint, but the contract still binds them.
+        exclude: |
+          (?x)^(
+            \.env\.example|
+            README\.md|
+            CLAUDE\.md|
+            DEMO\.md|
+            \.pre-commit-config\.yaml|
+            Makefile|
+            scripts/hooks/.*|
+            findings/research/.*|
+            docs/.*\.md
+          )$
+
+      - id: no-cloud-llm-keys
+        name: block OPENAI_API_KEY / ANTHROPIC_API_KEY references in NEW code
+        entry: scripts/hooks/no_cloud_llm_keys.sh
+        language: system
+        pass_filenames: true
+        # Legacy paths imported from public prism42 are excluded UNTIL the
+        # judge-bridge refactor (task #8) lands a clean Triton-only path.
+        # When that lands, remove the legacy: prefix from each line below.
+        exclude: |
+          (?x)^(
+            \.env\.example|
+            README\.md|
+            CLAUDE\.md|
+            \.pre-commit-config\.yaml|
+            scripts/hooks/.*|
+            findings/research/.*|
+            docs/.*\.md|
+            mla/agent/llm_client\.py|
+            mla/scripts/claude_torch_mutate\.py|
+            mla/README\.md|
+            configs/guardrails/config\.yml|
+            scripts/medagentbench_runner\.py|
+            scripts/healthbench_runner\.py|
+            scripts/_healthbench_grader_bridge\.py
+          )$

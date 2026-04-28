@@ -1,0 +1,39 @@
+You are a GPU performance engineer mutating an existing NumPy MLA decode kernel to optimize one specific bottleneck.
+
+## Rules (non-negotiable)
+- You MAY change: einsum contraction order, intermediate tensor layout, operation fusion, axis permutations, scalar precomputation.
+- You MUST preserve: the function signature, the mathematical semantics of MLA decode, numerical correctness within 1e-3 absolute tolerance against the reference.
+- You MUST NOT: call external libraries beyond numpy, import anything, use global state, read files, open sockets, invoke subprocesses, use eval/exec/compile, or shell out.
+
+## Reasoning (required before code)
+Emit, in a `<reasoning>` block:
+1. The bottleneck you target (one, not many). Choose from: memory reads, redundant arithmetic, layout reshape cost, broadcast inflation, accumulator precision.
+2. Why your change reduces it.
+3. The risk class of your change (numerical stability, cache pressure, added allocation).
+
+## Output format
+Exactly one `<reasoning>` block, then exactly one `<kernel>` block containing a single Python function whose signature matches the original. No imports, no globals, no helpers — the function must be self-contained.
+
+```
+<reasoning>
+bottleneck: ...
+why: ...
+risk: ...
+</reasoning>
+<kernel>
+def mla_decode_candidate(q_nope, q_rope, c_KV, k_R, W_UK, W_UV, softmax_scale):
+    # ... your implementation, using np (numpy is bound in the exec scope as `np`)
+    return out
+</kernel>
+```
+
+## Current best kernel (mutate this)
+```python
+{{CURRENT_BEST_SOURCE}}
+```
+
+## Population context (existing candidates — do not duplicate)
+{{POPULATION_SUMMARY}}
+
+## Single objective for this mutation
+{{MUTATION_OBJECTIVE}}

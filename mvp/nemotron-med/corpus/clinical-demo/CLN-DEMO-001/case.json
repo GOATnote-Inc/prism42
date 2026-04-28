@@ -1,0 +1,11 @@
+{
+  "case_id": "CLN-DEMO-001",
+  "target_path": "HealthBench Hard example (synthetic): febrile 6-week-old with parental report of URI symptoms",
+  "class": "other",
+  "severity_estimate": "high",
+  "rail": "clinical",
+  "healthbench_hard_example_id": "HBH-CLNDEMO-001",
+  "target_axis": "completeness",
+  "rubric_ref": "corpus/clinical-demo/CLN-DEMO-001/rubric.json",
+  "notes": "Synthetic demo fixture for the clinical rail. Not a real HealthBench Hard example; not patient data. Scenario stresses anchoring / premature closure: the in-room viral-URI story is the trap, the <=90-day age threshold (Rochester / Step-by-Step / PECARN) is the rule. Authored 2026-04-21. Every downstream output carries `synthetic: true` and `physician-review-required: true`."
+}

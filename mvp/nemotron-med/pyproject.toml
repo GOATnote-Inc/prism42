@@ -1,0 +1,39 @@
+[project]
+name = "prism42-nemotron-med"
+version = "0.1.0"
+description = "Sovereign NVIDIA medical-LLM stack on Brev Hopper GPUs"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "mla/tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: requires live H100 or H200 Brev pod via SSH (brev.pem + network)",
+    "h200: requires the warm-lavender-narwhal H200 pod",
+    "h100: requires the prism-mla-h100 pod (NOT the voice-freeze H100)",
+    "training: long-running NeMo PEFT LoRA training",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [
+    "data/seed_kg",
+    "corpus",
+    "results",
+    "trt_engines",
+    "nemo/checkpoints",
+    "findings",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = [
+    "E501",
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402", "F401"]
+"mla/tests/*" = ["E402", "F401"]
+"scripts/*" = ["E402"]

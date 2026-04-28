@@ -1,0 +1,25 @@
+{
+  "case_id": "KERNEL-GOLDEN",
+  "run_id": "464f659e-8099-41ef-899c-1aec6de57e04",
+  "rail": "cuda",
+  "compile": {
+    "duration_sec": 47.3,
+    "exit": 0,
+    "stderr": ""
+  },
+  "run": {
+    "duration_sec": 2.18,
+    "exit": 1,
+    "stdout": "PRISM_VERDICT case_id=KERNEL-GOLDEN attack_id=ATK-001 invariant_id=INV-002 ref_l=2.234250e+00 buggy_l=1.000000e+00 rel_err=0.552\n",
+    "stderr": "VIOLATION invariant_id=INV-002 class=precision attack_id=ATK-001 case_id=KERNEL-GOLDEN: fp8 rescale underflow dropped prior-tile probability mass (ref l=2.2343e+00, buggy l=1.0000e+00, rel_err=0.552); attack_succeeded\n"
+  },
+  "verdict": "attack_succeeded",
+  "host": {
+    "rail": "cuda",
+    "gpu": "NVIDIA H100 80GB HBM3 (SXM)",
+    "sm": "sm_90a",
+    "driver": "550.90.07",
+    "cuda": "12.4",
+    "note": "Execution recorded for the golden fixture. Reproducer stub is the mocked poc.py; real runs of this class of bug land on an H100 SXM rail."
+  }
+}
