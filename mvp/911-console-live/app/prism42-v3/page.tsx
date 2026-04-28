@@ -199,11 +199,12 @@ function V3Inner() {
           <div className="v3-voice-body">
             <h1 className="v3-title">Live 911 Dispatcher Simulation</h1>
             <p className="v3-subtitle">
-              sonnet-4.6 native-claude (real-time) · opus 4.7 off-path auditor +
-              healthbench hard baseline (0.196 ± 0.068)
+              first public opus 4.7 score on healthbench hard · 0.196 ± 0.068
             </p>
             <p className="v3-subtitle v3-subtitle-dim">
-              single voice · zero custom-llm hop · &lt;1.5s first audio · 5% sampled critic
+              this call · sonnet-4.6 native-claude in elevenlabs · single voice ·
+              &lt;1.5s first audio. opus 4.7 is too slow for live voice — it grades 5%
+              of turns off-path instead. same training family · zero latency cost.
             </p>
 
             <button
