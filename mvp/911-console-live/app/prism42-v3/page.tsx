@@ -199,13 +199,11 @@ function V3Inner() {
           <div className="v3-voice-body">
             <h1 className="v3-title">Live 911 Dispatcher Simulation</h1>
             <p className="v3-subtitle">
-              opus 4.7 auditor + healthbench hard baseline · sovereign voice stack at{" "}
-              <a href="/prism42/livekit" className="v3-subtitle-link">/prism42/livekit</a>{" "}
-              (experimental)
+              sonnet-4.6 native-claude (real-time) · opus 4.7 off-path auditor +
+              healthbench hard baseline (0.196 ± 0.068)
             </p>
             <p className="v3-subtitle v3-subtitle-dim">
-              real-time path · sonnet-4.6 native-claude · single voice · zero custom-llm hop ·
-              &lt;1.5s first audio · opus 4.7 off-path (5% sampled critic)
+              single voice · zero custom-llm hop · &lt;1.5s first audio · 5% sampled critic
             </p>
 
             <button
@@ -276,7 +274,6 @@ function V3Inner() {
         </div>
         <div>
           <a href="/prism42">/prism42</a> ·{" "}
-          <a href="/prism42/livekit">/prism42/livekit (experimental)</a> ·{" "}
           <a href="/prism42-v2">/prism42-v2</a>
         </div>
       </footer>
