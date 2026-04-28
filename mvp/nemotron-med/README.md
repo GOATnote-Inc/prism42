@@ -112,8 +112,7 @@ Machine-readable form: [`CITATION.cff`](./CITATION.cff).
 ### People
 
 - **Brandon Dent, MD** — author and physician-in-loop. Owns the OpenEM corpus design, the GEDP harness, and every clinical fixture under `corpus/clinical-demo/`.
-- **Andrej Karpathy** — the autoresearch / nightly-loop pattern (`findings/research/2026-04-27-future-stack/karpathy-autoresearch.md`). The pattern is his; the maintained RAG implementation we plan to use is **DSPy GEPA** by Stanford NLP. Both deserve credit at the same time.
-- **Prithvi Rajasekaran (Anthropic)** — the generator-evaluator separation lever from ["Harness design for long-running apps"](https://www.anthropic.com/engineering/harness-design-long-running-apps) (2026-03-24). The sovereign judge architecture in `mla/judges/triton.py` and `mla/judges/reward.py` implements that separation.
+- **Prithvi Rajasekaran (Anthropic)** — the generator-evaluator separation lever from ["Harness design for long-running apps"](https://www.anthropic.com/engineering/harness-design-long-running-apps) (2026-03-24, per public prism42's `CLAUDE.md` §10 attribution). The sovereign judge architecture in `mla/judges/triton.py` and `mla/judges/reward.py` realizes that separation.
 - **Anthropic team** — Claude Opus 4.7, the published baseline this lane benchmarks against (HealthBench Hard `0.196 ± 0.068`, public `prism42` baseline 2026-04-22). Claude Code, the harness this codebase was built with. The hackathon sprint window during which it shipped.
 - **OpenAI `simple-evals` authors** — the HealthBench Hard rubric grader logic. `scripts/_healthbench_grader_bridge.py` is a stdlib-only copy of three primitives with verbatim attribution comments and the upstream pinned at SHA `ee3b0318` so drift is caught at import. MIT, © 2024 OpenAI.
 - **NVIDIA Nemotron, NeMo, and RAPIDS teams** — the model weights, the inference and training runtimes, and the graph-acceleration stack that everything serves on.
@@ -137,7 +136,9 @@ Grouped by role; license + canonical URL given for each. Where a paper exists an
 - **TensorRT-LLM** — Apache-2.0. NVIDIA. <https://github.com/NVIDIA/TensorRT-LLM>
 - **Triton Inference Server** — BSD-3-Clause. NVIDIA. <https://github.com/triton-inference-server/server>
 - **NVIDIA NIM** — proprietary platform; Apache-2.0 components inside. <https://build.nvidia.com>
-- **NeMo Framework**, **NeMo Curator**, **NeMo Guardrails** (Colang 2.0) — Apache-2.0. NVIDIA. <https://github.com/NVIDIA-NeMo>
+- **NeMo Framework** — Apache-2.0. NVIDIA. <https://github.com/NVIDIA/NeMo>
+- **NeMo Curator** — Apache-2.0. NVIDIA. <https://github.com/NVIDIA/NeMo-Curator>
+- **NeMo Guardrails** (Colang 2.0) — Apache-2.0. NVIDIA. <https://github.com/NVIDIA/NeMo-Guardrails>
 - **TensorRT Model Optimizer (`modelopt`)** — Apache-2.0. NVIDIA. <https://github.com/NVIDIA/TensorRT-Model-Optimizer>
 
 #### Evaluation
@@ -150,14 +151,18 @@ Grouped by role; license + canonical URL given for each. Where a paper exists an
 #### Graph & retrieval
 - **NetworkX** — BSD-3-Clause. Hagberg, Schult, Swart, SciPy 2008. <https://networkx.org>
 - **nx-cugraph / cuGraph (RAPIDS)** — Apache-2.0. NVIDIA. <https://github.com/rapidsai/cugraph>
-- **FAISS** — MIT. Johnson, Douze, Jégou, *Billion-Scale Similarity Search with GPUs*, IEEE TBD 2019. <https://github.com/facebookresearch/faiss>
+- **FAISS** — MIT. Johnson, Douze, Jégou, *Billion-Scale Similarity Search with GPUs*, IEEE Transactions on Big Data, 2019. <https://github.com/facebookresearch/faiss>
 - **sentence-transformers** — Apache-2.0. Reimers & Gurevych, *Sentence-BERT*, EMNLP 2019. <https://github.com/UKPLab/sentence-transformers>
 
 #### Medical corpus
 - **OpenEM corpus** (370 conditions) — by GOATnote, the org behind this work. Apache-2.0 / CC-BY tier1 (PubMed OA, WHO, CDC). Physician reviewers credited per condition file's `reviewed_by:` frontmatter. <https://github.com/GOATnote-Inc/openem-corpus>
 
 #### Tooling (quietly load-bearing)
-- **httpx** (BSD-3), **PyYAML** (MIT), **pytest** (MIT), **Ruff** (MIT, Astral), **detect-secrets** (Apache-2.0, Yelp), **pre-commit** (MIT). Without these the sovereign path would not be testable from a laptop in a Coffee Shop.
+- **httpx** (BSD-3-Clause), **PyYAML** (MIT), **pytest** (MIT), **Ruff** (MIT, Astral), **detect-secrets** (Apache-2.0, Yelp), **pre-commit** (MIT). Without these the sovereign path would not be testable from a laptop in a coffee shop.
+
+### Note on Karpathy / DSPy / GEPA
+
+The public `prism42` repo's architecture diagram (`assets/prism42-medical-rag.png`, root `README.md`) names a "Karpathy autoresearch" RAG loop. Per the public-repo brief at `findings/research/2026-04-27-future-stack/karpathy-autoresearch.md`, that framing is an attribution correction in flight: Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) (2026-03) is an agent-driven nightly experiment loop for **ML training**, not RAG. The maintained RAG-native counterpart is [GEPA](https://github.com/gepa-ai/gepa) ("Reflective Prompt Evolution," Agrawal et al. 2025), which integrates with [DSPy](https://github.com/stanfordnlp/dspy) at Stanford NLP. Karpathy named the pattern; GEPA + DSPy are the maintained implementations. `mvp/nemotron-med` does not directly use either — its R2 retrieval scaffold is a `KeywordRetriever` plus an NV-Embed-v2 + FAISS stub (`mla/retrieval.py`) — so the credit lives in the public root `README` next to the diagram, not here.
 
 #### Compute
 - **Brev** — Hopper GPU access on demand, Hyperstack and Nebius substrates. <https://www.brev.dev>

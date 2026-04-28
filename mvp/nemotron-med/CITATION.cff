@@ -132,10 +132,3 @@ references:
     url: "https://www.anthropic.com/engineering/harness-design-long-running-apps"
     notes: "Generator-evaluator separation pattern realized in mla/judges/."
 
-  - type: software
-    title: "Andrej Karpathy — autoresearch pattern"
-    authors:
-      - family-names: Karpathy
-        given-names: Andrej
-    url: "https://eurekalabs.ai"
-    notes: "The autoresearch / nightly-loop pattern named in findings/research/2026-04-27-future-stack/karpathy-autoresearch.md. The maintained RAG implementation we plan to use is DSPy GEPA (Stanford NLP)."
