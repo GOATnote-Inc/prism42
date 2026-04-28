@@ -1,0 +1,9 @@
+=== freeze post-bench (against d810f1af44d449191b4da26081ceeea16e04b56e baseline) ===
+/prism42-v3  43c2ccd1b7f8c8f95b555c660faabbd1ab3ffa8fd8337d097c235f1b022dc99c
+/prism42-v2  91cc15625c97b08e397142d98972c9eb2958a9c00f2228f79cf6875968fc03f2
+/prism42/livekit  e9ce4e919c221fa7fc5702e5e942af9c29bd91a24bed64f302fa422fc96a936d
+
+--- prism42 HEAD ---
+7337df08918e5c46a9b9734edb4df8b1874e5e86
+--- prism42 worktree diff hash ---
+ca602d88b4ce029248f5e556064b915552c5b64c982ea2b008ffedb0643559b9

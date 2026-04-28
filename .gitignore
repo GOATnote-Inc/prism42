@@ -42,6 +42,10 @@ results/
 # traces stay under an unignored path by convention.
 !/mla/results/
 !/mla/results/**
+# mvp/nemotron-med — same pattern. The CARD + proof + artifact JSONs are
+# the judging evidence; commit them. Same reproducibility-pin posture as mla/.
+!/mvp/nemotron-med/results/
+!/mvp/nemotron-med/results/**
 
 # Clinical finding disclosure log — operational artifact, not public.
 findings/clinical-log.jsonl

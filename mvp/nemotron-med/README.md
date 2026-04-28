@@ -2,6 +2,12 @@
 
 **Sovereign NVIDIA medical-LLM stack on Brev Hopper GPUs. Private. Air-gapped from the prism42 production surface.**
 
+> **Hackathon visibility**: this work is mirrored at `mvp/nemotron-med/` on branch
+> `nemotron-med-hackathon` of the public `prism42` repo, exposed for judging via
+> [PR #11](https://github.com/GOATnote-Inc/prism42/pull/11). Production surface
+> `prism42-console.vercel.app/prism42-v3` is unchanged. PR is intentionally
+> not merged to main; production deploys remain on the user's promoted commit.
+
 A demonstration that GOATnote can serve, judge, evaluate, and (round 3) fine-tune a frontier NVIDIA-stack medical LLM end-to-end on its own GPUs — with zero cloud LLM API keys in any code path.
 
 ## What's running

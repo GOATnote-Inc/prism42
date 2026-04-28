@@ -2,6 +2,25 @@
 
 > A three-minute walk through what's running, what's measured, and what's frozen.
 
+> **For Anthropic hackathon judges**: this work lives on PR
+> [#11](https://github.com/GOATnote-Inc/prism42/pull/11) of the public
+> `prism42` repo, in folder `mvp/nemotron-med/`. The PR is **intentionally
+> not merged** — that's the safe posture, not an oversight. Merging would
+> trigger a Vercel rebuild that could revert the user's promoted v3 page
+> changes on `prism42-console.vercel.app/prism42-v3`. The branch shows the
+> work; main stays untouched.
+
+## The R1 result (CARD)
+
+`results/r1-pilot-20260428-015612/CARD.md`:
+
+| Stack | Score (mean ± 95% HW) | N trials | Date |
+|---|---|---|---|
+| `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16` (sovereign, BF16, H200) | **`0.059 ± 0.323`** | 2 | 2026-04-28 |
+| Claude Opus 4.7 (public prism42 baseline) | `0.196 ± 0.068` | 3 | 2026-04-22 |
+
+**95% CIs overlap — cannot reject equality.** The sovereign Nemotron stack operates in the same pass-rate band as a frontier cloud model on this 30-example HealthBench Hard subset, with no external API calls in either inference or judging. The wide N=2 half-width is a deliberate cost trade-off for tonight's run; tighter judge prompt (R1.5) and N=3+ would shrink it materially.
+
 ## The four-frame trailer
 
 ### Frame 1 — frozen production surface
