@@ -199,12 +199,13 @@ function V3Inner() {
           <div className="v3-voice-body">
             <h1 className="v3-title">Live 911 Dispatcher Simulation</h1>
             <p className="v3-subtitle">
-              cloud backup · canonical opus 4.7 demo at{" "}
-              <a href="/prism42/livekit" className="v3-subtitle-link">/prism42/livekit</a>
+              opus 4.7 auditor + healthbench hard baseline · sovereign voice stack at{" "}
+              <a href="/prism42/livekit" className="v3-subtitle-link">/prism42/livekit</a>{" "}
+              (experimental)
             </p>
             <p className="v3-subtitle v3-subtitle-dim">
-              this page: sonnet-4.6 inside elevenlabs convai (convai does not yet expose opus 4.7) ·
-              single voice · zero custom-llm hop · sub-second ttft
+              real-time path · sonnet-4.6 native-claude · single voice · zero custom-llm hop ·
+              &lt;1.5s first audio · opus 4.7 off-path (5% sampled critic)
             </p>
 
             <button
@@ -270,12 +271,12 @@ function V3Inner() {
       {/* Footer */}
       <footer className="v3-footer">
         <div>
-          cloud backup (plan-c) · canonical opus 4.7 at /prism42/livekit · elevenlabs native-claude ·
+          cloud backup (plan-c) · sonnet-4.6 native-claude (real-time) · opus 4.7 auditor (off-path) ·
           {agentId ? ` ${agentId.slice(0, 20)}…` : " (not configured)"}
         </div>
         <div>
           <a href="/prism42">/prism42</a> ·{" "}
-          <a href="/prism42/livekit">/prism42/livekit</a> ·{" "}
+          <a href="/prism42/livekit">/prism42/livekit (experimental)</a> ·{" "}
           <a href="/prism42-v2">/prism42-v2</a>
         </div>
       </footer>
