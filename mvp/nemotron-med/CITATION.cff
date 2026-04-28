@@ -130,5 +130,26 @@ references:
       - name: "Anthropic"
     year: 2026
     url: "https://www.anthropic.com/engineering/harness-design-long-running-apps"
-    notes: "Generator-evaluator separation pattern realized in mla/judges/."
+    notes: "Generator-evaluator separation pattern realized in mla/judges/. Person attribution propagated from public prism42's CLAUDE.md §10."
+
+  - type: article
+    title: "Managed Agents (engineering)"
+    authors:
+      - name: "Anthropic"
+    url: "https://www.anthropic.com/engineering/managed-agents"
+    notes: "Session-as-context-object pattern; informed how mla/judges/ keeps verify-state outside the LLM context window."
+
+  - type: software
+    title: "Claude Code"
+    authors:
+      - name: "Anthropic"
+    url: "https://code.claude.com"
+    notes: "The IDE / harness this codebase was built with — skills, hooks, agent teams, Managed Agents primitives. Best-practices doc at https://code.claude.com/docs/en/best-practices."
+
+  - type: software
+    title: "Claude Code Agent Teams"
+    authors:
+      - name: "Anthropic"
+    url: "https://code.claude.com/docs/en/agent-teams"
+    notes: "Experimental agent-team primitive; the discipline playbook the user formalized at prism42/.claude/skills/glasswing-discipline/ draws on this."
 
