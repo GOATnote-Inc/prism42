@@ -89,3 +89,80 @@ Provenance: derived from `github.com/GOATnote-Inc/prism42` HEAD `e02e62dd` on 20
 - Not running on the production B300 pod.
 - Not pinning to the prod `Nemotron-3-Nano-30B-A3B-NVFP4` weights (NVFP4 is Blackwell-only; BF16 is the Hopper sister).
 - Not using any cloud LLM API key. The only credentials in this repo's `.env.example` are HF read-only token + NGC registry token.
+
+## Citation & Acknowledgements
+
+Every framework, paper, and person below shaped this work. License URLs and identifiers given where they exist; warm thanks given where the contribution is more diffuse than a license can capture. If something is uncited and should be, that omission is unintentional — please open an issue on [PR #11](https://github.com/GOATnote-Inc/prism42/pull/11).
+
+### How to cite this work
+
+```bibtex
+@misc{prism42-nemotron-med-2026,
+  author       = {Dent, Brandon and {prism42 contributors}},
+  title        = {{prism42-nemotron-med}: a sovereign {NVIDIA} medical-{LLM} stack on {Brev} {Hopper} {GPUs}},
+  year         = {2026},
+  month        = apr,
+  howpublished = {GitHub PR},
+  url          = {https://github.com/GOATnote-Inc/prism42/pull/11}
+}
+```
+
+Machine-readable form: [`CITATION.cff`](./CITATION.cff).
+
+### People
+
+- **Brandon Dent, MD** — author and physician-in-loop. Owns the OpenEM corpus design, the GEDP harness, and every clinical fixture under `corpus/clinical-demo/`.
+- **Andrej Karpathy** — the autoresearch / nightly-loop pattern (`findings/research/2026-04-27-future-stack/karpathy-autoresearch.md`). The pattern is his; the maintained RAG implementation we plan to use is **DSPy GEPA** by Stanford NLP. Both deserve credit at the same time.
+- **Prithvi Rajasekaran (Anthropic)** — the generator-evaluator separation lever from ["Harness design for long-running apps"](https://www.anthropic.com/engineering/harness-design-long-running-apps) (2026-03-24). The sovereign judge architecture in `mla/judges/triton.py` and `mla/judges/reward.py` implements that separation.
+- **Anthropic team** — Claude Opus 4.7, the published baseline this lane benchmarks against (HealthBench Hard `0.196 ± 0.068`, public `prism42` baseline 2026-04-22). Claude Code, the harness this codebase was built with. The hackathon sprint window during which it shipped.
+- **OpenAI `simple-evals` authors** — the HealthBench Hard rubric grader logic. `scripts/_healthbench_grader_bridge.py` is a stdlib-only copy of three primitives with verbatim attribution comments and the upstream pinned at SHA `ee3b0318` so drift is caught at import. MIT, © 2024 OpenAI.
+- **NVIDIA Nemotron, NeMo, and RAPIDS teams** — the model weights, the inference and training runtimes, and the graph-acceleration stack that everything serves on.
+- **vLLM team (UC Berkeley Sky Lab)** — PagedAttention serving made this run in BF16 on a single H200 with KV headroom to spare. Kwon et al., *Efficient Memory Management for Large Language Model Serving with PagedAttention*, SOSP 2023, [arXiv:2309.06180](https://arxiv.org/abs/2309.06180).
+- **NetworkX maintainers** (Aric Hagberg, Dan Schult, Pieter Swart) — the graph library underneath the medical KG. *Exploring Network Structure, Dynamics, and Function using NetworkX*, SciPy 2008.
+- **Brev / Hyperstack / Nebius engineers** — Hopper GPU access on demand. Without these substrates, "sovereign on our own NVIDIA hardware" would have stayed a slide.
+
+### Components & upstream work
+
+Grouped by role; license + canonical URL given for each. Where a paper exists and the citation is verified, it is included; where it is not, the URL is the citation.
+
+#### Models
+- `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16` — primary serve (this run). NVIDIA Open Model License. <https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16>
+- `nvidia/Llama-3.1-Nemotron-70B-Instruct-HF` and `…-Reward-HF` — R1.5 / R2 scaffold targets. NVIDIA + Llama 3.1 Community License.
+- `meta-llama/Llama-Guard-3-8B` — R2 sovereign guardrails backend. Llama 3.1 Community License.
+- `nvidia/NV-Embed-v2` — R2 retrieval embedding. NVIDIA Open Model License.
+- Foundational: Llama-3 (Dubey et al. 2024, [arXiv:2407.21783](https://arxiv.org/abs/2407.21783)); LoRA (Hu et al. 2021, [arXiv:2106.09685](https://arxiv.org/abs/2106.09685)); Transformer (Vaswani et al. 2017, [arXiv:1706.03762](https://arxiv.org/abs/1706.03762)).
+
+#### Inference & serving
+- **vLLM** — Apache-2.0. <https://github.com/vllm-project/vllm>
+- **TensorRT-LLM** — Apache-2.0. NVIDIA. <https://github.com/NVIDIA/TensorRT-LLM>
+- **Triton Inference Server** — BSD-3-Clause. NVIDIA. <https://github.com/triton-inference-server/server>
+- **NVIDIA NIM** — proprietary platform; Apache-2.0 components inside. <https://build.nvidia.com>
+- **NeMo Framework**, **NeMo Curator**, **NeMo Guardrails** (Colang 2.0) — Apache-2.0. NVIDIA. <https://github.com/NVIDIA-NeMo>
+- **TensorRT Model Optimizer (`modelopt`)** — Apache-2.0. NVIDIA. <https://github.com/NVIDIA/TensorRT-Model-Optimizer>
+
+#### Evaluation
+- **`openai/simple-evals` @ `ee3b0318…`** — MIT, © 2024 OpenAI. Verbatim primitives copied with attribution into `scripts/_healthbench_grader_bridge.py`. <https://github.com/openai/simple-evals>
+- **HealthBench Hard** — `Tonic/Health-Bench-Eval-OSS-2025-07` on Hugging Face (Apache-2.0 via simple-evals). Pinned in `corpus/pins/healthbench-hard-1000.yaml`. <https://huggingface.co/datasets/Tonic/Health-Bench-Eval-OSS-2025-07>
+- **MedQA** — Jin et al., *What Disease does this Patient Have? A Large-scale Open Domain Question Answering Dataset from Medical Exams*, [arXiv:2009.13081](https://arxiv.org/abs/2009.13081). <https://github.com/jind11/MedQA>
+- **PubMedQA** — Jin et al., EMNLP 2019. <https://pubmedqa.github.io>
+- **MedAgentBench** — [arXiv:2501.14654](https://arxiv.org/abs/2501.14654). <https://github.com/stanfordmlgroup/MedAgentBench>
+
+#### Graph & retrieval
+- **NetworkX** — BSD-3-Clause. Hagberg, Schult, Swart, SciPy 2008. <https://networkx.org>
+- **nx-cugraph / cuGraph (RAPIDS)** — Apache-2.0. NVIDIA. <https://github.com/rapidsai/cugraph>
+- **FAISS** — MIT. Johnson, Douze, Jégou, *Billion-Scale Similarity Search with GPUs*, IEEE TBD 2019. <https://github.com/facebookresearch/faiss>
+- **sentence-transformers** — Apache-2.0. Reimers & Gurevych, *Sentence-BERT*, EMNLP 2019. <https://github.com/UKPLab/sentence-transformers>
+
+#### Medical corpus
+- **OpenEM corpus** (370 conditions) — by GOATnote, the org behind this work. Apache-2.0 / CC-BY tier1 (PubMed OA, WHO, CDC). Physician reviewers credited per condition file's `reviewed_by:` frontmatter. <https://github.com/GOATnote-Inc/openem-corpus>
+
+#### Tooling (quietly load-bearing)
+- **httpx** (BSD-3), **PyYAML** (MIT), **pytest** (MIT), **Ruff** (MIT, Astral), **detect-secrets** (Apache-2.0, Yelp), **pre-commit** (MIT). Without these the sovereign path would not be testable from a laptop in a Coffee Shop.
+
+#### Compute
+- **Brev** — Hopper GPU access on demand, Hyperstack and Nebius substrates. <https://www.brev.dev>
+- **NVIDIA H200 / H100** — the silicon that purred during the sweep.
+
+### What this work does not vendor
+
+This repo redistributes no model weights, no HealthBench Hard data, and no `simple-evals` source code. Models pull from Hugging Face under their own licenses at runtime. `simple-evals` is fetched at the pinned SHA on first run (`third_party/simple-evals/`, gitignored). The corpus pin is a manifest, not the data. License notices accompanying the verbatim primitives in `scripts/_healthbench_grader_bridge.py` are kept intact.
