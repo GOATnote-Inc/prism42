@@ -31,6 +31,10 @@ data/seed_kg/graph.gpickle
 data/seed_kg/expansions/*.gpickle
 # SSH TOFU artifacts (per-session host-key trust, NOT secrets but per-machine)
 configs/ssh_known_hosts
+# Reproducibility manifests captured at runtime — keep template + design;
+# captured manifests accumulate and pile up per run. Promote noteworthy ones
+# to docs/manifests/<id>.yaml when they're worth preserving.
+reproducibility/captured/
 nemo/checkpoints/
 nemo/*.nemo
 trt_engines/

@@ -91,3 +91,64 @@ preflight: ## 6-check preflight before R1/R2/R3 sweeps
 clean: ## Remove caches, results, engines (does NOT touch trained adapters)
 	rm -rf .ruff_cache .pytest_cache .mypy_cache __pycache__
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +
+
+# ---------------------------------------------------------------------------
+# Reproducibility — capture + verify
+# ---------------------------------------------------------------------------
+.PHONY: snapshot
+snapshot: ## Capture a reproducibility manifest (LOCAL_PURPOSE="..." to set purpose)
+	@$(VENV)/bin/python scripts/freeze_snapshot.py \
+	  --purpose "$${LOCAL_PURPOSE:-ad-hoc snapshot}" \
+	  $${POD_HOST:+--pod-host $$POD_HOST} \
+	  $${POD_PROVIDER:+--pod-provider $$POD_PROVIDER} \
+	  $${POD_ID:+--pod-id $$POD_ID} \
+	  $${SSH_CONFIG:+--ssh-config $$SSH_CONFIG}
+
+# ---------------------------------------------------------------------------
+# Closed-loop CI — run the bench end-to-end on the deployed pods
+# ---------------------------------------------------------------------------
+.PHONY: ci-medomni
+ci-medomni: ## Closed-loop bench: snapshot -> bench -> CARD -> diff vs prior. Halts on regression.
+	@echo "=== STAGE 1/4 — capture pre-run reproducibility manifest ==="
+	@LOCAL_PURPOSE="ci-medomni run" $(MAKE) snapshot
+	@echo
+	@echo "=== STAGE 2/4 — sovereign_bench against the configured serve+judge endpoints ==="
+	@test -n "$$NEMOTRON_SERVE_URL" || (echo "FAIL: NEMOTRON_SERVE_URL must be set"; exit 2)
+	@test -n "$$NEMOTRON_JUDGE_URL" || (echo "FAIL: NEMOTRON_JUDGE_URL must be set"; exit 2)
+	@CI_DIR="results/ci-medomni-$$(date +%Y%m%d-%H%M%S)"; \
+	 mkdir -p "$$CI_DIR"; \
+	 echo "$$CI_DIR" > /tmp/medomni-ci-dir.txt; \
+	 $(VENV)/bin/python scripts/sovereign_bench.py \
+	   --manifest corpus/clinical-demo/CLN-DEMO-TAMOXIFEN-MIRENA/case.json \
+	   --serve-url "$$NEMOTRON_SERVE_URL" \
+	   --serve-model "$${NEMOTRON_SERVE_MODEL:-nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-NVFP4}" \
+	   --judge-url "$$NEMOTRON_JUDGE_URL" \
+	   --judge-model "$${NEMOTRON_JUDGE_MODEL:-nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-NVFP4}" \
+	   --n 1 --trials 3 --max-tokens 1024 --timeout-s 300 \
+	   --out "$$CI_DIR/tamoxifen.json"
+	@echo
+	@echo "=== STAGE 3/4 — generate CARD ==="
+	@CI_DIR=$$(cat /tmp/medomni-ci-dir.txt); \
+	 $(VENV)/bin/python scripts/write_card.py "$$CI_DIR/tamoxifen.json"
+	@echo
+	@echo "=== STAGE 4/4 — verdict gate (>= 0.80 acceptance threshold) ==="
+	@CI_DIR=$$(cat /tmp/medomni-ci-dir.txt); \
+	 SCORE=$$($(VENV)/bin/python -c "import json; d = json.load(open('$$CI_DIR/tamoxifen.json')); print(d['trial_results'][0]['aggregate']['score'])"); \
+	 echo "score: $$SCORE  threshold: 0.80"; \
+	 awk -v s="$$SCORE" -v t=0.80 'BEGIN { exit (s+0 >= t+0) ? 0 : 1 }' && echo "PASS" || (echo "FAIL: below acceptance threshold"; exit 3)
+	@echo
+	@echo "=== ci-medomni complete; artifacts at $$(cat /tmp/medomni-ci-dir.txt) ==="
+
+.PHONY: ci-medomni-dry
+ci-medomni-dry: ## Show what ci-medomni would do; no pod calls
+	@echo "ci-medomni would:"
+	@echo "  1. snapshot reproducibility manifest"
+	@echo "  2. run sovereign_bench against \$$NEMOTRON_SERVE_URL + \$$NEMOTRON_JUDGE_URL"
+	@echo "     fixture: corpus/clinical-demo/CLN-DEMO-TAMOXIFEN-MIRENA"
+	@echo "     model:   \$${NEMOTRON_SERVE_MODEL:-nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-NVFP4}"
+	@echo "     judge:   \$${NEMOTRON_JUDGE_MODEL:-same-family}"
+	@echo "  3. write_card.py against the artifact"
+	@echo "  4. gate on rubric_score_mean >= 0.80; exit 3 below threshold"
+	@echo
+	@echo "Required env: NEMOTRON_SERVE_URL, NEMOTRON_JUDGE_URL"
+	@echo "Optional env: NEMOTRON_SERVE_MODEL, NEMOTRON_JUDGE_MODEL"
