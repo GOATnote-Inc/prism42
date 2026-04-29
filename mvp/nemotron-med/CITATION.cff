@@ -66,6 +66,22 @@ references:
     notes: "BF16 Hopper-native variant served on warm-lavender-narwhal H200; same-family sister to the Blackwell-only NVFP4 variant on the prod B300 pod."
 
   - type: software
+    title: "Nemotron-3-Nano-Omni-30B-A3B-Reasoning"
+    authors:
+      - name: "NVIDIA"
+    year: 2026
+    url: "https://huggingface.co/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16"
+    notes: >-
+      Multimodal (text+image+video+audio) successor announced 2026-04-28
+      at GTC 2026. Hybrid Mamba2-Transformer MoE, 30B total / 3B active,
+      256K context. Quantizations BF16 / FP8 / NVFP4 (NVFP4 is
+      Hopper-compatible per NVIDIA's technical blog, contradicting the
+      earlier mental model that NVFP4 was Blackwell-only). Status in
+      this lane: R1.5 candidate, swap deferred pending medical bench
+      data (NVIDIA published zero medical scores at release). See
+      findings/research/2026-04-28-nemotron-omni/brief.md.
+
+  - type: software
     title: "NVIDIA NeMo Guardrails (Colang 2.0)"
     authors:
       - name: "NVIDIA"
