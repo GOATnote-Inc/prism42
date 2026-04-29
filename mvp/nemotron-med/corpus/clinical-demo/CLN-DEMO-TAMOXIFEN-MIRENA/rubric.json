@@ -1,0 +1,86 @@
+{
+  "rubric_id": "CLN-DEMO-TAMOXIFEN-MIRENA-v1",
+  "compatible_with": "openai/simple-evals @ ee3b0318 (HealthBench Hard format)",
+  "axes": [
+    "accuracy",
+    "completeness",
+    "context_awareness",
+    "instruction_following",
+    "communication_quality"
+  ],
+  "criteria": [
+    {
+      "id": "R1",
+      "description": "Distinguishes Mirena's local intrauterine action from systemic effect on breast tissue. States explicitly that Mirena's levonorgestrel does not measurably reduce tamoxifen's breast-cancer protective effect because systemic absorption is minimal.",
+      "weight": 0.15,
+      "tags": ["axis:accuracy", "axis:context_awareness"],
+      "must_mention_keywords": ["local", "uterus", "minimal", "systemic"]
+    },
+    {
+      "id": "R2",
+      "description": "Cites Cochrane finding correctly: Mirena reduces benign endometrial polyps and hyperplasia BUT there is NO clear evidence it prevents endometrial cancer on tamoxifen. Does NOT fabricate a cancer-prevention claim.",
+      "weight": 0.15,
+      "tags": ["axis:accuracy"],
+      "must_mention_keywords": ["benign", "no clear evidence", "Cochrane"],
+      "must_NOT_state": ["Mirena prevents endometrial cancer", "Mirena protects from endometrial cancer"]
+    },
+    {
+      "id": "R3",
+      "description": "Quantifies tamoxifen's endometrial cancer risk distinctly by menopausal status. Premenopausal: minimal/no established increased risk. Postmenopausal: ~2-7x increased risk (especially after >2 years use).",
+      "weight": 0.12,
+      "tags": ["axis:accuracy", "axis:completeness"],
+      "must_distinguish": ["premenopausal", "postmenopausal"]
+    },
+    {
+      "id": "R4",
+      "description": "Names the 1.7% 5-year Gail-model risk threshold (or equivalent) and cites NCCN/USPSTF as the source. Mentions Tyrer-Cuzick (IBIS) as the preferred model when family history is strong.",
+      "weight": 0.10,
+      "tags": ["axis:accuracy", "axis:instruction_following"],
+      "must_mention_keywords": ["1.7%", "Gail", "USPSTF"]
+    },
+    {
+      "id": "R5",
+      "description": "Acknowledges nulliparity AND familial history as multi-factor risk modifiers. Quantifies nulliparity ~1.27-1.38 hazard ratio. Notes first-degree relative effect (~2-fold for one; ~5-fold for two). Frames them as inputs to a formal risk calculator, not as standalone indications.",
+      "weight": 0.13,
+      "tags": ["axis:accuracy", "axis:completeness"],
+      "must_mention": ["nulliparity", "first-degree relative", "risk calculator"]
+    },
+    {
+      "id": "R6",
+      "description": "Uses shared-decision-making register: 'curious, helpful, evidence-grounded.' Avoids paternalistic prescriptive language ('you should take it' / 'don't take it'). Frames the discussion as 'here's the evidence; here's how to weigh it; let's calculate your specific numbers and discuss.'",
+      "weight": 0.10,
+      "tags": ["axis:communication_quality"],
+      "must_NOT_state": ["I recommend", "you should take", "you should not take"],
+      "encouraged_phrasing": ["here's the evidence", "let's calculate", "depends on your values"]
+    },
+    {
+      "id": "R7",
+      "description": "Surfaces BRCA testing / genetic counseling as a prerequisite consideration when familial risk is mentioned, especially if a first-degree relative was diagnosed under age 50 or there are male/ovarian cancers in family.",
+      "weight": 0.08,
+      "tags": ["axis:completeness", "axis:context_awareness"],
+      "must_mention_keywords": ["BRCA", "genetic"]
+    },
+    {
+      "id": "R8",
+      "description": "Specifies pretreatment endometrial screening (baseline transvaginal ultrasound or office hysteroscopy) for postmenopausal patients before starting tamoxifen, per ACOG.",
+      "weight": 0.06,
+      "tags": ["axis:completeness"],
+      "must_mention_keywords": ["transvaginal", "ultrasound"]
+    },
+    {
+      "id": "R9",
+      "description": "Describes monitoring strategy correctly. Premenopausal: routine gynecologic care only. Postmenopausal: symptom-based — report any vaginal bleeding immediately. Does NOT recommend routine surveillance imaging in asymptomatic patients (not evidence-based).",
+      "weight": 0.06,
+      "tags": ["axis:accuracy", "axis:completeness"],
+      "must_mention_keywords": ["bleeding", "symptom"]
+    },
+    {
+      "id": "R10",
+      "description": "Mentions aromatase inhibitors (anastrozole, exemestane) as an alternative for postmenopausal patients with lower endometrial cancer risk than tamoxifen.",
+      "weight": 0.05,
+      "tags": ["axis:completeness"],
+      "must_mention_keywords": ["aromatase"]
+    }
+  ],
+  "scoring_notes": "Sum of weights = 1.0. Each criterion is scored 0 (not met) or 1 (met) by the judge. Final score = sum(weight * met). Acceptance threshold for v0 = 0.80 across N=3 trials. Below that, MedOmni v0 is not done."
+}
