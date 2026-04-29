@@ -1,27 +1,46 @@
 """mla.retrieval — sovereign medical-context retrieval.
 
-R2 architecture: query -> NV-Embed-v2 embedding -> top-k node IDs from
-FAISS index built over the OpenEM-expanded KG -> 2-hop ego graph
-expansion via NetworkX (or nx-cugraph if NETWORKX_BACKEND_PRIORITY=cugraph).
+ARCHITECTURE NOTE (revised 2026-04-28 after Nemotron-3-Nano-Omni release):
 
-Tonight's R1 does not use this module. It exists as scaffolding so the
-end-to-end retrieval contract is shippable before R2 lands.
+The original R2 plan was query -> embedding -> top-k -> 2-hop graph
+expansion. Per the engineering brief at
+`findings/research/2026-04-28-nemotron-omni/engineering-decisions.md`,
+that plan is REVISED for the Omni inference target:
 
-Two implementations are provided:
+  - At our scale (OpenEM 370 conditions / ~2K KG nodes), graph-walks do
+    not outperform dense retrieval (GraphRAG analysis, arXiv:2506.05690).
+  - Omni's 256K context window lets us inline ~50K tokens of relevant
+    medical content directly. Top-50 condition cards via NV-Embed-v2 +
+    FAISS, no graph walk required.
+  - Mamba2 long-context degradation is state-saturation (not "lost in
+    the middle"); place high-priority chunks at the START AND END of
+    the context window. See `_format_for_long_context` in mla/preamble.py
+    (R2 todo).
 
-  - `KeywordRetriever`  zero-dep, CPU-only, exact-match aliases + ICD-10
-                        codes. Useful for unit tests and as a fallback
-                        when the embedding stack is unavailable.
+Three implementations exist or are planned:
 
-  - `EmbeddingRetriever` requires `sentence-transformers` + a built FAISS
-                         index. The R2 plan uses NV-Embed-v2 weights
-                         loaded via sentence-transformers; you can swap
-                         in any embedding backend that implements
-                         `encode(texts) -> ndarray[N, D]`.
+  - `KeywordRetriever`   zero-dep CPU fallback. Exact-match aliases +
+                         ICD-10 + label substring search. Tonight's R1
+                         test path; not load-bearing for Omni.
 
-Both return a list of `KGNode` dicts ordered by relevance score, with
-the originating node's neighborhood (red flags, ICD-10 codes, decision
-rules) included for prompt-prepend formatting in `mla/preamble.py`.
+  - `EmbeddingRetriever` NV-Embed-v2 + FAISS over the OpenEM 370 corpus.
+                         R2 v1 target: top-10 inlined into 32K context.
+                         R2 v2 target: top-50 inlined into ~50K of Omni's
+                         256K context. Stub today.
+
+  - `MultimodalRetriever` (R2 v3 deferred) image retrieval via BiomedCLIP
+                         or NeMo Embed VL for ECG/chest-X-ray when the
+                         prompt mentions them. Requires Omni's vision
+                         encoder; not relevant to text-only HealthBench.
+
+The originally-planned 2-hop graph expansion is documented in
+`KGNode.differentials` for completeness but the runtime path no longer
+calls graph traversal; condition cards include their own differential
+list inline via the retrieved-card formatting.
+
+Both retrievers return a list of `KGNode` dicts ordered by relevance
+score, with the originating node's neighborhood (red flags, ICD-10
+codes, decision rules) for inline prompt formatting in mla/preamble.py.
 """
 
 from __future__ import annotations

@@ -20,7 +20,7 @@ A demonstration that GOATnote can serve, judge, evaluate, and (round 3) fine-tun
 | RAG | NV-Embed-v2 + nx-cugraph over OpenEM-expanded medical KG | R2 scaffold |
 | Guardrails | NeMo Guardrails 0.21+ Colang 2.0 + Llama-Guard-3-8B, all local | R2 scaffold |
 | Specialization | NeMo Framework PEFT LoRA → `Nemotron-3-Nano-30B-Med` | R3 (post-judging) |
-| Multi-modal upgrade | `nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-{BF16,FP8,NVFP4}` (released 2026-04-28) — text+vision+audio+video successor to the running model | **R1.5 deferred** — see [`findings/research/2026-04-28-nemotron-omni/brief.md`](findings/research/2026-04-28-nemotron-omni/brief.md). Swap script ready ([`scripts/swap_to_omni_h200.sh`](scripts/swap_to_omni_h200.sh), double-gated). Held until medical-bench delta is measured (NVIDIA published zero medical scores at release). |
+| Multi-modal upgrade | `nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-{BF16,FP8,NVFP4}` (released 2026-04-28) — text+vision+audio+video successor to the running model | **R1.5 A/B in plan** — see [`findings/research/2026-04-28-nemotron-omni/brief.md`](findings/research/2026-04-28-nemotron-omni/brief.md) and [`engineering-decisions.md`](findings/research/2026-04-28-nemotron-omni/engineering-decisions.md). A/B script ready ([`scripts/bench_omni_alongside.sh`](scripts/bench_omni_alongside.sh), double-gated; runs Omni on the idle H100 with no eviction on the H200). Direct swap script also exists ([`scripts/swap_to_omni_h200.sh`](scripts/swap_to_omni_h200.sh)) but is held until the A/B delta is measured. |
 
 ## What ships in this commit
 
