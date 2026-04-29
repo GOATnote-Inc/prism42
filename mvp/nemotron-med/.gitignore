@@ -29,6 +29,8 @@ data/lazygraph/
 # Seed KG built artifact — produced by scripts/build_seed_kg.py from CSVs
 data/seed_kg/graph.gpickle
 data/seed_kg/expansions/*.gpickle
+# SSH TOFU artifacts (per-session host-key trust, NOT secrets but per-machine)
+configs/ssh_known_hosts
 nemo/checkpoints/
 nemo/*.nemo
 trt_engines/
