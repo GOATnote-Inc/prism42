@@ -46,7 +46,13 @@ The starting flag set in `scripts/bench_omni_alongside.sh`:
 - Mamba SSM state corruption at block wrap-around in fp32 ([vLLM #27264](https://github.com/vllm-project/vllm/issues/27264)) — fp8 / auto state dtype is safe.
 - vLLM ≥ 0.20.0 explicitly required (NOT `:latest`).
 
-## Decision 2 — Skip graph-RAG at our scale; embrace NV-Embed-v2 + FAISS + 256K context
+## Decision 2 — ⚠️ SUPERSEDED 2026-04-29 — see [`../2026-04-29-graph-rag-rethink/synthesis.md`](../2026-04-29-graph-rag-rethink/synthesis.md)
+
+> **Reversed.** The user pushed back on this call and was right. The "10K-node threshold" came from a paper whose evaluation was bias-corrected the next month (arXiv:2506.06331). LazyGraphRAG indexing costs 0.1 % of full GraphRAG — no cost barrier at 2 K nodes. Medical multi-hop + provenance + hallucination resistance favor graph-augmented dense retrieval. The new architecture is LazyGraphRAG-shaped, NVIDIA-primitive-aligned, target p50 ~50 ms closed-loop. See the v2 brief.
+
+> Original Decision 2 text preserved below for audit. Decisions 1 (vLLM flags) and 3 (expert routing) still stand.
+
+### Skip graph-RAG at our scale; embrace NV-Embed-v2 + FAISS + 256K context
 
 For the R2 retrieval rewrite, we drop the graph-walk plan and go context-stuffing-first. Three reasons, sourced from Agent C:
 

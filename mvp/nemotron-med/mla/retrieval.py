@@ -1,46 +1,61 @@
 """mla.retrieval — sovereign medical-context retrieval.
 
-ARCHITECTURE NOTE (revised 2026-04-28 after Nemotron-3-Nano-Omni release):
+ARCHITECTURE NOTE (revised 2026-04-29; supersedes the 2026-04-28 note):
 
-The original R2 plan was query -> embedding -> top-k -> 2-hop graph
-expansion. Per the engineering brief at
-`findings/research/2026-04-28-nemotron-omni/engineering-decisions.md`,
-that plan is REVISED for the Omni inference target:
+The 2026-04-28 architecture note here said "skip graph; inline top-50
+into 256K context." That call was reversed after a second-opinion
+research pass — see
+`findings/research/2026-04-29-graph-rag-rethink/synthesis.md`.
 
-  - At our scale (OpenEM 370 conditions / ~2K KG nodes), graph-walks do
-    not outperform dense retrieval (GraphRAG analysis, arXiv:2506.05690).
-  - Omni's 256K context window lets us inline ~50K tokens of relevant
-    medical content directly. Top-50 condition cards via NV-Embed-v2 +
-    FAISS, no graph walk required.
-  - Mamba2 long-context degradation is state-saturation (not "lost in
-    the middle"); place high-priority chunks at the START AND END of
-    the context window. See `_format_for_long_context` in mla/preamble.py
-    (R2 todo).
+The corrected architecture is LazyGraphRAG-shaped, NVIDIA-primitive-
+aligned, graph-first:
 
-Three implementations exist or are planned:
+  1. Persistent in-VRAM medical KG (~2K nodes after OpenEM expansion),
+     Leiden community partitions precomputed at startup
+     (cuGraph; nx-cugraph zero-code-change).
+  2. cuVS IVF-PQ embedding index over node descriptions
+     (NV-Embed-v2 or Omni-Embed-Nemotron-3B for multimodal).
+  3. Llama-Nemotron-Rerank-VL cross-encoder rerank of top-k.
+  4. nx-cugraph 2-hop ego-graph expansion of reranked seeds.
+  5. Surgical ~5-15K subgraph inlined (NOT 50K of generic cards).
+  6. vLLM constrained decoding: output tokens must reference
+     subgraph node IDs (citation grounding).
+  7. Optional R3 polish: Leiden community label of retrieved subgraph
+     pre-warms a matching subset of Omni's 128 experts (top-6 routing
+     guided by ClusterMoE-style hierarchical alignment).
 
-  - `KeywordRetriever`   zero-dep CPU fallback. Exact-match aliases +
-                         ICD-10 + label substring search. Tonight's R1
-                         test path; not load-bearing for Omni.
+Why graph-first won the rethink:
+  - Multi-hop medical reasoning: vector-only retrieval drops recall to
+    51.6% on multi-hop clinical EHR vs 100% for hybrid graph+vector
+    (MediGRAF, Frontiers in Digital Health, Feb 2026).
+  - Provenance: edge-grounded citations stop the "confidently incorrect
+    on a rare-but-deadly condition" foot-gun (medRxiv Feb 2025).
+  - Cost: LazyGraphRAG indexing is ~0.1% of full GraphRAG (Microsoft,
+    June 2025) — basically free at our scale.
+  - Latency: persistent in-VRAM graph + cuVS + 2-hop expansion targets
+    p50 ~50ms closed-loop vs ~150-300ms for naive 50K-token inline.
 
-  - `EmbeddingRetriever` NV-Embed-v2 + FAISS over the OpenEM 370 corpus.
-                         R2 v1 target: top-10 inlined into 32K context.
-                         R2 v2 target: top-50 inlined into ~50K of Omni's
-                         256K context. Stub today.
+Three implementations:
 
-  - `MultimodalRetriever` (R2 v3 deferred) image retrieval via BiomedCLIP
-                         or NeMo Embed VL for ECG/chest-X-ray when the
-                         prompt mentions them. Requires Omni's vision
-                         encoder; not relevant to text-only HealthBench.
+  - `KeywordRetriever`     zero-dep CPU fallback (alias + ICD-10
+                           substring match). Used by tests; not the
+                           shipping path.
 
-The originally-planned 2-hop graph expansion is documented in
-`KGNode.differentials` for completeness but the runtime path no longer
-calls graph traversal; condition cards include their own differential
-list inline via the retrieved-card formatting.
+  - `EmbeddingRetriever`   cuVS + NV-Embed-v2 over OpenEM 370 corpus.
+                           v1 ship target. Stub today.
 
-Both retrievers return a list of `KGNode` dicts ordered by relevance
-score, with the originating node's neighborhood (red flags, ICD-10
-codes, decision rules) for inline prompt formatting in mla/preamble.py.
+  - `GraphAugmentedRetriever` (planned, R2 v1 ship target) builds on
+                              EmbeddingRetriever: dense top-k -> rerank
+                              -> 2-hop nx-cugraph ego-graph expansion
+                              -> subgraph slice. The 'Lazy' in
+                              LazyGraphRAG-shaped: graph structure is
+                              precomputed once at startup (Leiden
+                              communities + adjacency); query path is
+                              fast.
+
+Both shipping retrievers return a list of `KGNode` dicts ordered by
+score, with the originating node's 1-hop neighborhood for inline
+prompt formatting in mla/preamble.py (R2 todo).
 """
 
 from __future__ import annotations
