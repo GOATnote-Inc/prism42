@@ -24,6 +24,26 @@
       "has": [
         { "type": "host", "value": "prism42-app.thegoatnote.com" }
       ]
+    },
+    {
+      "source": "/4uwhat",
+      "destination": "/4UWHAt",
+      "permanent": false
+    },
+    {
+      "source": "/4uwhat/:path*",
+      "destination": "/4UWHAt/:path*",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/4UWHAt",
+      "destination": "https://medomni.vercel.app/4UWHAt"
+    },
+    {
+      "source": "/4UWHAt/:path*",
+      "destination": "https://medomni.vercel.app/4UWHAt/:path*"
     }
   ]
 }
