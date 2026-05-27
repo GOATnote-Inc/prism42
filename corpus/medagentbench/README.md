@@ -69,3 +69,8 @@ When H1 executes:
 - `docs/sota-portfolio.md` — H1 epic definition.
 - `scripts/_healthbench_grader_bridge.py` — pinned-clone pattern Prism
   uses for third-party scorers; same pattern applies at H1.
+- `configs/opus-4-7.yaml` — drop-in agent config for upstream
+  MedAgentBench's `HTTPAgent` that targets Anthropic's Messages API
+  directly (omits the temperature / top_p / top_k / budget_tokens
+  params Opus 4.7 rejects at the API boundary). Operator substitutes
+  `x-api-key` from `ANTHROPIC_API_KEY` before run.
