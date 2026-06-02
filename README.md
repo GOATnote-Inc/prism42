@@ -249,10 +249,39 @@ target-specific naming, and no reproduction fingerprints.
 
 ## Credits
 
-- Claude Opus 4.7 — the auditor and the audited.
-- OpenAI `simple-evals` (Apache 2.0) — HealthBench Hard rubric grader.
-- Anthropic Managed Agents — research-preview multi-agent.
-- GOATnote Emergency Dispatch Protocol (GEDP) v0.1 — developed under
+- **Anthropic** — the through-line of this project, in several distinct
+  threads:
+  - **Claude Opus 4.7** — the auditor and the audited.
+  - **[Claude Code](https://code.claude.com)** and the
+    [agent teams](https://code.claude.com/docs/en/agent-teams) primitive
+    — the IDE / harness much of this codebase was authored with.
+  - **Claude Managed Agents** — the research-preview multi-agent
+    platform behind the five-role dialectic (`mla/` + `agents/`).
+  - **[Project Glasswing](https://www.anthropic.com/glasswing)** —
+    Anthropic's cross-industry initiative to secure critical software
+    in the AI era (announced 2026; partners include AWS, Apple,
+    Broadcom, Cisco, CrowdStrike, Google, JPMorganChase, the Linux
+    Foundation, Microsoft, NVIDIA, and Palo Alto Networks). Its
+    defenders-first posture — moving frontier capability into the hands
+    of defenders before attackers — is the spirit behind Prism's
+    frozen-path discipline, the double-gated commit-time checks
+    (`PRISM_*_COMMIT=1` + `--commit`), and the physician-gated clinical
+    disclosure routing in `docs/clinical-handling.md`. The agent-team
+    playbook at `.claude/skills/glasswing-discipline/` is named in
+    tribute, sharing the butterfly metaphor (Greta oto's transparent
+    wings).
+  - **Anthropic engineering writing** — the
+    [long-running-apps harness post](https://www.anthropic.com/engineering/harness-design-long-running-apps)
+    is the precedent for the five-role dialectic; the
+    [Managed Agents engineering post](https://www.anthropic.com/engineering/managed-agents)
+    shaped how Prism keeps verify-state outside the LLM context window.
+    The published work of Anthropic's safety, safeguards-engineering,
+    and red-team groups (the Frontier Red Team and predecessors) is the
+    precedent for Prism's isolation, disclosure, and kernel-research
+    posture (`docs/kernel-research-posture.md`).
+- **OpenAI `simple-evals`** (Apache 2.0) — HealthBench Hard rubric
+  grader.
+- **GOATnote Emergency Dispatch Protocol (GEDP) v0.1** — developed under
   direction of Brandon Dent, MD (emergency medicine). Author: GOATnote
   Inc. MIT-licensed. Grounded in AHA BLS 2025, NHTSA EMS Scope of
   Practice Model, peer-reviewed EMS literature, and publicly published
