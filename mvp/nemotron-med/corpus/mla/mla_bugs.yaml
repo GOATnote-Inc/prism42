@@ -1,0 +1,99 @@
+# MLA decode bug corpus — already-public user-filed GitHub issues.
+#
+# Phase M (MLA decode oracle). See docs/mla-oracle-roadmap.md §3 M5.
+#
+# Structural parallel to the gitignored kernel-bug corpus. Unlike that
+# corpus (which tracks historical fixed bugs with fix_sha + PR), the MLA
+# corpus tracks OPEN bugs — user-filed reports on the SGLang / vLLM /
+# FlashInfer trackers that remain unresolved. Prism's role is executed
+# verification against a correctness oracle, not zero-day disclosure:
+# every entry here is a public GitHub issue that any reader can open
+# in a browser.
+#
+# Disclosure posture: see docs/kernel-research-posture.md.
+#   - These three bugs are already public; cite directly.
+#   - Any NOVEL correctness failure surfaced by the oracle during
+#     M6/M7 runs routes off-tree via the private channel described
+#     in the research-posture doc, never through this repo.
+#
+# All three bugs are SM100-specific (require B200/GB200 hardware to
+# trigger). Reproducers guard on REQUIRED_CC=(10, 0) and defer cleanly
+# on SM90 / SM103 / SM120, emitting a `deferred` verdict the runner
+# distinguishes from `triggered`.
+
+version: 0.1.0
+source: public GitHub issues on SGLang / vLLM / FlashInfer
+verified_at: 2026-04-22
+disclosure_status: already_public
+
+bugs:
+  - id: MLA-BUG-001
+    title: FP4 accuracy issue with B200 + FlashInfer MLA (SGLang)
+    class: precision
+    target_rail: cute-mla
+    target_hardware: B200 / GB200 (sm_100)
+    upstream_issue:
+      repo: sgl-project/sglang
+      number: 10284
+      url: https://github.com/sgl-project/sglang/issues/10284
+      state: open
+    repro_shape:
+      hardware: B200
+      sm: 100
+      precision_candidate: nvfp4
+      precision_reference: fp32
+      backend: FlashInfer trtllm MLA
+      model_shape: DeepSeek-V2-Lite (d_c=512, d_h^R=64, 16 heads × 128)
+    impact: observable task-accuracy drop on FP4 MLA decode vs FP32 reference
+    oracle_expectation:
+      baseline_verdict: FAIL on cos_sim_below_floor or rel_diff_exceeded
+      reference_verdict: PASS
+    reproducer: corpus/mla/reproducers/MLA_BUG_001_sglang_10284.py
+
+  - id: MLA-BUG-002
+    title: NVFP4 + MLA error during processing (vLLM)
+    class: precision
+    target_rail: cute-mla
+    target_hardware: B200 / GB200 (sm_100)
+    upstream_issue:
+      repo: vllm-project/vllm
+      number: 38439
+      url: https://github.com/vllm-project/vllm/issues/38439
+      state: open
+    repro_shape:
+      hardware: B200
+      sm: 100
+      precision_candidate: nvfp4
+      precision_reference: fp32
+      backend: vLLM NVFP4 path
+      model_shape: DeepSeek-V2-Lite
+      failure_mode: pipeline mismatch during NVFP4 + MLA inference
+    impact: incorrect output or exception under specific NVFP4 + MLA configs
+    oracle_expectation:
+      baseline_verdict: FAIL on shape_mismatch, rel_diff_exceeded, or nan_detected
+      reference_verdict: PASS
+    reproducer: corpus/mla/reproducers/MLA_BUG_002_vllm_38439.py
+
+  - id: MLA-BUG-003
+    title: MLA chunked-prefill batch-composition-dependent outputs on Blackwell (FlashInfer)
+    class: precision
+    target_rail: cute-mla
+    target_hardware: B200 / GB200 (sm_100)
+    upstream_issue:
+      repo: flashinfer-ai/flashinfer
+      number: 3047
+      url: https://github.com/flashinfer-ai/flashinfer/issues/3047
+      state: open
+    repro_shape:
+      hardware: B200
+      sm: 100
+      precision_candidate: fp8
+      precision_reference: fp32
+      backend: FlashInfer chunked-prefill MLA
+      model_shape: DeepSeek-V2-Lite
+      failure_mode: output varies with batch composition (should be invariant)
+    impact: per-example output non-determinism under batched chunked-prefill
+    oracle_expectation:
+      baseline_verdict: FAIL on rel_diff_exceeded or cos_sim_below_floor across batches
+      reference_verdict: PASS
+    reproducer: corpus/mla/reproducers/MLA_BUG_003_flashinfer_3047.py

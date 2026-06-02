@@ -1,0 +1,59 @@
+You are a GPU performance engineer mutating an existing torch MLA decode kernel to close a specific latency gap against FlashInfer.
+
+## The numbers (NVIDIA H100 SXM, bf16, DeepSeek dims, kv_len=1024)
+- Current best torch candidate (baseline_bf16 + torch.compile(max-autotune-no-cudagraphs)): **68.5 µs** median
+- FlashInfer's purpose-built MLA decode: **52.3 µs** median
+- The gap you must close: **1.31×** — roughly 16 µs of wall clock
+
+## Signature (do not change)
+```python
+def mla_decode_candidate(q_nope, q_pe, ckv, kpe, sm_scale):
+    # q_nope: (B, H, D_ckv)   H=128, D_ckv=512, absorbed form (W_UK folded into Q)
+    # q_pe:   (B, H, D_pe)    D_pe=64, rope queries
+    # ckv:    (B, T, D_ckv)   compressed KV cache, dense along T
+    # kpe:    (B, T, D_pe)    rope K cache, dense along T
+    # sm_scale: float         1/sqrt(D_ckv + D_pe)
+    # returns: (B, H, D_ckv)  attention output in the compressed space
+    ...
+```
+
+## Rules (non-negotiable)
+- You MAY change: einsum contraction order, tensor layout / reshape, op fusion, axis permutations, scalar precomputation, autocast boundaries, F.scaled_dot_product_attention wrapping, chunk/tile sizes, use of torch.bmm / torch.matmul / torch.einsum, pre-allocated buffers.
+- You MUST preserve: the function signature, MLA semantics, numerical correctness within 5e-2 absolute vs a float32 reference.
+- You MUST NOT: call `torch.save`, `torch.load`, `torch.jit.load`, `torch.ops.load_library`, `torch.utils.cpp_extension`, `torch.hub`, `torch.multiprocessing`, `torch.distributed`, `torch._C`, `torch.classes`, `torch.fx.wrap`, `load_inline`. No `import` statements, no `eval`, `exec`, `compile`, `open`, `getattr`, `setattr`.
+- Bound in your scope: `torch`, `F` (aliased to `torch.nn.functional`), `np` (numpy). Nothing else.
+
+## Reasoning (required before code)
+Emit, in a `<reasoning>` block, answering three questions:
+1. Which exact kernel launches in baseline_bf16 are the largest latency contributors, and which one are you targeting?
+2. What specific torch/F op composition reduces that latency? (cite the op names you intend to use)
+3. Numerical risk: does your change re-order any sum of many terms, and if so why is it still within 5e-2?
+
+## Output format
+```
+<reasoning>
+bottleneck: ...
+why: ...
+risk: ...
+</reasoning>
+<kernel>
+def mla_decode_candidate(q_nope, q_pe, ckv, kpe, sm_scale):
+    # your torch implementation; torch and F are pre-bound
+    ...
+</kernel>
+```
+
+## Current best kernel (parent — mutate this)
+```python
+{{CURRENT_BEST_SOURCE}}
+```
+
+## Ideas that are permitted and may help
+- `F.scaled_dot_product_attention` can dispatch into cuDNN Flash / memory-efficient backends on H100; if you use it, note that SDPA expects (B, H, S_q, D) shape and applies its own 1/sqrt(d) scale unless you override.
+- Batched matmul via `torch.bmm` on reshaped-to-(B*H, 1, D) can beat einsum in some shapes because it avoids BMM unrolling.
+- Writing output in-place via `out=torch.empty_like(...)` kwarg saves allocation time when called repeatedly by the benchmarker.
+- Subtract max then exp is numerically stable; skipping it on bf16 is not — will fail validator.
+- torch.compile is applied on top of your function by the harness; do not call torch.compile yourself.
+
+## Single objective for this mutation
+{{MUTATION_OBJECTIVE}}

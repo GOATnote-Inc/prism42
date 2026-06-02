@@ -1,0 +1,51 @@
+complaint_id,lay_phrase,mpds9_id,primary_icd10,severity_tier
+cc-001,crushing chest pain,mpds9-10,R07.9,Charlie
+cc-002,pressure in my chest,mpds9-10,R07.9,Charlie
+cc-003,my chest hurts and I am sweating,mpds9-10,R07.9,Charlie
+cc-004,I cannot catch my breath,mpds9-06,R06.02,Charlie
+cc-005,short of breath at rest,mpds9-06,R06.02,Charlie
+cc-006,wheezing badly cannot speak full sentences,mpds9-06,R06.02,Delta
+cc-007,sudden weakness on one side of body,mpds9-28,I63.9,Delta
+cc-008,face is drooping and slurred speech,mpds9-28,I63.9,Delta
+cc-009,worst headache of my life,mpds9-18,R51.9,Delta
+cc-010,not breathing and unresponsive,mpds9-09,I46.9,Echo
+cc-011,no pulse and not moving,mpds9-09,I46.9,Echo
+cc-012,gasping breathing only,mpds9-09,I46.9,Echo
+cc-013,passed out and woke up,mpds9-31,R55,Charlie
+cc-014,fainted and is now alert,mpds9-31,R55,Bravo
+cc-015,unconscious and not waking up,mpds9-31,R55,Delta
+cc-016,seizure happening now,mpds9-12,R56.9,Delta
+cc-017,had a seizure now sleepy,mpds9-12,R56.9,Charlie
+cc-018,cannot stop seizing,mpds9-12,R56.9,Delta
+cc-019,choking on food,mpds9-11,T17.9XXA,Delta
+cc-020,coughing but airway partial,mpds9-11,T17.9XXA,Charlie
+cc-021,baby choking and silent,mpds9-11,T17.9XXA,Echo
+cc-022,bleeding heavily from leg,mpds9-21,R58,Delta
+cc-023,deep cut soaked through towel,mpds9-21,R58,Charlie
+cc-024,nosebleed will not stop after 30 minutes,mpds9-21,R58,Bravo
+cc-025,fell from ladder cannot move legs,mpds9-17,W19.XXXA,Delta
+cc-026,elderly fall with hip pain,mpds9-17,W19.XXXA,Charlie
+cc-027,fell down stairs hit head,mpds9-17,W19.XXXA,Delta
+cc-028,feels weak all over for two days,mpds9-26,R69,Bravo
+cc-029,vomiting and confused,mpds9-26,R69,Charlie
+cc-030,fever and rigors and pain,mpds9-26,R69,Bravo
+cc-031,car accident with airbag deployment,mpds9-30,T14.90XA,Charlie
+cc-032,struck by vehicle pedestrian,mpds9-30,T14.90XA,Delta
+cc-033,motorcycle crash multiple injuries,mpds9-30,T14.90XA,Delta
+cc-034,kitchen burn with blistering,mpds9-07,T30.0,Charlie
+cc-035,scalded by hot water large area,mpds9-07,T30.0,Delta
+cc-036,electrical burn from outlet,mpds9-07,T30.0,Charlie
+cc-037,diabetic acting confused and sweaty,mpds9-13,E16.2,Charlie
+cc-038,low blood sugar cannot eat,mpds9-13,E16.2,Charlie
+cc-039,bee sting throat closing,mpds9-02,T78.40XA,Echo
+cc-040,hives all over body and dizzy,mpds9-02,T78.40XA,Delta
+cc-041,took too many pills on purpose,mpds9-23,T50.901A,Delta
+cc-042,accidental child medication ingestion,mpds9-23,T50.901A,Charlie
+cc-043,water broke contractions two minutes apart,mpds9-24,O80,Delta
+cc-044,bleeding heavily early pregnancy,mpds9-24,O80,Charlie
+cc-045,outdoors lost too long very cold,mpds9-20,T68.XXXA,Charlie
+cc-046,collapsed in heatwave at outdoor event,mpds9-20,T67.0XXA,Delta
+cc-047,touched live wire still tingling,mpds9-15,T75.4XXA,Charlie
+cc-048,struck by lightning and unresponsive,mpds9-15,T75.4XXA,Echo
+cc-049,gunshot wound to abdomen,mpds9-27,T14.90XA,Delta
+cc-050,stabbed in chest still breathing,mpds9-27,T14.90XA,Delta

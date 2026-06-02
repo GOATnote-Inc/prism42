@@ -1,0 +1,20 @@
+{
+  "case_id": "KERNEL-GOLDEN",
+  "round": 1,
+  "attacks": [
+    {
+      "id": "ATK-001",
+      "invariant_id": "INV-002",
+      "input_pattern": "Batch=1, heads=8, seq_q=128, seq_k=512, head_dim=128. K and V tiles are filled with fp8 (E4M3) values drawn uniformly from the subnormal band [2^-10, 2^-8]. Q is scaled so that qK^T produces row-maxes separated by exactly 9.0 between adjacent tiles, driving exp(m_prev - m_new) into the 2^-13 region -- well below the E4M3 subnormal boundary, guaranteeing l_prev underflows to zero on the rescale.",
+      "expected_violation": "After tile 2 of 4, l_i collapses to the current tile's row_sum only (prior mass lost). Output O for rows where this occurs deviates from fp32 reference by > 0.5 (relative). Downstream: INV-003 also trips on any row whose only finite contributions are in the lost tiles, producing NaN in O.",
+      "confidence": 0.92
+    },
+    {
+      "id": "ATK-002",
+      "invariant_id": "INV-001",
+      "input_pattern": "Batch=1, heads=4, seq_q=64, seq_k=256, head_dim=64. Causal mask is applied such that row 0's first tile is entirely masked (-inf). If the kernel initializes m_i = -inf and does not early-out before the first exp() call on that row, any finite x in a later tile triggers exp(finite - (-inf)) -> +inf.",
+      "expected_violation": "Row 0 of the output contains +inf in at least one head; fp32 reference yields the expected masked-softmax values.",
+      "confidence": 0.85
+    }
+  ]
+}

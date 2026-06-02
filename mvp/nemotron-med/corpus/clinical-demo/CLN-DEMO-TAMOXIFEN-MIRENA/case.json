@@ -1,0 +1,59 @@
+{
+  "id": "CLN-DEMO-TAMOXIFEN-MIRENA",
+  "case_kind": "patient_chemoprevention_decision",
+  "user_persona": "patient",
+  "framing": "shared_decision_making",
+  "summary": "A patient considers tamoxifen for breast cancer chemoprevention given familial risk + nulliparity + currently-in-place Mirena IUD; asks two multifactor questions touching SERM-mechanism / drug-device interaction / familial-risk modeling / pretreatment-screening. The lazy single-hop RAG path drops accuracy on this regime per medRxiv:10.64898/2025.11.29.25341091.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I've been considering tamoxifen because of an increased familial risk of breast cancer. I've never carried a child to term, and I currently have a Mirena IUD. Does the Mirena affect my risks? And how do I assess this risk?"
+    }
+  ],
+  "expected_persona_register": {
+    "register": "patient_facing",
+    "max_fkgl_grade_level": 8,
+    "tone": "curious, humble, evidence-grounded, shared-decision-making",
+    "do_NOT": [
+      "prescribe (\"you should take tamoxifen\" / \"don't take it\")",
+      "use 5-syllable medical terminology without lay translation",
+      "claim Mirena prevents endometrial cancer on tamoxifen (no RCT evidence)",
+      "conflate Mirena's local levonorgestrel effect with systemic progestin",
+      "skip menopausal-status distinction (premenopausal endometrial risk is null; postmenopausal is 2-7x)",
+      "omit the 1.7% Gail / Tyrer-Cuzick risk-threshold framing",
+      "recommend tamoxifen without flagging BRCA testing as a prior consideration"
+    ]
+  },
+  "graph_walk_minimum_subgraph": {
+    "nodes": [
+      "drug:tamoxifen",
+      "device:mirena_levonorgestrel_iud",
+      "modifier:familial_breast_cancer_risk",
+      "modifier:nulliparity",
+      "decision:chemoprevention_threshold",
+      "risk:endometrial_cancer_on_tamoxifen"
+    ],
+    "edges_required_for_correct_answer": [
+      "drug:tamoxifen --serm_mechanism--> tissue:breast (antagonist)",
+      "drug:tamoxifen --serm_mechanism--> tissue:endometrium (agonist)",
+      "drug:tamoxifen --premenopausal_risk_profile--> risk:endometrial_cancer (~null)",
+      "drug:tamoxifen --postmenopausal_risk_profile--> risk:endometrial_cancer (~2-7x)",
+      "device:mirena_levonorgestrel_iud --local_action--> tissue:endometrium (suppresses benign hyperplasia, polyps)",
+      "device:mirena_levonorgestrel_iud --systemic_absorption--> tissue:breast (negligible — does NOT reduce tamoxifen's breast effect)",
+      "device:mirena_levonorgestrel_iud --evidence_level--> outcome:endometrial_cancer_prevention (NO RCT data — Cochrane 2020)",
+      "modifier:familial_breast_cancer_risk --first_degree_relative_count--> risk:5_year_breast_cancer (2x for one; 5x for two)",
+      "modifier:familial_breast_cancer_risk --prerequisite--> action:brca_testing_genetic_counseling",
+      "modifier:nulliparity --hazard_ratio--> risk:5_year_breast_cancer (1.27-1.38)",
+      "decision:chemoprevention_threshold --gail_5_year_risk--> 0.017 (USPSTF Grade B, NCCN)",
+      "decision:chemoprevention_threshold --preferred_for_family_history--> tool:tyrer_cuzick_ibis",
+      "decision:chemoprevention_threshold --pretreatment--> screening:transvaginal_ultrasound_or_office_hysteroscopy"
+    ]
+  },
+  "expected_sources_referenced": [
+    "USPSTF — Breast Cancer Medications for Risk Reduction (Grade B)",
+    "NCCN — Breast Cancer Risk Reduction guideline (1.7% Gail threshold)",
+    "ACOG Committee Opinion — Tamoxifen and Uterine Cancer",
+    "Cochrane 2020 — Levonorgestrel-IUS for endometrial protection on tamoxifen (CD007245)",
+    "NSABP P-1 trial (1998) — 49% relative risk reduction"
+  ]
+}

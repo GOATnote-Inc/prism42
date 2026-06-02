@@ -1,0 +1,15 @@
+{
+  "case_id": "KERNEL-GOLDEN",
+  "run_id": "464f659e-8099-41ef-899c-1aec6de57e04",
+  "verdict": "confirmed",
+  "severity": "high",
+  "cross_checks": {
+    "poc_matches_claim": true,
+    "citations_valid": true,
+    "severity_consistent": true
+  },
+  "disclosure_target": "N/A",
+  "embargo_channel": "N/A",
+  "rationale": "Attacker ATK-001 targeted INV-002 (fp8 rescale subnormal flush). PoC exited nonzero with rel_err=0.552 between the mocked fp8 path and the fp32 reference on a subnormal-heavy K/V pattern, exceeding the 0.5 violation threshold. Executor observed attack_succeeded on the cuda rail. Source citations in report.md map to invariants.json source_lines. Severity=high is consistent with a precision-class bug that silently discards probability mass in the forward path (affects training-loss trajectories and inference determinism) without panicking or crashing.",
+  "adjudicator_notes": "Golden-case fixture. This verdict is frozen: any downstream change that flips any cross_checks.* to false, or flips the verdict away from confirmed, is a regression in the verification layer -- not a legitimate re-adjudication."
+}

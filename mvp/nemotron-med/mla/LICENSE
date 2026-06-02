@@ -1,0 +1,30 @@
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   Copyright 2026 GOATnote-Inc (Brandon Dent, MD)
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+   ---
+
+   Dependencies and inspirations retain their original licenses; see
+   `prism-mla-archive/ledger/provenance.md` in the companion archive for
+   the full per-source license ledger. No code in this repository is
+   forked from GPL or commercial-licensed sources; the scaffold uses only
+   numpy, torch (BSD-3), flashinfer (Apache-2.0), CUTLASS (BSD-3 C++ core),
+   and Anthropic SDK at the API layer.
+
+   The CuTe DSL (`python/CuTeDSL/` of NVIDIA/cutlass) is under NVIDIA EULA,
+   not BSD-3. This repository does NOT fork or redistribute CuTe DSL code.
+   Any reference to CuTe DSL is via permalinked citation only.
