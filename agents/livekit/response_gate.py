@@ -275,9 +275,24 @@ class ResponseGate:
     # ---- Routing -----------------------------------------------------
 
     def should_use_template(self, intent_value: str) -> bool:
-        """Return True when this intent renders deterministically."""
+        """Return True when this intent renders deterministically.
+
+        Cycle-2Q3 (2026-04-27): direct-answer intents always route to LLM
+        so the caller's specific question gets a context-aware response,
+        not a fixed template. Templates were producing reassurance-flavored
+        loops on "where are you sending help?" / "did you hear me?" turns.
+        Safety-template intents (CPR / cardiac-arrest gates) still
+        force-template via _SAFETY_TEMPLATE_ONLY above.
+        """
         if intent_value in _SAFETY_TEMPLATE_ONLY:
             return True
+        # Cycle-2Q3 (rev 2026-04-27): keep direct-answer intents on the
+        # TEMPLATE path. Routing them to LLM produced hallucinated
+        # reassurance loops ("we have it logged, I am with you, I hear you")
+        # instead of the deterministic address echo ("Yes, I have you at
+        # <addr>, and units are on the way."). Templates render with
+        # address_text substitution from the FSM, which is what the caller
+        # asks for when they say "where are you sending help?".
         return intent_value in TEMPLATES
 
     def render_template_for(self, intent_value: str) -> str | None:

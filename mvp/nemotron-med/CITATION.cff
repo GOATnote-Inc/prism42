@@ -1,0 +1,188 @@
+# Citation File Format — https://citation-file-format.github.io/
+# Machine-readable companion to the README's "Citation & Acknowledgements" section.
+cff-version: 1.2.0
+message: "If you reference this work, please cite it as below."
+title: "prism42-nemotron-med: a sovereign NVIDIA medical-LLM stack on Brev Hopper GPUs"
+type: software
+authors:
+  - family-names: Dent
+    given-names: Brandon
+    name-suffix: MD
+    affiliation: GOATnote
+    email: b@thegoatnote.com
+  - name: "prism42 contributors"
+date-released: "2026-04-28"
+url: "https://github.com/GOATnote-Inc/prism42/pull/11"
+repository-code: "https://github.com/GOATnote-Inc/prism42/tree/nemotron-med-hackathon/mvp/nemotron-med"
+license: MIT
+keywords:
+  - "medical large language models"
+  - "NVIDIA Nemotron"
+  - "sovereign inference"
+  - "HealthBench"
+  - "knowledge graph retrieval"
+  - "Hopper"
+  - "TensorRT-LLM"
+  - "vLLM"
+  - "NeMo Guardrails"
+abstract: >-
+  prism42-nemotron-med is a sovereign NVIDIA medical-LLM stack that serves
+  Nemotron-3 on Brev Hopper GPUs and benchmarks against HealthBench Hard
+  with a sovereign judge — no cloud LLM API keys in any code path. The lane
+  is air-gapped from the prism42 production voice surface; isolation is
+  enforced via pre-commit hooks and per-commit production-page hash diffs.
+references:
+  - type: software
+    title: "openai/simple-evals (HealthBench rubric grader, pinned at SHA ee3b0318)"
+    authors:
+      - name: "OpenAI"
+    url: "https://github.com/openai/simple-evals"
+    license: MIT
+    notes: "Verbatim attribution preserved in scripts/_healthbench_grader_bridge.py."
+
+  - type: dataset
+    title: "Health-Bench-Eval-OSS-2025-07"
+    authors:
+      - name: "Tonic AI"
+      - name: "OpenAI"
+    url: "https://huggingface.co/datasets/Tonic/Health-Bench-Eval-OSS-2025-07"
+    license: Apache-2.0
+    notes: "Pinned in corpus/pins/healthbench-hard-1000.yaml; 30-example stratified subset used for the published Opus 4.7 baseline."
+
+  - type: software
+    title: "vLLM (PagedAttention serving)"
+    authors:
+      - name: "vLLM team, UC Berkeley Sky Lab"
+    url: "https://github.com/vllm-project/vllm"
+    license: Apache-2.0
+    doi: "10.1145/3600006.3613165"
+    notes: "Kwon et al., Efficient Memory Management for Large Language Model Serving with PagedAttention, SOSP 2023, arXiv:2309.06180."
+
+  - type: software
+    title: "NVIDIA Nemotron model family"
+    authors:
+      - name: "NVIDIA"
+    url: "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
+    notes: "BF16 Hopper-native variant served on warm-lavender-narwhal H200; same-family sister to the Blackwell-only NVFP4 variant on the prod B300 pod."
+
+  - type: software
+    title: "Nemotron-3-Nano-Omni-30B-A3B-Reasoning"
+    authors:
+      - name: "NVIDIA"
+    year: 2026
+    url: "https://huggingface.co/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16"
+    notes: >-
+      Multimodal (text+image+video+audio) successor announced 2026-04-28
+      at GTC 2026. Hybrid Mamba2-Transformer MoE, 30B total / 3B active,
+      256K context. Quantizations BF16 / FP8 / NVFP4 (NVFP4 is
+      Hopper-compatible per NVIDIA's technical blog, contradicting the
+      earlier mental model that NVFP4 was Blackwell-only). Status in
+      this lane: R1.5 candidate, swap deferred pending medical bench
+      data (NVIDIA published zero medical scores at release). See
+      findings/research/2026-04-28-nemotron-omni/brief.md.
+
+  - type: software
+    title: "NVIDIA NeMo Guardrails (Colang 2.0)"
+    authors:
+      - name: "NVIDIA"
+    url: "https://github.com/NVIDIA/NeMo-Guardrails"
+    license: Apache-2.0
+
+  - type: software
+    title: "RAPIDS nx-cugraph"
+    authors:
+      - name: "NVIDIA RAPIDS"
+    url: "https://github.com/rapidsai/cugraph"
+    license: Apache-2.0
+
+  - type: software
+    title: "NetworkX"
+    authors:
+      - family-names: Hagberg
+        given-names: Aric
+      - family-names: Schult
+        given-names: Daniel
+      - family-names: Swart
+        given-names: Pieter
+    url: "https://networkx.org"
+    license: BSD-3-Clause
+    notes: "Exploring Network Structure, Dynamics, and Function using NetworkX, SciPy 2008."
+
+  - type: article
+    title: "LoRA: Low-Rank Adaptation of Large Language Models"
+    authors:
+      - family-names: Hu
+        given-names: "Edward J."
+      - family-names: Shen
+        given-names: Yelong
+      - family-names: Wallis
+        given-names: Phillip
+      - family-names: Allen-Zhu
+        given-names: Zeyuan
+      - family-names: Li
+        given-names: Yuanzhi
+      - family-names: Wang
+        given-names: Shean
+      - family-names: Wang
+        given-names: Lu
+      - family-names: Chen
+        given-names: Weizhu
+    year: 2021
+    url: "https://arxiv.org/abs/2106.09685"
+    notes: "Cited as the R3 PEFT method."
+
+  - type: article
+    title: "The Llama 3 Herd of Models"
+    authors:
+      - name: "Meta AI"
+    year: 2024
+    url: "https://arxiv.org/abs/2407.21783"
+
+  - type: article
+    title: "Harness design for long-running apps"
+    authors:
+      - family-names: Rajasekaran
+        given-names: Prithvi
+      - name: "Anthropic"
+    year: 2026
+    url: "https://www.anthropic.com/engineering/harness-design-long-running-apps"
+    notes: "Generator-evaluator separation pattern realized in mla/judges/. Person attribution propagated from public prism42's CLAUDE.md §10."
+
+  - type: article
+    title: "Managed Agents (engineering)"
+    authors:
+      - name: "Anthropic"
+    url: "https://www.anthropic.com/engineering/managed-agents"
+    notes: "Session-as-context-object pattern; informed how mla/judges/ keeps verify-state outside the LLM context window."
+
+  - type: software
+    title: "Claude Code"
+    authors:
+      - name: "Anthropic"
+    url: "https://code.claude.com"
+    notes: "The IDE / harness this codebase was built with — skills, hooks, agent teams, Managed Agents primitives. Best-practices doc at https://code.claude.com/docs/en/best-practices."
+
+  - type: software
+    title: "Claude Code Agent Teams"
+    authors:
+      - name: "Anthropic"
+    url: "https://code.claude.com/docs/en/agent-teams"
+    notes: "Experimental agent-team primitive."
+
+  - type: article
+    title: "Project Glasswing — Securing critical software for the AI era"
+    authors:
+      - name: "Anthropic"
+    year: 2026
+    url: "https://www.anthropic.com/glasswing"
+    notes: >-
+      Cross-industry initiative announced 2026 with AWS, Apple, Broadcom,
+      Cisco, CrowdStrike, Google, JPMorganChase, the Linux Foundation,
+      Microsoft, NVIDIA, and Palo Alto Networks. Its defenders-first
+      posture is the spiritual model for this lane's isolation contract
+      (CLAUDE.md §1), cloud-LLM-key-leak pre-commit hooks, and
+      freeze-verify-on-every-commit discipline. The user's agent-team
+      playbook at prism42/.claude/skills/glasswing-discipline/ is named
+      in tribute, sharing the butterfly metaphor (Greta oto's
+      transparent wings).
+

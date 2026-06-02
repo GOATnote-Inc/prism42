@@ -1,0 +1,27 @@
+[project]
+name = "prism-mla"
+version = "0.1.0"
+description = "Evolutionary MLA/NVFP4 kernel search with two-tier numerical validator"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+torch = ["torch>=2.4"]
+test = ["pytest>=8.0", "numpy>=1.26"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["prism*", "runner*", "agent*", "loop*", "kernels*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+markers = [
+    "cuda: tests that require a CUDA device and flashinfer (skipped on CPU-only hosts)",
+]

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/prism42-medical-rag.png" alt="prism42 medical RAG · all-GPU runtime — Refract complexity. Ship the answer. User medical inquiry → NVIDIA knowledge-graph RAG → B300 all-GPU native (nx-cugraph in-VRAM graph + Nemotron Nano 30B + Cosmos vision) → five adversarial roles → safe final response, with a Karpathy autoresearch nightly feedback loop on retrieval/ranking/subgraph logic." width="100%">
+</p>
+
 # Prism42
 
 **A full-stack trust-and-performance pipeline for high-stakes voice AI.
@@ -50,15 +54,24 @@ The current production surface is the four stages above. The
 forward-looking architecture under research lives in
 [`findings/research/2026-04-27-future-stack/`](findings/research/2026-04-27-future-stack/):
 NVIDIA knowledge-graph RAG → nx-cugraph 26.04.00 medical graph →
-Nemotron-Nano-30B-A3B-NVFP4 + Cosmos-Reason2-2B on B300 (CUDA 13.2.1) →
-five-role dialectic → DSPy GEPA as the nightly RAG optimizer.
+Nemotron-Nano-30B-A3B-NVFP4 (TensorRT-LLM 1.2.1) + Cosmos-Reason2-2B
+(vLLM ≥ 0.12) on B300 (CUDA 13.2.1) → five-role dialectic → DSPy GEPA
+as the nightly RAG optimizer (named for Karpathy's autoresearch
+pattern).
 
 Each component has a written verdict (green / yellow / red) with cited
-sources; nothing in that directory is deployed. Two attribution
-corrections worth reading the briefs for: **Cosmos-Reason2-2B is
-general-purpose physical AI** (no public medical fine-tune yet), and
-**Karpathy's `autoresearch` optimizes LLM training, not RAG** — the
-nightly RAG optimizer of record is DSPy GEPA.
+sources; nothing in that directory is deployed. Notable corrections in
+the briefs: **two-runtime serving on B300** (TRT-LLM for Nemotron,
+vLLM for Cosmos — NVIDIA's official runtimes for each); **medical
+accuracy** is being addressed via a user-led Nemotron fine-tune on a
+curated medical corpus (BioNeMo dropped — biomolecular, not clinical-
+encounter); **Karpathy autoresearch dual-credited with DSPy GEPA** in
+the diagram caption (Karpathy named the pattern; GEPA is the
+maintained RAG implementation).
+
+The fresh research B300 (`final-gold-ox`, Verda/Helsinki) and its
+agent-team operating plan live at
+[`findings/research/2026-04-27-future-stack/b300-bench-plan.md`](findings/research/2026-04-27-future-stack/b300-bench-plan.md).
 
 ## The continuity claim
 
@@ -236,10 +249,39 @@ target-specific naming, and no reproduction fingerprints.
 
 ## Credits
 
-- Claude Opus 4.7 — the auditor and the audited.
-- OpenAI `simple-evals` (Apache 2.0) — HealthBench Hard rubric grader.
-- Anthropic Managed Agents — research-preview multi-agent.
-- GOATnote Emergency Dispatch Protocol (GEDP) v0.1 — developed under
+- **Anthropic** — the through-line of this project, in several distinct
+  threads:
+  - **Claude Opus 4.7** — the auditor and the audited.
+  - **[Claude Code](https://code.claude.com)** and the
+    [agent teams](https://code.claude.com/docs/en/agent-teams) primitive
+    — the IDE / harness much of this codebase was authored with.
+  - **Claude Managed Agents** — the research-preview multi-agent
+    platform behind the five-role dialectic (`mla/` + `agents/`).
+  - **[Project Glasswing](https://www.anthropic.com/glasswing)** —
+    Anthropic's cross-industry initiative to secure critical software
+    in the AI era (announced 2026; partners include AWS, Apple,
+    Broadcom, Cisco, CrowdStrike, Google, JPMorganChase, the Linux
+    Foundation, Microsoft, NVIDIA, and Palo Alto Networks). Its
+    defenders-first posture — moving frontier capability into the hands
+    of defenders before attackers — is the spirit behind Prism's
+    frozen-path discipline, the double-gated commit-time checks
+    (`PRISM_*_COMMIT=1` + `--commit`), and the physician-gated clinical
+    disclosure routing in `docs/clinical-handling.md`. The agent-team
+    playbook at `.claude/skills/glasswing-discipline/` is named in
+    tribute, sharing the butterfly metaphor (Greta oto's transparent
+    wings).
+  - **Anthropic engineering writing** — the
+    [long-running-apps harness post](https://www.anthropic.com/engineering/harness-design-long-running-apps)
+    is the precedent for the five-role dialectic; the
+    [Managed Agents engineering post](https://www.anthropic.com/engineering/managed-agents)
+    shaped how Prism keeps verify-state outside the LLM context window.
+    The published work of Anthropic's safety, safeguards-engineering,
+    and red-team groups (the Frontier Red Team and predecessors) is the
+    precedent for Prism's isolation, disclosure, and kernel-research
+    posture (`docs/kernel-research-posture.md`).
+- **OpenAI `simple-evals`** (Apache 2.0) — HealthBench Hard rubric
+  grader.
+- **GOATnote Emergency Dispatch Protocol (GEDP) v0.1** — developed under
   direction of Brandon Dent, MD (emergency medicine). Author: GOATnote
   Inc. MIT-licensed. Grounded in AHA BLS 2025, NHTSA EMS Scope of
   Practice Model, peer-reviewed EMS literature, and publicly published

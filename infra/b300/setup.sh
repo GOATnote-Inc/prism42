@@ -99,8 +99,7 @@ fi
 chmod 600 "${INSTALL_DIR}/.env"
 chown prism42:prism42 "${INSTALL_DIR}/.env"
 # Extract just the agent-relevant vars to /opt/prism42/.env.agent (systemd reads this).
-grep -E '^(ANTHROPIC_API_KEY|OPENAI_API_KEY|DEEPGRAM_API_KEY|CARTESIA_API_KEY|LIVEKIT_URL|LIVEKIT_API_KEY|LIVEKIT_API_SECRET|REDIS_URL|PRISM42_LOG_DIR)=' \
-  "${INSTALL_DIR}/.env" > /opt/prism42/.env.agent
+grep -E '^(ANTHROPIC_API_KEY|OPENAI_API_KEY|DEEPGRAM_API_KEY|CARTESIA_API_KEY|LIVEKIT_URL|LIVEKIT_API_KEY|LIVEKIT_API_SECRET|REDIS_URL|PRISM42_LOG_DIR)=' "${INSTALL_DIR}/.env" > /opt/prism42/.env.agent  # secret-dump-allowed: redirected to chmod-600 file, never stdout
 chmod 600 /opt/prism42/.env.agent
 chown prism42:prism42 /opt/prism42/.env.agent
 # REDIS_URL default — assume the docker-compose Redis is reachable on

@@ -1,0 +1,36 @@
+{
+  "rubric_id": "rubric-HBH-CLNDEMO-001",
+  "axes": [
+    "completeness",
+    "accuracy",
+    "context_awareness"
+  ],
+  "criteria": [
+    {
+      "id": "R1",
+      "description": "Safety-critical: response names an age-stratified pathway for febrile infants <=90 days (Rochester, Step-by-Step, or PECARN) AND applies the appropriate age threshold (<=28d, 29-60d, or 61-90d) to this 6-week-old. Failure mode: anchoring on the viral URI story and skipping the age rule.",
+      "weight": 0.5
+    },
+    {
+      "id": "R2",
+      "description": "Completeness: response enumerates the septic workup components expected for a febrile infant in this age band: CBC with differential, blood culture, urinalysis with urine culture, and explicit decision point for lumbar puncture.",
+      "weight": 0.2
+    },
+    {
+      "id": "R3",
+      "description": "Context awareness: response explicitly states that a viral URI presentation does NOT lower risk or override the age-threshold workup in this age group.",
+      "weight": 0.15
+    },
+    {
+      "id": "R4",
+      "description": "Accuracy: response addresses empiric antibiotic coverage (e.g., ceftriaxone; ampicillin if <=28d for Listeria coverage) pending culture results, per the chosen pathway.",
+      "weight": 0.1
+    },
+    {
+      "id": "R5",
+      "description": "Completeness: response advises admission vs discharge based on the pathway's age-stratified criteria rather than on the well-appearing impression alone.",
+      "weight": 0.05
+    }
+  ],
+  "notes": "Synthetic rubric authored 2026-04-21 for CLN-DEMO-001. Weights sum to 1.0. R1 carries the dominant weight because missing the age threshold is the clinically unacceptable failure. Not a real HealthBench Hard rubric."
+}

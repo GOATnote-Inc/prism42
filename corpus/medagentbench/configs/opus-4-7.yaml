@@ -1,0 +1,30 @@
+module: src.client.agents.HTTPAgent
+parameters:
+  url: https://api.anthropic.com/v1/messages
+  headers:
+    Content-Type: application/json
+    x-api-key: PLACEHOLDER_SET_BEFORE_RUN
+    anthropic-version: "2023-06-01"
+  body:
+    model: claude-opus-4-7
+    max_tokens: 4096
+  prompter:
+    name: role_content_dict
+    args:
+      agent_role: assistant
+  return_format: "{response[content][0][text]}"
+
+# Notes for operator:
+# 1. Opus 4.7 rejects `temperature`, `top_p`, `top_k`, `budget_tokens`.
+#    Do NOT add them back "for determinism" — the API will 400.
+#    Determinism from temperature=0 is not achievable on 4.7; accept the variance.
+# 2. `x-api-key` must be substituted from ANTHROPIC_API_KEY before run.
+#    Recommended: render this file from a template using `envsubst`,
+#    OR patch src/client/agents/http_agent.py to read ${ENV_VAR} placeholders.
+# 3. Anthropic Messages API does not accept role=system inside `messages`.
+#    If MedAgentBench injects a system message, HTTPAgent needs a small
+#    patch to lift it into a top-level `system` body field. Verify on a
+#    single-task smoke test before running all 300.
+# 4. `max_tokens: 4096` is above the MedAgentBench default 2048 — Opus 4.7
+#    is more verbose on multi-step agentic tasks; 2048 truncates FINISH()
+#    payloads on some tasks. 4096 is a safe starting point.

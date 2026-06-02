@@ -857,6 +857,15 @@ class DispatcherFSM:
         return self._record(Intent.REQUEST_LOCATION_AND_EMERGENCY, t0)
 
     def _intent_in_address_confirmed(self, f: Features, t0: float) -> Intent:
+        # FSM-routing-bug fix (2026-04-27, see
+        # findings/research/2026-04-27-future-stack/fsm-routing-bug-diagnosis.md §7):
+        # if reassurance_done is already latched, do NOT re-enter the
+        # reassurance path. Defer to the after-reassurance helper, which
+        # handles direct-question routing + advancement to KEY_QUESTIONS
+        # without re-emitting any DELIVER_REASSURANCE_* intent.
+        if self.reassurance_done:
+            self.state = State.REASSURANCE_DELIVERED
+            return self._intent_in_after_reassurance(f, t0)
         # Special-case: caller asks a direct question right after
         # confirmation. Answer-the-question rule beats reassurance.
         q = self._direct_question_intent(f)
@@ -928,6 +937,25 @@ class DispatcherFSM:
         return self._record(kq, t0)
 
     def _intent_in_pre_arrival(self, f: Features, t0: float) -> Intent:
+        # P0 SAFETY (cycle-2Q4 2026-04-27): if the caller signals a FRESH
+        # cardiac arrest mid-pre-arrival ("I think he stopped breathing",
+        # "no pulse now", "he just collapsed"), un-latch breathing_assessed
+        # and re-enter CRITICAL_VERIFY. Without this guard, the FSM stays
+        # in pre_arrival emitting CLOSEOUT ("Stay on the line until they
+        # get there.") even after the patient deteriorates. Live-call
+        # incident logged in findings/clinical-log.jsonl 2026-04-27T19:53Z.
+        if (f.not_breathing or f.gasping) and not self.is_cardiac_arrest:
+            log.info(
+                "fsm.pre_arrival_to_critical_verify_on_late_cardiac_signal",
+                turns=self.turn_count,
+                f_not_breathing=f.not_breathing,
+                f_gasping=f.gasping,
+            )
+            self.is_cardiac_arrest = True
+            self.breathing_assessed = False
+            self.surface_confirmed = False
+            self.state = State.CRITICAL_VERIFY
+            return self._intent_in_verify(f, t0)
         q = self._direct_question_intent(f)
         if q is not None:
             return self._record(q, t0)
@@ -1215,8 +1243,10 @@ class DispatcherFSM:
             "Do NOT promise an outcome. Tell the caller responders are "
             "close and to tell you if anything changes.",
         Intent.ANSWER_HEARD_ADDRESS:
-            "Reassure the caller: yes, you have their address and units "
-            "are on the way.",
+            "Confirm directly: yes, you have the address. State the address "
+            "back in 5-7 words. Then ask the next key question (responsive? "
+            "breathing? bleeding?). Do NOT add reassurance phrasing — no "
+            "'stay with me', no 'I'm with you', no 'units are on the way'.",
         Intent.REPROMPT:
             "Ask the caller to repeat what they just said.",
         Intent.CLOSEOUT:
@@ -1256,8 +1286,15 @@ class DispatcherFSM:
         latched_lines = []
         if self.reassurance_done:
             latched_lines.append(
-                "  - Reassurance ALREADY DELIVERED. Do NOT say 'help is on "
-                "the way' / 'help's coming' / 'units are en route' again."
+                "  - Reassurance ALREADY DELIVERED. Do NOT emit ANY of the "
+                "following phrasings or close synonyms: 'help is on the way' "
+                "/ 'help's coming' / 'units are en route' / 'stay with me' / "
+                "'stay on the line' / 'I'm with you' / 'I hear you' / "
+                "'I'm right here' / 'hold with me' / 'don't hang up' / "
+                "'keep talking to me'. Reassurance phrasing is BANNED for "
+                "the rest of the call. Answer the caller's specific "
+                "question, or ask the next key question, with NO co-presence "
+                "or encouragement language attached."
             )
         if self.is_cardiac_arrest and self.state == State.CRITICAL_VERIFY:
             latched_lines.append(

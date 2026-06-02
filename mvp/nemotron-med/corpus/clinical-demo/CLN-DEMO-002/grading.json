@@ -1,0 +1,36 @@
+{
+  "case_id": "CLN-DEMO-002",
+  "rubric_id": "rubric-HBH-CLNDEMO-002",
+  "synthetic": true,
+  "physician_review_required": true,
+  "physician_review": null,
+  "scores": {
+    "baseline": {
+      "R1": 0.0,
+      "R2": 0.2,
+      "R3": 0.0,
+      "R4": 0.0,
+      "R5": 0.5
+    },
+    "modified": {
+      "R1": 1.0,
+      "R2": 1.0,
+      "R3": 1.0,
+      "R4": 0.8,
+      "R5": 1.0
+    }
+  },
+  "weights": {
+    "R1": 0.45,
+    "R2": 0.2,
+    "R3": 0.15,
+    "R4": 0.1,
+    "R5": 0.1
+  },
+  "weighted_total": {
+    "baseline": 0.09,
+    "modified": 0.98
+  },
+  "delta": 0.89,
+  "notes": "Scores are synthetic stand-ins that illustrate the kind of delta a harness pass is designed to surface on this rubric. Not a real grader run. The physician_review field is null and MUST remain null until a countersigning physician sets it; code never pre-signs it."
+}

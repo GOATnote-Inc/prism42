@@ -12,8 +12,18 @@
 
 # Auto-load project-local .env (API keys). Gitignored; see .env.example.
 # `make` silently continues if .env is absent, so CI without .env still works.
+#
+# Scope (2026-04-27): the include is skipped for purely-local targets that
+# don't need pod/cloud creds (lint/help/cleanup). The repo's .env carries
+# operator notes alongside KEY=VALUE lines, so unconditional include made
+# `make secret-hygiene` fail with "missing separator" on natural-language
+# rows. The filter below keeps cloud targets working while letting the
+# linter run without parsing .env at all.
+LINT_TARGETS := secret-hygiene help clean verify
+ifneq (,$(filter-out $(LINT_TARGETS),$(MAKECMDGOALS)))
 -include .env
 export
+endif
 
 AWS_PROFILE ?= prism
 AWS_REGION  ?= us-east-1
@@ -66,7 +76,7 @@ help:
 # "always verify after acting": syntax-check every script, parse-check
 # every yaml, parse-check every make target.
 # ---------------------------------------------------------------------
-verify:
+verify: secret-hygiene
 	@echo "verify: bash syntax check"
 	@for f in scripts/*.sh cloud-init/*.sh; do bash -n "$$f" && echo "  ok: $$f"; done
 	@echo "verify: make parse check"
@@ -81,6 +91,13 @@ verify:
 	     || python3 -c 'import yaml; yaml.safe_load(open("corpus/kernel_bugs.yaml")); print("  ok: corpus/kernel_bugs.yaml")'; \
 	 else echo "  skip: corpus/kernel_bugs.yaml (removed for coordinated-disclosure redaction on 2026-04-23)"; fi
 	@echo "verify: PASS"
+
+# Reject any new value-dump pattern. Effective 2026-04-27 after two
+# P0 secret-exposure incidents (see docs/secret-hygiene.md).
+.PHONY: secret-hygiene
+secret-hygiene:
+	@echo "verify: secret-hygiene"
+	@python3 scripts/check_no_secret_dumps.py
 
 # ---------------------------------------------------------------------
 # PRIMARY: Lambda Labs rail

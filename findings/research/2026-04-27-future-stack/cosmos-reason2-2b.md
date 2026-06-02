@@ -66,19 +66,35 @@ risks the hackathon target.
 latency + determinism"): correct for prism42 voice. Cosmos is a VLM, not a
 latency mitigation. Skip prism42 voice integration.
 
-## 3. Inference path on B300
+## 3. Inference path on B300 — vLLM is the official runtime
 
-Cosmos-Reason2-2B is **vLLM-compatible** (vLLM ≥ 0.11.0 recommended;
-v0.20.0 + ships SM 10.3 / B300 support — see `vllm-cuda-13.2.1.md`).
+**NVIDIA's blessed serving path for Cosmos-Reason2-2B is vLLM**, not
+TensorRT-LLM. The HF model card lists Transformers as runtime; the
+recommended production serve uses vLLM with the Qwen3-VL multimodal
+stack (Cosmos-Reason2-2B is post-trained on Qwen3-VL-2B-Instruct).
+NIMs wrap vLLM under the hood (verified via `NIM_MODEL_NAME` env-var
+plumbing). TRT-LLM has no first-class VLM recipe for this model.
+
+Recommended serve command:
+
+```
+vllm serve nvidia/Cosmos-Reason2-2B \
+  --allowed-local-media-path "$(pwd)" --max-model-len 16384 \
+  --media-io-kwargs '{"video":{"num_frames":-1}}' \
+  --reasoning-parser qwen3 --port 8000
+```
+
+Pin vLLM ≥ 0.12 for the Qwen3-VL recipe.
 
 Three deployment options on the B300 pod:
 
 1. **Standalone vLLM server** on its own GPU partition (simplest).
-2. **Co-tenant with Nemotron-30B-NVFP4** — Nemotron is MoE (3B active per
-   token, 30B total params); Cosmos is dense 2B. With careful TP
-   partitioning both fit, but VRAM accounting must be explicit.
-3. **TensorRT-LLM** — not yet broadly supported for vision models; vLLM is
-   the current standard.
+2. **Co-tenant with Nemotron** — Nemotron is served via TRT-LLM
+   (cookbook AutoDeploy path, see `tensorrt-llm-on-b300.md`); Cosmos
+   is served via vLLM. Two runtimes, same B300, different ports.
+   This is the future-stack shape.
+3. **TRT-LLM for Cosmos** — **do not.** No NVIDIA-blessed recipe;
+   vLLM is the current standard for Qwen3-VL-class VLMs.
 
 ## 4. Latency + VRAM math on B300
 

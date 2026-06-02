@@ -261,9 +261,17 @@ class ParakeetSpeechStream(RecognizeStream):
         timeout = aiohttp.ClientTimeout(total=None, sock_connect=5.0, sock_read=None)
         try:
             async with aiohttp.ClientSession(timeout=timeout) as http:
+                # Cycle-2Q6 (parallel-session-coord §4 finding 1, operator
+                # OK 2026-04-27): drop the `prism42-parakeet-v1` subprotocol
+                # negotiation. The Parakeet container's `@app.websocket("/ws")`
+                # handler in infra/b300/services/parakeet/server.py:262 does
+                # not validate or accept that subprotocol; FastAPI/Starlette
+                # rejects with HTTP 400 before the WebSocket upgrade
+                # completes. Symptom: every session showed stt_ms=0 with
+                # no caller-turn events. Falling back to no-subprotocol
+                # negotiation is the one-line client-side fix.
                 async with http.ws_connect(
                     ws_url,
-                    protocols=("prism42-parakeet-v1",),
                     max_msg_size=0,  # no cap; binary audio is small per-frame
                     heartbeat=None,
                 ) as ws:

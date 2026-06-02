@@ -440,6 +440,11 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
             # runs as fire-and-forget so it never blocks speech. Output is
             # logged + relayed to the UI via dispatch_publisher; the FSM
             # is unaware. Phase 1 = observe-only. No fusion.
+            # Hoisted so the 5-role dispatches below can reference it even
+            # when the shadow-classifier branch is skipped (flag OFF).
+            turn_index_for_perception = (
+                getattr(_dp, "_turn_index", 0) if _dp is not None else 0
+            )
             try:
                 _shadow_client = getattr(self, "_shadow_classifier_client", None)
                 if (
@@ -447,9 +452,6 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
                     and _shadow_classify_async is not None
                     and _shadow_client is not None
                 ):
-                    turn_index_for_perception = (
-                        getattr(_dp, "_turn_index", 0) if _dp is not None else 0
-                    )
                     asyncio.create_task(
                         _run_shadow_classifier(
                             client=_shadow_client,
@@ -462,6 +464,48 @@ class FsmDispatcherAgent(BufferedDispatcherAgent):
             except Exception as e:  # noqa: BLE001
                 local_log.warning(
                     "orchestrator.shadow_classifier_dispatch_failed",
+                    err=str(e)[:200],
+                )
+
+            # 5-role activation (2026-04-27): Guardrails input rail + Attacker
+            # adversarial probe — both fire-and-forget, structlog-only
+            # observability. Each wrapper is env-flag-gated default OFF
+            # (PRISM42_ENABLE_GUARDRAILS, PRISM42_ENABLE_ATTACKER) — when
+            # disabled the dispatch returns None immediately without
+            # importing the SDK, hitting the network, or mutating any
+            # FSM / chat_ctx state. Output flows ONLY to structlog; the
+            # audio path is unaffected.
+            # Refs:
+            #   findings/research/2026-04-27-future-stack/voice-5role-design.md §1, §3
+            #   findings/research/2026-04-27-future-stack/nvidia-voice-stack-architecture.md §1
+            try:
+                from guardrails_wrapper import check_input as _guardrails_check_input  # noqa: PLC0415
+                asyncio.create_task(
+                    _guardrails_check_input(
+                        utterance,
+                        session_id=self._session_id,
+                        turn_idx=turn_index_for_perception,
+                    )
+                )
+            except Exception as e:  # noqa: BLE001
+                local_log.debug(
+                    "orchestrator.guardrails_input_dispatch_failed",
+                    err=str(e)[:200],
+                )
+
+            try:
+                from attacker import probe as _attacker_probe  # noqa: PLC0415
+                asyncio.create_task(
+                    _attacker_probe(
+                        caller_utterance=utterance,
+                        dispatcher_reply=getattr(intent, "value", str(intent)),
+                        session_id=self._session_id,
+                        turn_idx=turn_index_for_perception,
+                    )
+                )
+            except Exception as e:  # noqa: BLE001
+                local_log.debug(
+                    "orchestrator.attacker_dispatch_failed",
                     err=str(e)[:200],
                 )
 

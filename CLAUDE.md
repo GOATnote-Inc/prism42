@@ -102,6 +102,25 @@ Current gated scripts (12, AST-verified by `scripts/check_sdk_containment.py`):
 
 All default to dry-run. All lazy-import the SDK *inside* `do_commit()` so dry-run paths cannot accidentally import `anthropic`. AST containment is part of `make verify-t3`. If you add a gated script, extend `check_sdk_containment.py`'s TARGETS.
 
+## 5b. Secret hygiene — value-dump ban (effective 2026-04-27)
+
+**Hard rule.** Never run a command whose default stdout includes env-value strings — even when "just diagnosing." Two P0 secret-exposure incidents in one session caused a 7-key rotation. Treat as a process bug: ban the *output shape* (name + value), not specific commands.
+
+Banned (always):
+- `systemctl show ... --property=Environment` — dumps every `Environment=` line verbatim.
+- `cat /proc/<pid>/environ` (with or without `tr '\0' '\n'`).
+- bare `printenv` / `env` (no arg, no filter).
+- `cat .env` / `cat */.env` / `cat *.env`.
+- `grep -E '...KEY=|TOKEN=|SECRET=...' file` — matched lines include values.
+
+Allowed:
+```bash
+awk -F= '/^(KEY|TOKEN|SECRET|API)=/ {print $1, "len:", length($2)}' /path/to/.env
+sudo systemctl show <unit>.service --property=EnvironmentFiles  # paths only
+```
+
+Enforcement: `make secret-hygiene` (`scripts/check_no_secret_dumps.py`) runs in `make verify` and blocks any new violation. Per-line allowlist via `# secret-dump-allowed: <reason>` magic comment for legitimate redirected-to-chmod-600-file extractions only. Full rule + recovery posture: `docs/secret-hygiene.md`.
+
 ## 6. Commit + push discipline
 
 - **One commit per task**, message template `T-{id}: {subject}` (e.g. `T3 P6: tests/test_clinical_case.py — clinical rail validator tests`).
