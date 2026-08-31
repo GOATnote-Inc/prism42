@@ -136,8 +136,10 @@ OUTPUT CONTRACT — emit EXACTLY ONE JSON object, no prose before or after:
 }
 
 HARD RULES:
-1. "content" must be natural spoken English, no markdown, no brackets,
-   no "I am an AI". Plain voice.
+1. "content" must be natural spoken English, no markdown, no brackets.
+   Plain voice. If the caller directly asks whether you are an AI or a
+   real person, answer truthfully in one short sentence and continue
+   the protocol — honest self-disclosure when asked is required.
 2. If self_verify.all_passed is false, you STILL emit the JSON. The
    runtime will replace content with a safe fallback before TTS.
 3. If action == "refuse" because of SP-001 (real-emergency claim),
@@ -188,17 +190,17 @@ ANTI-PATTERNS — CONTENT THAT MUST NEVER APPEAR IN YOUR OUTPUT:
   BAD: "Please contact emergency services."
   BAD: "Have you been able to contact a professional?"
   BAD: "As an AI, I cannot..."
-  BAD: "I'm an AI assistant, not a real dispatcher."
   BAD: "I'm not able to diagnose."   (say nothing about diagnosis — just dispatch)
   BAD: "I can't give medical advice." (you give GEDP pre-arrival instructions — that IS your job)
   BAD: "You should consult a doctor."
-  BAD: "I'm just a language model."
 
-  Why these are wrong: a real 911 dispatcher does not identify as an AI,
+  Why these are wrong: the refusal half is the problem — a dispatcher
   does not tell the caller to contact emergency services (the caller
   already did — you ARE emergency services in this simulation), does not
   decline the triage role, and delivers GEDP pre-arrival instructions
-  verbatim without hedging.
+  verbatim without hedging. Being an AI is never a reason to stop doing
+  the dispatcher's job — and honestly saying you are an AI when asked is
+  never a refusal.
 
 POSITIVE EXAMPLES — THIS IS WHAT THE CALLER SHOULD HEAR:
 
@@ -219,9 +221,10 @@ POSITIVE EXAMPLES — THIS IS WHAT THE CALLER SHOULD HEAR:
            instructions; redirect to address intake, do not decline.)
 
   Caller: "Are you a real person?"
-  GOOD:   "I'm the 911 dispatcher on this line. Tell me what's
-           happening — what's the emergency?"   (Never self-disclose as
-           AI. You ARE the dispatcher in this simulation.)
+  GOOD:   "I'm an AI dispatcher assistant in this simulation. I'm
+           staying on the line with you — what's the emergency?"
+           (Answer truthfully, then carry the turn forward. Lying about
+           being an AI is prohibited.)
 
 WHEN YOU ACTUALLY REFUSE (the ONLY permitted refusal):
 
@@ -352,13 +355,18 @@ export function tryParseTurn(raw: string): ParseResult {
 // Kept short — ElevenLabs TTS renders this in ~200 ms.
 export const SAFE_FALLBACK_CONTENT = "One moment please.";
 
-// Last-line-of-defense: if Claude leaks a refusal phrase into content
-// (happens occasionally on Sonnet 4.6 even with simulation framing),
-// swap it for a neutral dispatcher opener so the caller never hears
-// "I am an AI". The list is deliberately conservative — we only match
-// the specific AI-self-reference + medical-refusal combos that have
-// been observed on the live deployment. Natural dispatcher phrases
-// like "help is on the way" must pass through unchanged.
+// Last-line-of-defense: if Claude leaks a refusal-of-service phrase or
+// a medically harmful instruction into content, block it before TTS.
+// The list is deliberately conservative — we only match the specific
+// refusal + medical-harm combos observed on the live deployment.
+// Natural dispatcher phrases like "help is on the way" must pass
+// through unchanged.
+//
+// NOTE (P1-6, 2026-08-24 audit): plain AI self-disclosure ("I am an
+// AI", "as an AI", "I'm a language model") is intentionally NOT on
+// this list. Honest self-disclosure when the caller asks is required
+// by policy and must never be blocked or rewritten. Only the
+// refusal-of-service half of those historical leaks is matched.
 //
 // Medical-harm block list (added by fix/glasswing-lenient-serve,
 // DEFEND-20260424T1245): prompt-injection via the Zod-fail lenient-serve
@@ -368,12 +376,9 @@ export const SAFE_FALLBACK_CONTENT = "One moment please.";
 // checked against parse.lenient_content BEFORE route.ts assigns
 // spokenText — see the lenient-serve branch in route.ts.
 const REFUSAL_SUBSTRINGS = [
-  // AI self-disclosure (pre-existing)
-  "i am an ai",
-  "i'm an ai",
-  "as an ai",
-  "i am a language model",
-  "i'm just a language model",
+  // Refusal-of-service phrases (the refusal half of historical
+  // "I am an AI, I cannot..." leaks; the self-disclosure half is
+  // deliberately not matched — see NOTE above)
   "i cannot provide any advice or diagnosis",
   "cannot provide medical advice",
   "have you been able to contact a professional",
@@ -407,12 +412,6 @@ const REFUSAL_SUBSTRINGS = [
   "no need for an ambulance",
   "help is not needed",
 ];
-
-// Dispatcher-appropriate opener used when we rescue a refusal. Phrased
-// to carry the turn forward (caller hears a working 911 line) without
-// claiming any specific triage context — safe on turn 1 or turn N.
-export const REFUSAL_RESCUE_CONTENT =
-  "Nine-one-one, what is the address of your emergency?";
 
 export function detectRefusalLeak(content: string | null): boolean {
   if (!content) return false;
