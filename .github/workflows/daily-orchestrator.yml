@@ -11,6 +11,19 @@ name: Daily orchestrator (Tier-1 autonomy)
 #
 # Also exposes workflow_dispatch for manual runs (e.g. post-PR-close
 # to verify the fresh orchestrator produces a clean PR).
+#
+# KILL SWITCHES (any one stops autonomous activity):
+#   1. Disable the workflow:  gh workflow disable daily-orchestrator.yml
+#      (or Actions UI -> Daily orchestrator -> "..." -> Disable workflow).
+#      This blocks BOTH cron (if ever re-enabled) and manual dispatch.
+#   2. Remove the ANTHROPIC_API_KEY repo secret — the planner cannot
+#      start a session; the job fails at Phase 2 with no spend.
+#   3. Delete PRISM_ORCHESTRATOR_COMMIT from the job environment below —
+#      the double gate in scripts/orchestrator.py refuses --commit
+#      without it (exit 1 before any SDK import).
+# A run already in flight is bounded by timeout-minutes below plus the
+# orchestrator's own --max-wall-sec / --stream-cap-sec enforcement, and
+# can be stopped with "Cancel workflow run" in the Actions UI.
 
 on:
   # Scheduled trigger disabled 2026-04-23 pending two preconditions:
@@ -22,7 +35,12 @@ on:
   #   - cron: "0 9 * * *"   # 09:00 UTC = 01:00 PST / 02:00 PDT
   workflow_dispatch:       # manual trigger
 
-# The job needs to create branches, push, and open PRs.
+# Minimum permission set that still lets the job push a branch and open
+# a draft PR: `contents: write` (branch push) + `pull-requests: write`
+# (PR create). Declaring the block sets every other scope to `none`
+# (no issues, no id-token, no actions, no packages). The orchestrator
+# never pushes to main — every write lands on an orchestrator/* branch
+# via draft PR (scripts/orchestrator.py Phase 6).
 permissions:
   contents: write
   pull-requests: write
@@ -75,7 +93,17 @@ jobs:
         run: make verify-all
 
       - name: Run orchestrator
-        run: python scripts/orchestrator.py --commit
+        # Caps are explicit so a workflow reader sees the enforcement:
+        # --max-wall-sec / --stream-cap-sec are model-independent
+        # wall-clock limits enforced inside orchestrator.py;
+        # --budget-cap-usd only pre-filters the plan's self-reported
+        # estimate. timeout-minutes above is the hard backstop GitHub
+        # enforces regardless.
+        run: >-
+          python scripts/orchestrator.py --commit
+          --budget-cap-usd 25
+          --stream-cap-sec 900
+          --max-wall-sec 1500
 
       - name: Upload run artifacts
         if: always()
