@@ -147,7 +147,7 @@ The full 500-word submission text lives in `score-maximizer-2026-04-26.md` §4. 
 - [ ] Public repo: `github.com/GOATnote-Inc/prism42`
 - [ ] Running URL: `prism42-console.vercel.app/prism42` (NOT `www.thegoatnote.com/prism42`)
 - [ ] Side prize tagged: **Most Creative Opus 4.7 Exploration**
-- [ ] Author email: `b@thegoatnote.com` (NOT `brandondent17@gmail.com`)
+- [ ] Author email: `b@thegoatnote.com` (never a personal address)
 
 ---
 

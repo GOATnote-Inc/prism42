@@ -1,5 +1,5 @@
 version: 0.1.0
-source: /Users/kiteboard/healthbench_frozen/healthbench_hard_canonical_1000.jsonl
+source: ~/healthbench_frozen/healthbench_hard_canonical_1000.jsonl
 seed: 42
 strata_counts:
   emergency: 10

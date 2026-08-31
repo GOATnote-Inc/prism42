@@ -52,7 +52,7 @@ Applied in three layers:
 ## Current runtime (2026-04-24)
 
 - **Media plane**: LiveKit Cloud, project `ai therapy` → URL `wss://ai-therapy-v3svfd9o.livekit.cloud`, region Germany 2. Free tier: 5,000 participant-min/mo, 100 concurrent, 50 GB downstream.
-- **Compute plane**: Python agent worker on Brev B300 pod `prism-mla-b300-h4h5`, at `/opt/prism42/agents/livekit/`. Outbound-WSS only — no inbound ports required (this is why we pivoted off self-hosted LiveKit server).
+- **Compute plane**: Python agent worker on Brev B300 pod `b300-pod`, at `/opt/prism42/agents/livekit/`. Outbound-WSS only — no inbound ports required (this is why we pivoted off self-hosted LiveKit server).
 - **STT**: Parakeet TDT 0.6B v3 on pod `127.0.0.1:9100` (NeMo).
 - **TTS**: Fish Speech S2-Pro on pod `127.0.0.1:9200` (custom FastAPI wrapping `tools/api_server.py`).
 - **LLM**: Anthropic Opus 4.7 (orchestrator + voice-facing specialists), Sonnet 4.6 (parallel safety/ohca/intent evaluators).
@@ -89,6 +89,6 @@ checks 1-4 PASS automatically + user-attestation checks 5-8 pass.
 
 ## Memory pointer
 
-The user's auto-memory at `/Users/kiteboard/.claude/projects/-Users-kiteboard/memory/`
+The user's auto-memory at `<owner-memory>/`
 holds a pointer to this KB so future sessions find it without
 re-discovering. See `livekit-kb-pointer.md` entry in `MEMORY.md`.

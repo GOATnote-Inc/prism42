@@ -552,7 +552,7 @@ simulation. The orchestrator carries a simulation preamble
 (`docs/safety-preambles.md`), the specialist role is "911 PSAP
 dispatcher coaching a civilian through a real emergency call," and
 the user is explicitly a clinical researcher (Brandon Dent, MD) with
-a published corpus (`/Users/kiteboard/openem-corpus`, 370 conditions,
+a published corpus (`~/openem-corpus`, 370 conditions,
 80 physician-reviewed).
 
 Opus 4.7's Apr 2026 refusal regression affects exactly this kind of

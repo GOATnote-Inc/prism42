@@ -26,7 +26,7 @@ B300 Blackwell Ultra introduces augmentations that **cannot** run on the current
 ### 1.3 What's shippable today vs `pending`
 
 - **Shippable**: rubric grader on local Llama-3-70B NVFP4 (vLLM 0.14.1 + FlashInfer FP4 MoE), Parakeet-RNNT streaming STT, Opus 4.7 + GPT-5.5 hosted-API dialectic.
-- **`pending`**: FlashInfer MLA on sm_103 (H4 deferred in `/Users/kiteboard/prism/docs/mla-corpus/HYPOTHESIS_LADDER.md` §H4); on-device second-model cross-vendor if both must be local (memory-gated).
+- **`pending`**: FlashInfer MLA on sm_103 (H4 deferred in `~/prism/docs/mla-corpus/HYPOTHESIS_LADDER.md` §H4); on-device second-model cross-vendor if both must be local (memory-gated).
 
 ---
 
@@ -55,7 +55,7 @@ All numbers cited with fetch-date; unverifiable claims labeled `pending`.
 
 | Attribute | Value | Source |
 |:---|:---|:---|
-| Compute capability | `10.3` (`sm_103` / `sm_103a`) | Verified empirically on Brev/Verda pod `prism-mla-b300-h4h5`; `torch.cuda.get_device_capability(0) == (10, 3)` |
+| Compute capability | `10.3` (`sm_103` / `sm_103a`) | Verified empirically on Brev/Verda pod `b300-pod`; `torch.cuda.get_device_capability(0) == (10, 3)` |
 | HBM3e memory | 270–288 GB per GPU (nvidia-smi on test pod reports 275 040 MiB usable) | [Verda B300 page](https://verda.com/b300) fetch 2026-04-23; empirical `nvidia-smi` |
 | Memory bandwidth | 7.7 TB/s | [Verda B300-vs-B200 blog](https://verda.com/blog/nvidia-b300-vs-b200-complete-gpu-comparison-to-date) fetch 2026-04-23 |
 | FP4 dense | 14 PFLOPS (55.6 % > B200's 9 PFLOPS) | same source |
@@ -315,7 +315,7 @@ Rates fetch-date 2026-04-23. Rounded per-hour; monthly = hourly × 720.
 
 | Provider | Config | $/hr (on-demand) | $/hr (spot) | Source |
 |:---|:---|---:|---:|:---|
-| Brev (NVIDIA) | 1× B300 SXM6 (Verda, Helsinki) | $7.91 | `pending` | empirical (pod `prism-mla-b300-h4h5`) |
+| Brev (NVIDIA) | 1× B300 SXM6 (Verda, Helsinki) | $7.91 | `pending` | empirical (pod `b300-pod`) |
 | Verda direct | 1× B300 SXM6 | `pending` (not listed on verda.com/b300, which lists B200 only) | `pending` | [verda.com/b300](https://verda.com/b300) fetch 2026-04-23 |
 | Shadeform | 1× B300 via partner clouds | ~$5.63/hr (this was March 2026 B200 number; B300 `pending`) | varies | [Shadeform B200 article](https://shadeform.com/resources/articles/nvidia-b200-gpu-price-guide) fetch 2026-04-23 |
 | Lambda | `pending` — no B300 listing seen 2026-04-23 | `pending` | `pending` | — |
@@ -376,7 +376,7 @@ The following must remain identical between `/prism42` and `/prism42-b300`:
 - **Pipeline narrative** (`docs/pipeline-narrative.md`). Four-stage evidence stack unchanged. `/prism42-b300` plugs into Stage 2 (compute-path optimization) and Stage 3 (clinical-reasoning lift) without rewriting Stage 1 (kernel correctness).
 - **Public URL `/prism42`**. Not redirected, not deprecated. `/prism42-b300` is a sibling.
 - **Continuity claim** (`README.md` L47–57). `/prism42`'s claim stands as-is. `/prism42-b300` has its own continuity claim: same 20 agents, same preambles, same fixture, enhanced on B300-specific augmentations each of which has its own L1–L4 verification record.
-- **Rubric v1.1 discipline** (from `/Users/kiteboard/prism/mla/docs/EVALUATION_RUBRIC.md` v1.1). No "beats X" claims for B300 augmentations without rubric §2 grid + §3 integration. Same hype-free language.
+- **Rubric v1.1 discipline** (from `~/prism/mla/docs/EVALUATION_RUBRIC.md` v1.1). No "beats X" claims for B300 augmentations without rubric §2 grid + §3 integration. Same hype-free language.
 
 ---
 
@@ -463,8 +463,8 @@ This spec is complete when a build-agent can:
 - **prism42 pipeline narrative**: `docs/pipeline-narrative.md`
 - **prism42 ElevenLabs blueprint (decode-latency budget)**: `docs/anthropic-elevenlabs-agent-bp-2026-04-21.md` §5 (updated 2026-04-23)
 - **prism MLA decode measurements (H100, B300 torch-only)**: `<off-tree benchmark corpus>`, `.../CLAIM_002_b300_blackwell_ultra_torch_ceiling.md`
-- **prism hypothesis ladder (H4 deferred, H5 supported)**: `/Users/kiteboard/prism/docs/mla-corpus/HYPOTHESIS_LADDER.md`
-- **Empirical B300 pod session**: Brev/Verda `prism-mla-b300-h4h5`, 2026-04-23, artifacts at `/Users/kiteboard/prism/mla/results/logs/h5_h4_b300/`
+- **prism hypothesis ladder (H4 deferred, H5 supported)**: `~/prism/docs/mla-corpus/HYPOTHESIS_LADDER.md`
+- **Empirical B300 pod session**: Brev/Verda `b300-pod`, 2026-04-23, artifacts at `~/prism/mla/results/logs/h5_h4_b300/`
 
 ---
 

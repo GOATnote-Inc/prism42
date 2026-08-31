@@ -4,7 +4,7 @@ These tests run against the FSM module **in isolation** (no LiveKit, no TTS). Th
 
 Run via:
 ```
-cd /Users/kiteboard/prism42 && pytest tests/voice/test_cycle2R3_*.py -v
+cd ~/prism42 && pytest tests/voice/test_cycle2R3_*.py -v
 ```
 
 No B300 pod restart required. No service interruption.
@@ -235,7 +235,7 @@ def test_b3_repositioning_force_advance_after_2_emits():
 Run a synthetic-caller session locally (no pod restart needed):
 
 ```bash
-cd /Users/kiteboard/prism42/agents/livekit
+cd ~/prism42/agents/livekit
 PRISM42_ENABLE_FSM=1 PRISM42_ENABLE_RESPONSE_GATE=1 \
   python synthetic_caller.py --scenario cardiac_arrest_in_chair \
   --turns "100 main st my dad isn't breathing" \

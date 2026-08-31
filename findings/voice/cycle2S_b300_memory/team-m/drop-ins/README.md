@@ -26,7 +26,7 @@ pattern but apply the levers:
 scp launch-vllm-cycle2S.sh shadeform@31.22.104.100:/tmp/launch-vllm-cycle2S.sh
 
 # 2. SSH and install:
-ssh prism-mla-b300-h4h5
+ssh b300-pod
 sudo install -m 0755 -d /opt/prism42/infra/b300/services/vllm/
 sudo install -m 0755 -o shadeform -g shadeform \
     /tmp/launch-vllm-cycle2S.sh \
@@ -71,7 +71,7 @@ scp prism42-vllm.service 00-cycle2S-merged.conf \
     shadeform@31.22.104.100:/tmp/
 
 # 2. SSH and install:
-ssh prism-mla-b300-h4h5
+ssh b300-pod
 sudo install -m 0644 /tmp/prism42-vllm.service /etc/systemd/system/prism42-vllm.service
 sudo install -m 0755 -d /etc/systemd/system/prism42-vllm.service.d
 sudo install -m 0644 /tmp/00-cycle2S-merged.conf \

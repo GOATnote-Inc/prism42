@@ -57,7 +57,7 @@ are correctly set, the adapter never builds the `references_payload` because
 - Diagnostic prior: `FISH_SPEECH_REFERENCE_ID=psap` in process env.
 - Diagnostic prior: NO `fish.reference_voice.loaded` events post-deploy.
 
-**Validation probe.** `grep -n "reference_id\|reference_audio\|reference_text" /Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py | head -10` confirms mutex.
+**Validation probe.** `grep -n "reference_id\|reference_audio\|reference_text" ~/prism42/agents/livekit/fish_speech_tts.py | head -10` confirms mutex.
 
 **Remediation.** Either (a) actually clear `FISH_SPEECH_REFERENCE_ID` in the
 running worker env, or (b) change the adapter mutex to prefer
@@ -236,7 +236,7 @@ plugin, not a separate one. Adaptive interruption is audio-input only.
 
 ### F8 — MW voice indistinguishable from psap-fast / "robotic"
 
-**Mechanism.** Per cycle-2N decision (`/Users/kiteboard/prism42/findings/voice/cycle2N_mw_reference/2026-04-26T060507Z/decision.txt:1-9`):
+**Mechanism.** Per cycle-2N decision (`~/prism42/findings/voice/cycle2N_mw_reference/2026-04-26T060507Z/decision.txt:1-9`):
 
 ```
 MW            mean f0_std 35.7   mean f0_range 202.3
@@ -313,7 +313,7 @@ The single highest-leverage probe, in this order:
    — what did Fish-server actually receive? If it logs `reference_id=psap`
    on every recent synth call, F1 is confirmed.
 
-3. **`grep -n "reference_id\|references" /Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py | head -20`**
+3. **`grep -n "reference_id\|references" ~/prism42/agents/livekit/fish_speech_tts.py | head -20`**
    (already done) — confirms adapter mutex.
 
 4. **`ls -la /etc/systemd/system/prism42-worker.service.d/`** on pod
@@ -358,24 +358,24 @@ not explain:
 
 ## Sources
 
-- `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py:29,166-193,221-222`
+- `~/prism42/agents/livekit/fish_speech_tts.py:29,166-193,221-222`
   — adapter mutex (the `reference_id`-wins contract)
-- `/Users/kiteboard/prism42/agents/livekit/worker.py:54,210-306,659,1067-1075`
+- `~/prism42/agents/livekit/worker.py:54,210-306,659,1067-1075`
   — Fish TTS instantiation, greeting cache warm path, `session.say` greeting dispatch
-- `/Users/kiteboard/prism42/agents/livekit/prism42-worker.service:11`
+- `~/prism42/agents/livekit/prism42-worker.service:11`
   — `EnvironmentFile=` declaration
-- `/Users/kiteboard/prism42/infra/b300/services/fish-speech/setup_psap_reference.sh:47`
+- `~/prism42/infra/b300/services/fish-speech/setup_psap_reference.sh:47`
   — proves `FISH_SPEECH_REFERENCE_ID=psap` was appended to `/opt/prism42/agents/livekit/.env` historically
-- `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T014938Z/team_j0_static_audit.md:117-134`
+- `~/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T014938Z/team_j0_static_audit.md:117-134`
   — engine-side reference precedence (silent drop)
-- `/Users/kiteboard/prism42/findings/voice/cycle2N_mw_reference/2026-04-26T060507Z/decision.txt`
+- `~/prism42/findings/voice/cycle2N_mw_reference/2026-04-26T060507Z/decision.txt`
   — cycle-2N MW reference results, REJECT_MW verdict; key f0 numbers
-- `/Users/kiteboard/prism42/findings/voice/cycle2N_mw_reference/2026-04-26T060507Z/summary.md:53-60`
+- `~/prism42/findings/voice/cycle2N_mw_reference/2026-04-26T060507Z/summary.md:53-60`
   — explicit production-state note: "100-cycle2N drop-in NOT installed,
   FISH_SPEECH_REFERENCE_ID=psap from .env stays canonical, env var
   PRISM42_FISH_REFERENCE_AUDIO unset" (this matches the diagnostic
   prior — drop-in stage was never actually committed before user listened)
-- `/Users/kiteboard/.claude/projects/-Users-kiteboard/memory/prism42_b300_voice_durable_findings.md`
+- `<owner-memory>/prism42_b300_voice_durable_findings.md`
   — durable-findings cycle-2 context
 - systemd.exec(5) — `Environment=` overrides `EnvironmentFile=` documented
   semantic; both apply only at process spawn

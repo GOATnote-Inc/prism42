@@ -7,7 +7,7 @@ baseline so ship/no-ship is measurable.
 ## How to run
 
 ```bash
-cd /Users/kiteboard/prism42
+cd ~/prism42
 python3 -m pip install --break-system-packages structlog --quiet
 python3 - <<'PY'
 import sys
@@ -222,7 +222,7 @@ assert fsm.complaint == "medical"  # no trauma, stays medical
 ## Live re-test plan
 
 After ship:
-1. ssh prism-mla-b300-h4h5
+1. ssh b300-pod
 2. Place a synthetic test call via the public LiveKit room.
 3. Speak the verbatim user-attestation utterances:
    - "Uh 100 Ocean Avenue. My friend's been in a car accident. Will you send some people? He's not he's not, he doesn't seem like he's doing good."

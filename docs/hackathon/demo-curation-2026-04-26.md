@@ -161,7 +161,7 @@ Hard stops. If any one of these appears in the candidate, do not submit it.
     from an actual 911 call is a publicity and licensing problem.
 [ ] Real cell number, real address, real PSAP CAD ID, real ANI/ALI
     metadata anywhere on screen.
-[ ] Any GOATnote private repo URL (prism2, stealth-tic). Public-only:
+[ ] Any GOATnote private repo URL. Public-only:
     prism42, lostbench, scribegoat2, openem-corpus, healthcraft,
     radslice, safeshift.
 [ ] Any embargoed kernel finding. The repo is intentionally clean

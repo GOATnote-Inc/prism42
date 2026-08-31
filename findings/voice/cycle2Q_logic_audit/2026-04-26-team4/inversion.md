@@ -274,5 +274,5 @@ The user reports 4 bugs that all reduce to one structural gap: the LLM is being 
 - [https://cpr.heart.org/en/resuscitation-science/telecommunicator-cpr/telecommunicator-cpr-recommendations-and-performance-measures — fetched 2026-04-26] (AHA T-CPR: two-question recognition then immediate dispatch, <150 s benchmark)
 - [https://www.anthropic.com/engineering/managed-agents — fetched 2026-04-23 per CLAUDE.md] (session as context-outside-window — applicable to F7 mitigation)
 - [https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7 — fetched 2026-04-23 per CLAUDE.md] (Opus 4.7 is more literal, fewer silent generalizations — comparison anchor)
-- Internal: `/Users/kiteboard/prism42/agents/livekit/orchestrator.py` (FAST_DISPATCHER_SYSTEM_PROMPT lines 227-387, BufferedDispatcherAgent line 128, cycle-2e flag line 406)
-- Internal: `/Users/kiteboard/.claude/projects/-Users-kiteboard/memory/prism42_b300_voice_durable_findings.md` finding #6 (vLLM Nemotron MoE-backend instability — TRTLLM auto-select produces JS garbage; the unproven-stack risk that drives the don't-ship-guided-decoding-without-fallback recommendation)
+- Internal: `~/prism42/agents/livekit/orchestrator.py` (FAST_DISPATCHER_SYSTEM_PROMPT lines 227-387, BufferedDispatcherAgent line 128, cycle-2e flag line 406)
+- Internal: `<owner-memory>/prism42_b300_voice_durable_findings.md` finding #6 (vLLM Nemotron MoE-backend instability — TRTLLM auto-select produces JS garbage; the unproven-stack risk that drives the don't-ship-guided-decoding-without-fallback recommendation)

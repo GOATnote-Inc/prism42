@@ -91,6 +91,6 @@ banner.
 ## Contact
 
 Clinical findings, questions about the rubric, or physician-review
-capacity requests: **brandondent17@gmail.com** (Brandon Dent, MD;
+capacity requests: **b@thegoatnote.com** (Brandon Dent, MD;
 GOATnote-Inc). Security findings on the GPU rail follow the
 private-disclosure playbook in `docs/disclosure-playbook.md`.

@@ -1,6 +1,6 @@
-# B300 Bench Plan — `final-gold-ox` (OODA + agent teams)
+# B300 Bench Plan — `research-pod` (OODA + agent teams)
 
-**Date:** 2026-04-27 · **Pod:** `final-gold-ox` (NVIDIA B300,
+**Date:** 2026-04-27 · **Pod:** `research-pod` (NVIDIA B300,
 288 GiB HBM3E, 30 vCPU, 275 GiB RAM, Helsinki / Verda, $7.91/hr) ·
 **Status:** Deploying as of session start; SSH-ready signal pending.
 
@@ -70,7 +70,7 @@ TP=2 needed, the "do I need 2 GPUs" question dissolves.
 | `amazing-coral-bee` (`f5ubt2usb`) | 2× H100 (FAILURE) | Failed, $0/hr | — | Slot-blocking; deletable |
 
 **Failed Verda pods (already deleted by parallel session):**
-`prism-mla-b300-h4h5`, `final-gold-ox`, `verbal-yellow-hoverfly`,
+`b300-pod`, `research-pod`, `verbal-yellow-hoverfly`,
 `sleepy-bronze-puffin`, `comfortable-indigo-asp`.
 
 **Brev CLI:** `brew install brevdev/homebrew-brev/brev` →
@@ -166,7 +166,7 @@ phase); Team D runs locally (doc only).
   SOTA MLA kernels target `sm_100/sm_103`, not `sm_90`. Useful as
   the Hopper-rail reference (the dominant production GPU today) but
   not as a Blackwell-roadmap preview.
-- **Inputs:** `mla/` package (`/Users/kiteboard/prism42/mla/`), the
+- **Inputs:** `mla/` package (`~/prism42/mla/`), the
   evolutionary search runners, golden test set, production attention
   kernel implementations for SM 9.0.
 - **Success criteria:**
@@ -234,7 +234,7 @@ phase); Team D runs locally (doc only).
 - ❌ Train Nemotron on Claude-generated outputs.
 - ❌ Measure perf without an `nvidia-smi` capture in the artifact.
 - ❌ Claim a TRT-LLM-vs-vLLM win without a paired 24h shadow run.
-- ❌ Touch any file under `/Users/kiteboard/prism2/` (parallel
+- ❌ Touch any file under the private predecessor repo checkout (parallel
   session's worktree).
 - ❌ Skip the verification step on any team's "done" claim.
 

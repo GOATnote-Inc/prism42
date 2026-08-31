@@ -23,7 +23,7 @@ All topics are **additive** to the existing `prism42.dispatch` channel. The fron
   "timestamp_ms": 1714161000000,
   "tick_index": 142,
   "agent_session_id": "ses_01...",
-  "host": "prism-mla-b300-h4h5",
+  "host": "b300-pod",
   "state": "nominal | warn | degraded | failing",
   "components": {
     "worker": {"systemd": "active", "last_register_url": "wss://prism42.thegoatnote.com", "uptime_s": 8421},

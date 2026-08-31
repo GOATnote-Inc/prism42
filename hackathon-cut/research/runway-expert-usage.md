@@ -139,7 +139,7 @@ There is **no API for the Multi-Shot Video / Scene Builder web feature** as of A
 **Cleanest API recipe for "use Ken_Fox.mp4 as canon, regenerate Ken speaking new lines":**
 
 1. Extract a clean keyframe of Ken from `Ken_Fox.mp4` (ffmpeg, frame around t=2s where his face is centered and well-lit) → `ken_canon.png`.
-2. Upload `ken_canon.png` to a public HTTPS host (S3, Cloudflare R2 signed-URL with TTL > 1h, or just a tunnel from `/Users/kiteboard/prism42/hackathon-cut/assets/`).
+2. Upload `ken_canon.png` to a public HTTPS host (S3, Cloudflare R2 signed-URL with TTL > 1h, or just a tunnel from `~/prism42/hackathon-cut/assets/`).
 3. POST `/v1/text_to_image` with `model="gen4_image"`, `reference_images=[{uri: ken_canon_url, tag: "image_1"}]`, `prompt_text="@image_1 fox news anchor at desk, broadcast lighting, framed centered chest-up, eyes to camera"` → poll → get `keyframe_url`.
 4. Choose lip-sync route:
    - **Option A (quality, $0.05/s):** `/v1/character_performance` with `character={type: "image", uri: keyframe_url}`, `reference={type: "video", uri: human_take_url}`, `model="act_two"`.

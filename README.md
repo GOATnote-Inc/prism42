@@ -69,7 +69,7 @@ encounter); **Karpathy autoresearch dual-credited with DSPy GEPA** in
 the diagram caption (Karpathy named the pattern; GEPA is the
 maintained RAG implementation).
 
-The fresh research B300 (`final-gold-ox`, Verda/Helsinki) and its
+The fresh research B300 (`research-pod`, Verda/Helsinki) and its
 agent-team operating plan live at
 [`findings/research/2026-04-27-future-stack/b300-bench-plan.md`](findings/research/2026-04-27-future-stack/b300-bench-plan.md).
 

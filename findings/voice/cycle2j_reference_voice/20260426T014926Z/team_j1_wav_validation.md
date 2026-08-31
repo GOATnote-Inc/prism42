@@ -37,7 +37,7 @@ If forced to pick one of these three for any reason, the rank is below.
 
 ### Candidate 1 — `2026_22756_000001_000001.wav` (PRIMARY among the three)
 
-**Path:** `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000001.wav`
+**Path:** `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000001.wav`
 
 **Technical specs (afinfo + wave):**
 - Format: WAVE, 1 channel mono, 24000 Hz, Int16
@@ -75,7 +75,7 @@ If forced to pick one of these three for any reason, the rank is below.
 
 ### Candidate 2 — `2026_22756_000001_000000.wav`
 
-**Path:** `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.wav`
+**Path:** `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.wav`
 
 **Technical specs:**
 - Format: WAVE, 1 channel mono, 24000 Hz, Int16
@@ -110,7 +110,7 @@ If forced to pick one of these three for any reason, the rank is below.
 
 ### Candidate 3 — `2026_22756_000002_000001.wav` (SUPPLEMENTAL ONLY — recommend NOT using)
 
-**Path:** `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000002_000001.wav`
+**Path:** `~/Downloads/libritts-english/2026/22756/2026_22756_000002_000001.wav`
 
 **Technical specs:**
 - Format: WAVE, 1 channel mono, 24000 Hz, Int16
@@ -213,7 +213,7 @@ For this specific speaker (Mil Nicholson):
 - WAV files: not modified (timestamps unchanged from 2023-03-17 source date)
 - No copies made to `prism42/` or any pod
 - No prism42 venv pollution (no librosa/parselmouth installed; stdlib + numpy was sufficient)
-- Output directory: `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/20260426T014926Z/team_j1_wav_validation.md` (this file only)
+- Output directory: `~/prism42/findings/voice/cycle2j_reference_voice/20260426T014926Z/team_j1_wav_validation.md` (this file only)
 
 ---
 

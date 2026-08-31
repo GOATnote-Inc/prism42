@@ -1,7 +1,7 @@
 # Cycle-2J — Verification (Team J)
 
 **Date:** 2026-04-26
-**Worker:** `prism42-worker.service` on `prism-mla-b300-h4h5`, registered as
+**Worker:** `prism42-worker.service` on `b300-pod`, registered as
 `AW_SW3RGqg9Cgit` against `wss://prism42.thegoatnote.com` (selfhost).
 
 Three probes were run. All pass; one with a documented caveat.

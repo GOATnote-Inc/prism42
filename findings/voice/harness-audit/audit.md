@@ -1,6 +1,6 @@
 # Harness audit — synthetic_caller_full.py — 2026-04-25
 
-Read-only audit of `/Users/kiteboard/prism42/agents/livekit/synthetic_caller_full.py`
+Read-only audit of `~/prism42/agents/livekit/synthetic_caller_full.py`
 (271 lines). Goal: complete inventory of measurement biases, hardcoded sleeps,
 hardcoded thresholds, race-condition assumptions, audio-thresholds, worker-
 behavior coupling, and token/room/session coupling so cycle-2a (and beyond)
@@ -271,7 +271,7 @@ reply_deadline = reply_window_start + reply_timeout
 
 The following diff applies F1, F2, F4, F5, F6, F7 as a single patch. F3, F8, F9, F10, F13, F14 are documented assumptions and stay unchanged. F11, F12 are correct as-is.
 
-Patch file: `/Users/kiteboard/prism42/findings/voice/harness-audit/synthetic_caller_full.py.patch`. Verified via `git apply --check` (exit 0). Apply with:
+Patch file: `~/prism42/findings/voice/harness-audit/synthetic_caller_full.py.patch`. Verified via `git apply --check` (exit 0). Apply with:
 
 ```
 git apply findings/voice/harness-audit/synthetic_caller_full.py.patch
@@ -377,7 +377,7 @@ These items require live-pod runs to confirm; this audit is read-only.
 
 ## Verification
 
-Verified live during this audit (CWD `/Users/kiteboard/prism42`):
+Verified live during this audit (CWD `~/prism42`):
 
 ```
 $ git apply --check findings/voice/harness-audit/synthetic_caller_full.py.patch

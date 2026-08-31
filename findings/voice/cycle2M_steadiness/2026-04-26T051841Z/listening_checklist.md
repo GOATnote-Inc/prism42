@@ -41,7 +41,7 @@ Mark each (A, B, C) per phrase as: PSAP_FIT / OK / NOT_FIT.
 ## Re-install drop-in (if user picks B or C)
 
 ```bash
-ssh prism-mla-b300-h4h5 'sudo tee /etc/systemd/system/prism42-worker.service.d/90-cycle2M-refaudio.conf > /dev/null <<EOF
+ssh b300-pod 'sudo tee /etc/systemd/system/prism42-worker.service.d/90-cycle2M-refaudio.conf > /dev/null <<EOF
 [Service]
 Environment="PRISM42_FISH_REFERENCE_AUDIO=/opt/prism42/voice-refs/wav_M{1|2}.wav"
 Environment="PRISM42_FISH_REFERENCE_TEXT=<verbatim transcript from result.json>"
@@ -59,7 +59,7 @@ journalctl -u prism42-worker --since "1 min ago" | grep reference_voice'
 ## Rollback (60 s)
 
 ```bash
-ssh prism-mla-b300-h4h5 'sudo rm -f /etc/systemd/system/prism42-worker.service.d/90-cycle2M-refaudio.conf && sudo systemctl daemon-reload && sudo systemctl restart prism42-worker && systemctl is-active prism42-worker'
+ssh b300-pod 'sudo rm -f /etc/systemd/system/prism42-worker.service.d/90-cycle2M-refaudio.conf && sudo systemctl daemon-reload && sudo systemctl restart prism42-worker && systemctl is-active prism42-worker'
 ```
 
 (Already executed at end of bench — no further action needed unless user re-installs.)

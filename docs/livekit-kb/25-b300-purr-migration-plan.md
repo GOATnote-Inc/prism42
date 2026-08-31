@@ -62,7 +62,7 @@ Already coded (commit `2644b29`, branch landed on main). Server.py has the `/ws`
 
 ```
 # operator action — single SSH command:
-ssh prism-mla-b300-h4h5 "sudo kill 60210 && sleep 2 && \
+ssh b300-pod "sudo kill 60210 && sleep 2 && \
   sudo systemctl restart prism42-parakeet"
 # verify:
 curl -sS http://127.0.0.1:9100/openapi.json | python3 -c \
@@ -202,7 +202,7 @@ If ANY gate fails: leave `vllm serve` running for inspection, mark which gate(s)
 ### Phase E — Flip `LLM_BACKEND=vllm-local` on the worker + bench | 15 min
 
 ```
-ssh prism-mla-b300-h4h5 "echo 'LLM_BACKEND=vllm-local' | sudo tee -a \
+ssh b300-pod "echo 'LLM_BACKEND=vllm-local' | sudo tee -a \
   /opt/prism42/agents/livekit/.env && \
   sudo systemctl restart prism42-worker"
 # bench:

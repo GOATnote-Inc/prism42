@@ -47,7 +47,7 @@ jobs:
           echo "${{ secrets.BREV_PEM }}" > ~/.ssh/brev.pem
           chmod 600 ~/.ssh/brev.pem
           cat > ~/.ssh/config <<EOF
-          Host prism-mla-b300-h4h5
+          Host b300-pod
             HostName ${{ secrets.POD_HOSTNAME }}
             User shadeform
             IdentityFile ~/.ssh/brev.pem

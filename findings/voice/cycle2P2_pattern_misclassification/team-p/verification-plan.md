@@ -148,14 +148,14 @@ These run against the live Parakeet service. Read-only.
 
 ```bash
 # B1 (ITN) smoke — the integrator runs this AFTER B1 ships.
-ssh prism-mla-b300-h4h5 'curl -s -X POST \
+ssh b300-pod 'curl -s -X POST \
   http://127.0.0.1:9100/transcribe \
   -H "Content-Type: audio/wav" \
   --data-binary @/path/to/one_hundred_ocean.wav | jq .text'
 # Expected: "100 Ocean Avenue" or close.
 
 # B2 (GPU-PB) smoke — bench delta.
-ssh prism-mla-b300-h4h5 'cd /opt/prism42/agents/livekit && \
+ssh b300-pod 'cd /opt/prism42/agents/livekit && \
   .venv/bin/python bench_b300.py --runs 10 --utt "100 Ocean Avenue"'
 # Expected: p95 delta vs baseline within +20 ms; "Avenue" stability up.
 ```

@@ -235,21 +235,21 @@ If any of these go true mid-sprint, re-run this analysis:
 
 Numbered, with retrieval / fetch dates and verification status (V = verified on this workspace, D = doc-claim only, M = memory file as of date in frontmatter).
 
-1. CLAUDE.md §8 — Managed Agents specifics, callable_agents silent-strip + request_id `req_011CaJg9qBnVqPNkaoBLgjrN` — **V** 2026-04-22 — `/Users/kiteboard/prism42/CLAUDE.md`
+1. CLAUDE.md §8 — Managed Agents specifics, callable_agents silent-strip + request_id `req_011CaJg9qBnVqPNkaoBLgjrN` — **V** 2026-04-22 — `~/prism42/CLAUDE.md`
 2. CLAUDE.md §0 — Hackathon mode rules, ship-by 2026-04-26 — **V** — same path
 3. CLAUDE.md §5, §9 — double-gate, budget cap $280 — **V** — same path
-4. `hackathon_opus_4_7_reference.md` — model pricing, `$0.08/session-hr`, `agent_toolset_20260401`, multi-agent shape, event taxonomy — **M** 2026-04-21 — `/Users/kiteboard/.claude/projects/-Users-kiteboard/memory/hackathon_opus_4_7_reference.md`
-5. `managed_agents_multi_agent_verified.md` — endpoints, thread persistence, callable_agents declared at agent-create — **M** 2026-04-21 — `/Users/kiteboard/.claude/projects/-Users-kiteboard/memory/managed_agents_multi_agent_verified.md`
-6. `findings/smoke-session-2026-04-22.md` — real cost datapoint: $0.15 / smoke session, 8,424 + 251 tokens, 8.3 s wallclock — **V** 2026-04-22 — `/Users/kiteboard/prism42/findings/smoke-session-2026-04-22.md`
-7. `agents/manifest.yaml` — five sub-agents + coordinator IDs — **V** 2026-04-22 — `/Users/kiteboard/prism42/agents/manifest.yaml`
-8. `scripts/register_agents.py` — registration mechanism, ORDER list, `_strip_prism`, `resolve_callable_agents`, `do_commit` containment — **V** — `/Users/kiteboard/prism42/scripts/register_agents.py`
-9. `scripts/smoke_session.py` — live event-stream pattern, BETA header — **V** — `/Users/kiteboard/prism42/scripts/smoke_session.py`
-10. `scripts/verify_session_durability.py` — session-reattach pattern (kill client, restream, status `running`/`idle`) — **V** — `/Users/kiteboard/prism42/scripts/verify_session_durability.py`
-11. `scripts/harness_sweep.py` lines 30-37 — cost envelope ($100-$130 + $0.08 × session-hr per 30-example sweep) — **V** — `/Users/kiteboard/prism42/scripts/harness_sweep.py`
-12. `findings/voice/synthesis.md` — five-fix plan, cycle-2c/2d/2e scope, OODA cadence — **V** 2026-04-25 — `/Users/kiteboard/prism42/findings/voice/synthesis.md`
-13. `findings/voice/cycle-2a-anticipator/contingencies.md` — synthetic_caller_full.py:254-256 + bench_b300.py structure — **V** 2026-04-25 — `/Users/kiteboard/prism42/findings/voice/cycle-2a-anticipator/contingencies.md`
-14. `findings/voice/llm-tail-causes.md` — bench cycle 1 forensics, p95 figures — **V** 2026-04-25 — `/Users/kiteboard/prism42/findings/voice/llm-tail-causes.md`
-15. `agents/livekit/bench_b300.py` lines 1-120 — bench-loop entrypoint shape, log parsing — **V** — `/Users/kiteboard/prism42/agents/livekit/bench_b300.py`
+4. `hackathon_opus_4_7_reference.md` — model pricing, `$0.08/session-hr`, `agent_toolset_20260401`, multi-agent shape, event taxonomy — **M** 2026-04-21 — `<owner-memory>/hackathon_opus_4_7_reference.md`
+5. `managed_agents_multi_agent_verified.md` — endpoints, thread persistence, callable_agents declared at agent-create — **M** 2026-04-21 — `<owner-memory>/managed_agents_multi_agent_verified.md`
+6. `findings/smoke-session-2026-04-22.md` — real cost datapoint: $0.15 / smoke session, 8,424 + 251 tokens, 8.3 s wallclock — **V** 2026-04-22 — `~/prism42/findings/smoke-session-2026-04-22.md`
+7. `agents/manifest.yaml` — five sub-agents + coordinator IDs — **V** 2026-04-22 — `~/prism42/agents/manifest.yaml`
+8. `scripts/register_agents.py` — registration mechanism, ORDER list, `_strip_prism`, `resolve_callable_agents`, `do_commit` containment — **V** — `~/prism42/scripts/register_agents.py`
+9. `scripts/smoke_session.py` — live event-stream pattern, BETA header — **V** — `~/prism42/scripts/smoke_session.py`
+10. `scripts/verify_session_durability.py` — session-reattach pattern (kill client, restream, status `running`/`idle`) — **V** — `~/prism42/scripts/verify_session_durability.py`
+11. `scripts/harness_sweep.py` lines 30-37 — cost envelope ($100-$130 + $0.08 × session-hr per 30-example sweep) — **V** — `~/prism42/scripts/harness_sweep.py`
+12. `findings/voice/synthesis.md` — five-fix plan, cycle-2c/2d/2e scope, OODA cadence — **V** 2026-04-25 — `~/prism42/findings/voice/synthesis.md`
+13. `findings/voice/cycle-2a-anticipator/contingencies.md` — synthetic_caller_full.py:254-256 + bench_b300.py structure — **V** 2026-04-25 — `~/prism42/findings/voice/cycle-2a-anticipator/contingencies.md`
+14. `findings/voice/llm-tail-causes.md` — bench cycle 1 forensics, p95 figures — **V** 2026-04-25 — `~/prism42/findings/voice/llm-tail-causes.md`
+15. `agents/livekit/bench_b300.py` lines 1-120 — bench-loop entrypoint shape, log parsing — **V** — `~/prism42/agents/livekit/bench_b300.py`
 16. `https://platform.claude.com/docs/en/managed-agents/overview` — research-preview gating language for outcomes/multi-agent/memory — **D** quoted in CLAUDE.md §8, NOT freshly fetched 2026-04-25
 17. `https://platform.claude.com/docs/en/managed-agents/sessions` — session lifecycle, idle/running/rescheduling/terminated — **D** referenced in `managed_agents_multi_agent_verified.md`, NOT freshly fetched 2026-04-25
 18. `https://platform.claude.com/docs/en/managed-agents/events` — event taxonomy, send/stream endpoints — **D** referenced in `hackathon_opus_4_7_reference.md`, NOT freshly fetched 2026-04-25

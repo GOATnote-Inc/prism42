@@ -3,7 +3,7 @@
 Submits all non-Act-Two shots from ../shot-list.json via the Runway API,
 polls for completion, downloads results to ../clips/<shot_id>.mp4.
 
-Auth: reads RUNWAYML_API_SECRET from /Users/kiteboard/prism42/.env (or env var).
+Auth: reads RUNWAYML_API_SECRET from ~/prism42/.env (or env var).
 
 Character refs (optional): place PNGs at refs/ken.png and refs/fizzlepuff.png
 to lock identity on the 8 Scene Builder shots. Without them, those shots fall
@@ -54,7 +54,7 @@ CLIPS_DIR = PROJECT_ROOT / "clips"
 REFS_DIR = ROOT / "refs"
 TASKS_FILE = ROOT / "tasks-api.json"
 RESULTS_FILE = ROOT / "results-api.json"
-ENV_FILE = Path("/Users/kiteboard/prism42/.env")
+ENV_FILE = Path("~/prism42/.env")
 
 # Models
 M_T2V = "gen4.5"
@@ -301,7 +301,7 @@ def main() -> None:
         return
 
     if not secret:
-        sys.exit("RUNWAYML_API_SECRET not found in env or /Users/kiteboard/prism42/.env. "
+        sys.exit("RUNWAYML_API_SECRET not found in env or ~/prism42/.env. "
                  "Add it and retry.")
 
     client = RunwayML(api_key=secret)

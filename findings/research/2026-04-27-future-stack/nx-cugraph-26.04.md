@@ -45,14 +45,14 @@ https://developer.nvidia.com/blog/networkx-introduces-zero-code-change-accelerat
 
 **No NetworkX usage detected anywhere in healthcraft.**
 
-Grep audit across `/Users/kiteboard/healthcraft/`:
+Grep audit across `~/healthcraft/`:
 - No `import networkx`, `from networkx`, `nx.Graph`, `nx.DiGraph`.
 - No graph algorithm calls (`pagerank`, `betweenness_centrality`,
   `shortest_path`, `connected_components`, etc.).
 - `pyproject.toml:11` lists no graph libraries.
 
 The "14-type entity graph, 3,987 entities" referenced in
-`/Users/kiteboard/healthcraft/CLAUDE.md:38` is a **relational reference
+`~/healthcraft/CLAUDE.md:38` is a **relational reference
 graph** — entities stored as dicts keyed by ID in
 `src/healthcraft/world/state.py:55-57`, with foreign keys (`patient_id`,
 `encounter_id`, `condition_id`) maintained as fields. There is no NetworkX
@@ -79,10 +79,10 @@ completes in < 10 ms. No performance win at this scale even if NetworkX
 
 ## 5. Other repos — NetworkX usage check
 
-- `/Users/kiteboard/lostbench/` — none
-- `/Users/kiteboard/openem-corpus/` — none
-- `/Users/kiteboard/scribegoat2/` — none
-- `/Users/kiteboard/prism42/` — none
+- `~/lostbench/` — none
+- `~/openem-corpus/` — none
+- `~/scribegoat2/` — none
+- `~/prism42/` — none
 
 ## 6. Integration delta
 

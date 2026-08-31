@@ -2,7 +2,7 @@
 reports exactly which voice-pipeline stages succeed.
 
 Run on the pod (where the livekit SDK is already installed):
-    brev exec prism-mla-b300-h4h5 'cd /opt/prism42/agents/livekit && \
+    brev exec b300-pod 'cd /opt/prism42/agents/livekit && \
         .venv/bin/python synthetic_caller.py'
 
 This eliminates the human caller from the test loop. Reports:

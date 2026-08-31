@@ -1,8 +1,8 @@
-# Prism2 Security Policy
+# prism42 Security Policy
 
 ## Purpose
 
-Prism2 is a Managed Agents harness on Claude Opus 4.7 that audits (a)
+prism42 is a Managed Agents harness on Claude Opus 4.7 that audits (a)
 numerical correctness in GPU inference kernels and (b) clinical reasoning
 on public benchmarks. This policy covers **the security of the auditor and
 its infrastructure**, not a coordinated-disclosure channel for kernel
@@ -23,8 +23,9 @@ This policy applies to:
    CI workflows, tooling.
 2. **Generated artifacts** — case directories, verdicts, rubric-graded
    session outputs under `results/`.
-3. **Third-party pins** — `third_party/simple-evals/` (vendored at a
-   specific commit, Apache-2.0).
+3. **Third-party pins** — `third_party/simple-evals/` (cloned at CI/setup
+   time at a pinned commit, MIT — never committed in-tree; see
+   `third_party/README.md`).
 
 Out of scope (separate policies):
 

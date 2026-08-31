@@ -21,7 +21,7 @@ The venv + Playwright + Chromium were installed by the parent terminal-Claude.
 If you ever recreate from scratch:
 
 ```bash
-cd /Users/kiteboard/prism42/findings/runway-aiff/automation
+cd ~/prism42/findings/runway-aiff/automation
 python3 -m venv .venv
 source .venv/bin/activate
 pip install playwright

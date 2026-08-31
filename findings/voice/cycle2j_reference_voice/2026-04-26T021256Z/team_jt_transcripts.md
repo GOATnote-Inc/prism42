@@ -26,7 +26,7 @@ Day after day as he bent his steps homeward, returning from some new effort to p
 
 (File 1: original.txt and normalized.txt are byte-identical — 240 bytes each, no normalization needed; 19th-century prose contained no expandable abbreviations or numerics in this segment.)
 
-**Source:** `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.original.txt` (Mar 17 2023 mtime, 240 bytes). Cross-verified against Dickens *Old Curiosity Shop* Ch. 20 canonical text (see Sources §1, §3).
+**Source:** `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.original.txt` (Mar 17 2023 mtime, 240 bytes). Cross-verified against Dickens *Old Curiosity Shop* Ch. 20 canonical text (see Sources §1, §3).
 
 **Cross-check:**
 - Audio metadata: 16-bit PCM mono 24 kHz, 324,720 frames → 13.530 s (matches stated 13.53 s exactly).
@@ -55,7 +55,7 @@ His own earnest wish, coupled with the assurance he had received from Quilp, fil
 
 **Key drift:** original `to-morrow` (hyphenated, archaic Dickensian) vs normalized `to morrow` (space). The audio (a human narrator) will pronounce a single word "tomorrow" — both forms are imperfect, but `to-morrow` matches the canonical 1841 Dickens print text and is the standard LibriTTS "original" label that Fish-style models are trained on. The space-separated `to morrow` would tokenize as TWO words, breaking phoneme-alignment cues for the speaker conditioner.
 
-**Source:** `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000001.original.txt` (Mar 17 2023 mtime, 253 bytes). Cross-verified against Dickens *Old Curiosity Shop* Ch. 20 (Sources §2, §3).
+**Source:** `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000001.original.txt` (Mar 17 2023 mtime, 253 bytes). Cross-verified against Dickens *Old Curiosity Shop* Ch. 20 (Sources §2, §3).
 
 **Cross-check:**
 - Audio metadata: 16-bit PCM mono 24 kHz, 349,200 frames → 14.550 s (matches stated 14.55 s exactly).
@@ -100,14 +100,14 @@ His own earnest wish, coupled with the assurance he had received from Quilp, fil
    - `"His own earnest wish, coupled with the assurance he had received from Quilp" "to-morrow"` → confirmed File 2 text including hyphenated `to-morrow` in Ch. 20.
 4. LibriVox catalog — *The Old Curiosity Shop* read by Mil Nicholson — `https://librivox.org/the-old-curiosity-shop-by-charles-dickens/` and `https://archive.org/details/curiosity_shop_mn_librivox`. Retrieved 2026-04-26. Confirms LibriVox source recording of Mil Nicholson, consistent with LibriTTS speaker-2026 attribution from Team J1's earlier audit.
 5. Local transcript files (read-only):
-   - `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.original.txt`
-   - `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.normalized.txt`
-   - `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000001.original.txt`
-   - `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000001.normalized.txt`
+   - `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.original.txt`
+   - `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.normalized.txt`
+   - `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000001.original.txt`
+   - `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000001.normalized.txt`
 6. Local WAV metadata (Python `wave` module, read-only):
    - `2026_22756_000001_000000.wav`: 324,720 frames @ 24 kHz, mono, 16-bit → 13.530 s
    - `2026_22756_000001_000001.wav`: 349,200 frames @ 24 kHz, mono, 16-bit → 14.550 s
-7. Team J0 static audit (referenced for R4 framing): `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T014938Z/team_j0_static_audit.md`.
+7. Team J0 static audit (referenced for R4 framing): `~/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T014938Z/team_j0_static_audit.md`.
 
 ---
 

@@ -42,7 +42,6 @@ $ curl -sX POST https://prism42-app.thegoatnote.com/prism42/api/livekit-token \
 
 HTTP_CODE=200
 {
-  "token": "eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6...",
   "room": "d-team-domain-swap-smoke-001",
   "livekit_url": "wss://prism42.thegoatnote.com",
   "identity": "caller-d-team-d",

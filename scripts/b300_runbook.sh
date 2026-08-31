@@ -6,8 +6,8 @@
 #        bash /opt/prism42/scripts/b300_runbook.sh
 #        bash /opt/prism42/scripts/b300_runbook.sh --heal
 #   2. FROM the laptop, via brev exec:
-#        brev exec prism-mla-b300-h4h5 'bash /opt/prism42/scripts/b300_runbook.sh'
-#        brev exec prism-mla-b300-h4h5 'bash /opt/prism42/scripts/b300_runbook.sh --heal'
+#        brev exec b300-pod 'bash /opt/prism42/scripts/b300_runbook.sh'
+#        brev exec b300-pod 'bash /opt/prism42/scripts/b300_runbook.sh --heal'
 #
 # Exit codes:
 #   0 — all checks PASS

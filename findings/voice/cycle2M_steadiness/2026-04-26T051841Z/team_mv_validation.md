@@ -5,12 +5,12 @@
 **Window:** 2026-04-26T05:18Z, 20-minute ship-by.
 
 **Inputs (6 LibriTTS WAVs, speaker 2026 = Mil Nicholson per Team J1):**
-- `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.wav` (cycle-2j wav1; previously tested as ref)
-- `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000001.wav` (cycle-2j wav2; speaker character produced cycle-2j wav2/p4 GO output)
-- `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000003_000000.wav` (NEW)
-- `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000006_000001.wav` (NEW)
-- `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000010_000000.wav` (NEW)
-- `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000013_000000.wav` (NEW)
+- `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.wav` (cycle-2j wav1; previously tested as ref)
+- `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000001.wav` (cycle-2j wav2; speaker character produced cycle-2j wav2/p4 GO output)
+- `~/Downloads/libritts-english/2026/22756/2026_22756_000003_000000.wav` (NEW)
+- `~/Downloads/libritts-english/2026/22756/2026_22756_000006_000001.wav` (NEW)
+- `~/Downloads/libritts-english/2026/22756/2026_22756_000010_000000.wav` (NEW)
+- `~/Downloads/libritts-english/2026/22756/2026_22756_000013_000000.wav` (NEW)
 
 **Per-file raw features:** `team_mv_features.json` (this dir). **Tracker source:** `team_mv_analyze.py`.
 
@@ -65,14 +65,14 @@ All clean: 0 disqualifying clipping events, all transcripts present (`.original.
 
 ### Candidate A — `2026_22756_000001_000000.wav`
 
-- Path: `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.wav`
+- Path: `~/Downloads/libritts-english/2026/22756/2026_22756_000001_000000.wav`
 - f0 profile: f0_std=50.9, f0_range (max-min)=291, f0_range (p5-p95)=132, f0_mean=176, duration=13.53 s, sr=24 kHz, mono, 16-bit
 - Transcript (`.original.txt`, verbatim): *"Day after day as he bent his steps homeward, returning from some new effort to procure employment, Kit raised his eyes to the window of the little room he had so much commended to the child, and hoped to see some indication of her presence."*
 - **Predicted Fish-reference fit: MODERATE.** Best of the 6 by f0_std AND by p5-p95 range. But this is the SAME file already tested as cycle-2j wav1 ref — the user's existing prior on this clip is the prior on this candidate.
 
 ### Candidate B — `2026_22756_000013_000000.wav` (NEW)
 
-- Path: `/Users/kiteboard/Downloads/libritts-english/2026/22756/2026_22756_000013_000000.wav`
+- Path: `~/Downloads/libritts-english/2026/22756/2026_22756_000013_000000.wav`
 - f0 profile: f0_std=51.2, f0_range (max-min)=289, f0_range (p5-p95)=140, f0_mean=171, duration=10.95 s, sr=24 kHz, mono, 16-bit
 - Transcript (`.original.txt`, verbatim): *"Kit scratched his head mournfully, in reluctant admission that it did not, and clambering up to the old nail took down the cage and set himself to clean it and to feed the bird."*
 - **Predicted Fish-reference fit: MODERATE.** Functionally tied with Candidate A on f0_std (Δ=0.3 Hz, well inside tracker noise). Slightly higher p5-p95 range (140 vs 132) but within 6%. Duration 10.95 s sits in the upper half of Fish's recommended 10-30 s window. Anticipated failure mode (chapter 13 = late-book narrative tension) **did not** materialize — this clip is calmer-toned narration ("Kit scratched his head mournfully"), descriptive prose with no dialogue, no high-affect punctuation.

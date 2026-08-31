@@ -23,7 +23,7 @@
 
 set -euo pipefail
 
-POD="${PRISM42_POD_HOST:-prism-mla-b300-h4h5}"
+POD="${PRISM42_POD_HOST:-b300-pod}"
 BENCH_DIR="/opt/prism42/agents/livekit"
 LOG_DIR="/tmp/prism42-ralph"
 LOG_FILE="$LOG_DIR/ralph.jsonl"

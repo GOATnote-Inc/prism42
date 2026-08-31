@@ -111,7 +111,7 @@ After the patch, on the gate-template path:
 ### Verification (synthetic_caller probe)
 
 ```bash
-ssh prism-mla-b300-h4h5 'cd /opt/prism42/agents/livekit && \
+ssh b300-pod 'cd /opt/prism42/agents/livekit && \
   .venv/bin/python synthetic_caller.py "I am at twelve riverside drive my friend stopped breathing"'
 ```
 
@@ -132,8 +132,8 @@ template path. NO second fishspeech.t0 with a different text_len.
 
 If StopResponse cancellation breaks something else:
 ```bash
-ssh prism-mla-b300-h4h5 'sudo rm /etc/systemd/system/prism42-worker.service.d/140-cycle2T-response-gate.conf'
-ssh prism-mla-b300-h4h5 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
+ssh b300-pod 'sudo rm /etc/systemd/system/prism42-worker.service.d/140-cycle2T-response-gate.conf'
+ssh b300-pod 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
 ```
 With `PRISM42_ENABLE_RESPONSE_GATE` unset, `self._response_gate` is None,
 the gate-template branch is skipped, `gate_emitted_template` stays

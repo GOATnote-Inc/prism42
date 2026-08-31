@@ -2,7 +2,7 @@
 
 Format mirrors Team P/Q `fix-candidates.md`: ranked by confidence and impact, with file:line, LoC, risk, and rollback per fix.
 
-All paths relative to `/Users/kiteboard/prism42/agents/livekit/`. All flags default OFF — these add behavior under the existing `PRISM42_ENABLE_FSM=1 + PRISM42_ENABLE_RESPONSE_GATE=1` posture.
+All paths relative to `~/prism42/agents/livekit/`. All flags default OFF — these add behavior under the existing `PRISM42_ENABLE_FSM=1 + PRISM42_ENABLE_RESPONSE_GATE=1` posture.
 
 ---
 

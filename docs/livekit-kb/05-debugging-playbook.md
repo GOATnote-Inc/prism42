@@ -1,6 +1,6 @@
 # 05 — Anthropic `additionalProperties: true` Debugging Playbook
 
-**Status:** Root cause CAPTURED on `prism-mla-b300-h4h5` — 2026-04-23.
+**Status:** Root cause CAPTURED on `b300-pod` — 2026-04-23.
 **Canonical failure mode:** `api.anthropic.com` returns `400 tools.0.custom: additionalProperties: true is not supported` on the first voice-facing turn.
 **Binding:** This is a `livekit-plugins-anthropic 1.x` + `anthropic==0.97.0` + Pydantic schema-generation bug when `@function_tool` signatures use `dict[str, Any] | None` type hints.
 **TL;DR:** The existing `_force_additional_properties_false` walker in `worker.py` has a guard bug — it only matches `type == "object"` (string), but Pydantic emits `type: ["object", "null"]` (list) for `dict[str, Any] | None` parameters, so the nested node with `additionalProperties: true` passes through untouched.
@@ -146,7 +146,7 @@ llm = lk_anthropic.LLM(model="claude-opus-4-7", client=SHARED_ANTHROPIC_CLIENT)
 
 ## 4. Captured body — the exact 400-trigger (from pod, 2026-04-23)
 
-Synthesized via §2 script on `prism-mla-b300-h4h5`. The full strict schema for `run_safety_monitor` as produced by `ToolContext.parse_function_tools("anthropic", strict=True)`:
+Synthesized via §2 script on `b300-pod`. The full strict schema for `run_safety_monitor` as produced by `ToolContext.parse_function_tools("anthropic", strict=True)`:
 
 ```json
 {

@@ -29,7 +29,7 @@
 set -euo pipefail
 
 DRY_RUN=0
-SSH_HOST="prism-mla-b300-h4h5"
+SSH_HOST="b300-pod"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

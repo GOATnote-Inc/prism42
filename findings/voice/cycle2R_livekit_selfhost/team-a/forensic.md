@@ -1,6 +1,6 @@
 # Cycle-2R Team A — LiveKit self-host forensic + takeover plan
 
-**Pod:** `prism-mla-b300-h4h5` (`31.22.104.100`, no NAT)
+**Pod:** `b300-pod` (`31.22.104.100`, no NAT)
 **Author:** Team A (cycle-2R, 2026-04-26)
 **Source of truth for keys:** `keys.local.txt` in this same directory (gitignored).
 

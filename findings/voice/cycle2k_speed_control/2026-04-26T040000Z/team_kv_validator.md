@@ -2,9 +2,9 @@
 
 **Mode:** read-only acoustic analysis. No code edits, no pod commands, no commits.
 
-**K-E artifact:** `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z`
+**K-E artifact:** `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z`
 
-**cycle-2j reference:** `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline`
+**cycle-2j reference:** `~/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline`
 
 **Methodology:** stdlib `wave` + numpy + scipy.io.wavfile. Duration = total file duration (`getnframes/getframerate`); wpm = words/duration*60; sps = syllables/duration. K1 audit's word counts (P1=6, P2=3, P3=3, P4=3, P5=5) used as primary — methodology cited from `findings/voice/cycle2k_speed_control/2026-04-26T031403Z/team_k1_speed_audit.md` lines 76-92. Target band: 175-200 wpm (trained-dispatcher pace).
 
@@ -141,55 +141,55 @@ Ordered with **highest-stakes (slowest-baseline) phrase P1 first**, then briskne
 
 | order | condition | wpm | path |
 |---|---|---|---|
-| 1 | cycle-2k baseline (no tag) | 100.7 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/baseline/p1.wav` |
-| 2 | P1-rank #1 T5 `[911 dispatcher voice]` | 158.2 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T5/p1.wav` |
-| 3 | P1-rank #2 T1 `[urgent dispatcher pace]` | 140.9 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T1/p1.wav` |
-| 4 | P1-rank #3 T3 `[news anchor pace]` | 119.3 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T3/p1.wav` |
-| 5 | cycle-2j baseline (cross-cycle anchor) | 100.7 | `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline/p1.wav` |
+| 1 | cycle-2k baseline (no tag) | 100.7 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/baseline/p1.wav` |
+| 2 | P1-rank #1 T5 `[911 dispatcher voice]` | 158.2 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T5/p1.wav` |
+| 3 | P1-rank #2 T1 `[urgent dispatcher pace]` | 140.9 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T1/p1.wav` |
+| 4 | P1-rank #3 T3 `[news anchor pace]` | 119.3 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T3/p1.wav` |
+| 5 | cycle-2j baseline (cross-cycle anchor) | 100.7 | `~/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline/p1.wav` |
 
 ### P2: "What's your location?" — fast-baseline check (don't overshoot)
 
 
 | order | condition | wpm | path |
 |---|---|---|---|
-| 1 | cycle-2k baseline (no tag) | 121.1 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/baseline/p2.wav` |
-| 2 | rank #1 T2 `[fast clear]` | 114.0 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T2/p2.wav` |
-| 3 | rank #2 T3 `[news anchor pace]` | 121.1 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T3/p2.wav` |
-| 4 | rank #3 T5 `[911 dispatcher voice]` | 143.6 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T5/p2.wav` |
-| 5 | cycle-2j baseline (cross-cycle anchor) | 121.1 | `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline/p2.wav` |
+| 1 | cycle-2k baseline (no tag) | 121.1 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/baseline/p2.wav` |
+| 2 | rank #1 T2 `[fast clear]` | 114.0 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T2/p2.wav` |
+| 3 | rank #2 T3 `[news anchor pace]` | 121.1 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T3/p2.wav` |
+| 4 | rank #3 T5 `[911 dispatcher voice]` | 143.6 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T5/p2.wav` |
+| 5 | cycle-2j baseline (cross-cycle anchor) | 121.1 | `~/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline/p2.wav` |
 
 ### P3: "Are they breathing?" — fast-baseline check
 
 
 | order | condition | wpm | path |
 |---|---|---|---|
-| 1 | cycle-2k baseline (no tag) | 184.6 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/baseline/p3.wav` |
-| 2 | rank #1 T2 `[fast clear]` | 215.3 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T2/p3.wav` |
-| 3 | rank #2 T3 `[news anchor pace]` | 184.6 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T3/p3.wav` |
-| 4 | rank #3 T5 `[911 dispatcher voice]` | 168.5 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T5/p3.wav` |
-| 5 | cycle-2j baseline (cross-cycle anchor) | 184.5 | `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline/p3.wav` |
+| 1 | cycle-2k baseline (no tag) | 184.6 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/baseline/p3.wav` |
+| 2 | rank #1 T2 `[fast clear]` | 215.3 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T2/p3.wav` |
+| 3 | rank #2 T3 `[news anchor pace]` | 184.6 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T3/p3.wav` |
+| 4 | rank #3 T5 `[911 dispatcher voice]` | 168.5 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T5/p3.wav` |
+| 5 | cycle-2j baseline (cross-cycle anchor) | 184.5 | `~/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline/p3.wav` |
 
 ### P4: "Stay with me." — short declarative (K1: 1.0x perception in cycle-2j)
 
 
 | order | condition | wpm | path |
 |---|---|---|---|
-| 1 | cycle-2k baseline (no tag) | 155.0 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/baseline/p4.wav` |
-| 2 | rank #1 T2 `[fast clear]` | 193.8 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T2/p4.wav` |
-| 3 | rank #2 T3 `[news anchor pace]` | 176.2 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T3/p4.wav` |
-| 4 | rank #3 T5 `[911 dispatcher voice]` | 193.8 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T5/p4.wav` |
-| 5 | cycle-2j baseline (cross-cycle anchor) | 155.0 | `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline/p4.wav` |
+| 1 | cycle-2k baseline (no tag) | 155.0 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/baseline/p4.wav` |
+| 2 | rank #1 T2 `[fast clear]` | 193.8 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T2/p4.wav` |
+| 3 | rank #2 T3 `[news anchor pace]` | 176.2 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T3/p4.wav` |
+| 4 | rank #3 T5 `[911 dispatcher voice]` | 193.8 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T5/p4.wav` |
+| 5 | cycle-2j baseline (cross-cycle anchor) | 155.0 | `~/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline/p4.wav` |
 
 ### P5: "Help is on the way." — fast-baseline check
 
 
 | order | condition | wpm | path |
 |---|---|---|---|
-| 1 | cycle-2k baseline (no tag) | 222.8 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/baseline/p5.wav` |
-| 2 | rank #1 T2 `[fast clear]` | 201.9 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T2/p5.wav` |
-| 3 | rank #2 T3 `[news anchor pace]` | 170.0 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T3/p5.wav` |
-| 4 | rank #3 T5 `[911 dispatcher voice]` | 222.8 | `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T5/p5.wav` |
-| 5 | cycle-2j baseline (cross-cycle anchor) | 222.7 | `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline/p5.wav` |
+| 1 | cycle-2k baseline (no tag) | 222.8 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/baseline/p5.wav` |
+| 2 | rank #1 T2 `[fast clear]` | 201.9 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T2/p5.wav` |
+| 3 | rank #2 T3 `[news anchor pace]` | 170.0 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T3/p5.wav` |
+| 4 | rank #3 T5 `[911 dispatcher voice]` | 222.8 | `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T040000Z/audio/T5/p5.wav` |
+| 5 | cycle-2j baseline (cross-cycle anchor) | 222.7 | `~/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T024731Z/audio/baseline/p5.wav` |
 
 
 ## Audible-tag flags

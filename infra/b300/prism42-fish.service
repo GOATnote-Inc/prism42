@@ -2,8 +2,8 @@
 #
 # Source of truth lives here; `/etc/systemd/system/prism42-fish.service`
 # on the pod must match. Update via:
-#   scp infra/b300/prism42-fish.service prism-mla-b300-h4h5:/tmp/
-#   ssh prism-mla-b300-h4h5 "sudo cp /tmp/prism42-fish.service \
+#   scp infra/b300/prism42-fish.service b300-pod:/tmp/
+#   ssh b300-pod "sudo cp /tmp/prism42-fish.service \
 #     /etc/systemd/system/prism42-fish.service && \
 #     sudo systemctl daemon-reload && \
 #     sudo systemctl restart prism42-fish"

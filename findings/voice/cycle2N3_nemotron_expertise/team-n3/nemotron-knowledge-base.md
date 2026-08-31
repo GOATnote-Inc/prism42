@@ -303,11 +303,11 @@ External (all fetched 2026-04-26):
 13. Unsloth Nemotron-3 guide: https://unsloth.ai/docs/models/nemotron-3
 
 Internal (file:line):
-- `/Users/kiteboard/prism42/findings/voice/cycle2S_b300_memory/team-m/profile.md` — perf/memory ground truth for our pod.
-- `/Users/kiteboard/prism42/findings/voice/cycle2S_b300_memory/team-m/drop-ins/launch-vllm-cycle2S.sh:48-63` — current vLLM launch invocation.
-- `/Users/kiteboard/prism42/agents/livekit/orchestrator.py:495-729` — current `FAST_DISPATCHER_SYSTEM_PROMPT`.
-- `/Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py:108-141, 720-790` — Intent enum + `next_prompt()`.
-- `/Users/kiteboard/prism42/agents/livekit/response_gate.py:288-351` — `gate_decision()`.
-- `/Users/kiteboard/prism42/agents/livekit/templates.py:106-235` — 21 deterministic templates.
+- `~/prism42/findings/voice/cycle2S_b300_memory/team-m/profile.md` — perf/memory ground truth for our pod.
+- `~/prism42/findings/voice/cycle2S_b300_memory/team-m/drop-ins/launch-vllm-cycle2S.sh:48-63` — current vLLM launch invocation.
+- `~/prism42/agents/livekit/orchestrator.py:495-729` — current `FAST_DISPATCHER_SYSTEM_PROMPT`.
+- `~/prism42/agents/livekit/dispatcher_fsm.py:108-141, 720-790` — Intent enum + `next_prompt()`.
+- `~/prism42/agents/livekit/response_gate.py:288-351` — `gate_decision()`.
+- `~/prism42/agents/livekit/templates.py:106-235` — 21 deterministic templates.
 </content>
 </invoke>

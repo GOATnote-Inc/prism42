@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 from scipy.io import wavfile
 
-LIBRITTS_DIR = Path("/Users/kiteboard/Downloads/libritts-english/2026/22756")
+LIBRITTS_DIR = Path("~/Downloads/libritts-english/2026/22756")
 
 CANDIDATES = [
     "2026_22756_000001_000000.wav",

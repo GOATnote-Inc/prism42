@@ -317,13 +317,13 @@ is lucky, because that's where WebRTC media lives.
 
 1. **Phase 3a path (ship-ready today): Brev Shareable URL for WSS
    signaling; direct UDP for media.** User shares port 7880 in the
-   Brev dashboard → gets a `https://livekit-bvtyxg31j.brevlab.com`
+   Brev dashboard → gets a `https://livekit-<tunnel-id>.brevlab.com`
    URL with a valid `*.brevlab.com` cert. Set
-   `NEXT_PUBLIC_LIVEKIT_URL=wss://livekit-bvtyxg31j.brevlab.com`.
+   `NEXT_PUBLIC_LIVEKIT_URL=wss://livekit-<tunnel-id>.brevlab.com`.
    WebRTC media uses UDP/7882 direct to the pod IP — that port we
    verified reachable. Caddy is NOT deployed for Phase 3a.
 2. **Phase 3c path: Cloudflare in front of Brev.** `livekit.thegoatnote
-   .com` CNAME → Cloudflare → origin = `livekit-bvtyxg31j.brevlab.com`.
+   .com` CNAME → Cloudflare → origin = `livekit-<tunnel-id>.brevlab.com`.
    Cloudflare rewrites the Host header + serves a matching cert.
    Gets us the branded domain back. Requires moving DNS for
    `thegoatnote.com` (or at least the `livekit` subdomain) to
@@ -354,7 +354,7 @@ GODADDY_API_SECRET=...
 **Run once at pod provisioning:**
 
 ```bash
-set -a && source /Users/kiteboard/prism42/.env && set +a
+set -a && source ~/prism42/.env && set +a
 POD_PUBLIC_IP=$(ssh prism42-pod 'curl -s ifconfig.me') \
   bash infra/b300/setup-dns.sh
 ```

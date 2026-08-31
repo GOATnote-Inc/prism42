@@ -23,7 +23,7 @@ pytest tests/voice -v -m integration
 ```
 
 Requires:
-- `ssh prism-mla-b300-h4h5` works (see `memory/brev_ssh_bypass.md`).
+- `ssh b300-pod` works (see `memory/brev_ssh_bypass.md`).
 - `/opt/prism42/agents/livekit/bench_b300.py` present on pod.
 - `PyYAML` installed (`pip install pyyaml`).
 

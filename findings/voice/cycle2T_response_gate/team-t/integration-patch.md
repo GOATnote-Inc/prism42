@@ -236,7 +236,7 @@ modified.
 ## How `session.say` works (verified via worker.py + livekit-agents)
 
 - `Agent.session` is a property defined at
-  `/Users/kiteboard/prism42/agents/livekit/.venv/lib/python3.14/site-packages/livekit/agents/voice/agent.py:677`.
+  `~/prism42/agents/livekit/.venv/lib/python3.14/site-packages/livekit/agents/voice/agent.py:677`.
   Returns the `AgentSession` bound to the running agent.
 - `AgentSession.say(text, *, audio=NOT_GIVEN, allow_interruptions=NOT_GIVEN, add_to_chat_ctx=True)`
   is defined at the same .venv at
@@ -287,9 +287,9 @@ modified.
    ast.parse(open('agents/livekit/orchestrator.py').read())"`.
 3. scp the new files to the pod:
    ```
-   scp agents/livekit/response_gate.py prism-mla-b300-h4h5:/opt/prism42/agents/livekit/
-   scp agents/livekit/templates.py     prism-mla-b300-h4h5:/opt/prism42/agents/livekit/
-   scp agents/livekit/orchestrator.py  prism-mla-b300-h4h5:/opt/prism42/agents/livekit/
+   scp agents/livekit/response_gate.py b300-pod:/opt/prism42/agents/livekit/
+   scp agents/livekit/templates.py     b300-pod:/opt/prism42/agents/livekit/
+   scp agents/livekit/orchestrator.py  b300-pod:/opt/prism42/agents/livekit/
    ```
 4. Add to systemd drop-in at `/etc/systemd/system/prism42-worker.service.d/cycle2t.conf`:
    ```ini
@@ -301,7 +301,7 @@ modified.
    Worker comes up in ~3s.
 6. Synthetic-caller harness:
    ```
-   ssh prism-mla-b300-h4h5 \
+   ssh b300-pod \
      'cd /opt/prism42/agents/livekit && \
       .venv/bin/python synthetic_caller_full.py \
       "I am at 451 Mission Street, my husband stopped breathing"'
@@ -313,7 +313,7 @@ modified.
    instruction (after both V1 and V2 latched).
 7. Verify in the worker log:
    ```
-   ssh prism-mla-b300-h4h5 \
+   ssh b300-pod \
      'tail -300 /tmp/prism42-logs/worker.log | grep response_gate.decision'
    ```
    Each line should show `intent`, `used_template`, `used_llm`,

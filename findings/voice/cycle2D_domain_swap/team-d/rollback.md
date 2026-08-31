@@ -25,10 +25,10 @@ If `prism42-app.thegoatnote.com` exists and the user wants to keep that hostname
 ```bash
 # Edit vercel.json — remove the redirects[] block added in cycle-2D
 # Then deploy:
-$ cp /Users/kiteboard/prism42/.vercel/project.json /tmp/d-rollback.bak
-$ cp /Users/kiteboard/prism42/mvp/911-console-live/.vercel/project.json /Users/kiteboard/prism42/.vercel/project.json
-$ cd /Users/kiteboard/prism42 && vercel --prod --yes
-$ cp /tmp/d-rollback.bak /Users/kiteboard/prism42/.vercel/project.json
+$ cp ~/prism42/.vercel/project.json /tmp/d-rollback.bak
+$ cp ~/prism42/mvp/911-console-live/.vercel/project.json ~/prism42/.vercel/project.json
+$ cd ~/prism42 && vercel --prod --yes
+$ cp /tmp/d-rollback.bak ~/prism42/.vercel/project.json
 ```
 
 ### Layer 2 — Detach the Vercel custom domain
@@ -36,7 +36,7 @@ $ cp /tmp/d-rollback.bak /Users/kiteboard/prism42/.vercel/project.json
 Removes the domain from the Vercel project. After this, `https://prism42-app.thegoatnote.com` will return Vercel's "domain not in project" 404 page (cert remains valid for ~30 days but no project answers).
 
 ```bash
-$ cd /Users/kiteboard/prism42/mvp/911-console-live/
+$ cd ~/prism42/mvp/911-console-live/
 $ vercel domains rm prism42-app.thegoatnote.com
 # CLI will prompt for confirmation; type the domain to confirm.
 ```
@@ -55,8 +55,8 @@ $ curl -X DELETE \
 Removes DNS resolution. After this + DNS TTL expiration (10 min, since we set TTL=600), `dig prism42-app.thegoatnote.com` returns NXDOMAIN.
 
 ```bash
-$ GODADDY_API_KEY=$(grep '^GODADDY_API_KEY=' /Users/kiteboard/prism42/.env | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
-$ GODADDY_API_SECRET=$(grep '^GODADDY_API_SECRET=' /Users/kiteboard/prism42/.env | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+$ GODADDY_API_KEY=$(grep '^GODADDY_API_KEY=' ~/prism42/.env | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+$ GODADDY_API_SECRET=$(grep '^GODADDY_API_SECRET=' ~/prism42/.env | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
 $ curl -sS -X DELETE "https://api.godaddy.com/v1/domains/thegoatnote.com/records/CNAME/prism42-app" \
     -H "Authorization: sso-key ${GODADDY_API_KEY}:${GODADDY_API_SECRET}" \
     -w '\nHTTP_CODE=%{http_code}\n'
@@ -76,7 +76,7 @@ $ curl -sS -X GET "https://api.godaddy.com/v1/domains/thegoatnote.com/records/CN
 If the redirects were the only `vercel.json` change in this cycle (they were), revert the file:
 
 ```bash
-$ cd /Users/kiteboard/prism42
+$ cd ~/prism42
 $ git diff mvp/911-console-live/vercel.json   # confirms the cycle-2D diff is the only change
 $ git checkout -- mvp/911-console-live/vercel.json
 ```

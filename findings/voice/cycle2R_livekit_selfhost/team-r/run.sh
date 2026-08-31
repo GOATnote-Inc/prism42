@@ -20,7 +20,7 @@
 #   PRISM42_AUTH_G4=1   systemd takeover of livekit-server (kills bare pid)
 #   PRISM42_AUTH_G6=1   Production env flip to LIVEKIT_BACKEND=selfhost
 #
-# Required env (sourced by integrator from canonical /Users/kiteboard/lostbench/.env):
+# Required env (sourced by integrator from canonical ~/lostbench/.env):
 #   GODADDY_API_KEY, GODADDY_API_SECRET   (Phase 0 only)
 #   VERCEL_TOKEN                          (Phase 4, 6)
 #   TEAM_A_LIVEKIT_KEY, TEAM_A_LIVEKIT_SECRET  (Phase 3, 4 — from Team A handoff)
@@ -31,12 +31,12 @@ set -Eeuo pipefail
 # Configuration (frozen facts — DO NOT change without re-verification)
 # ─────────────────────────────────────────────────────────────────────
 POD_PUBLIC_IP="31.22.104.100"
-POD_HOSTNAME="prism-mla-b300-h4h5"
+POD_HOSTNAME="b300-pod"
 LIVEKIT_DOMAIN="prism42.thegoatnote.com"
 TURN_DOMAIN="turn-prism42.thegoatnote.com"
 LIVEKIT_WSS_URL="wss://${LIVEKIT_DOMAIN}"
 WORKER_ENV_PATH="/opt/prism42/worker/.env"   # confirmed by integrator via `systemctl cat prism42-worker | grep EnvironmentFile`
-VERCEL_PROJECT_DIR="/Users/kiteboard/prism42/mvp/911-console-live"
+VERCEL_PROJECT_DIR="~/prism42/mvp/911-console-live"
 
 # ─────────────────────────────────────────────────────────────────────
 # Helpers
@@ -357,7 +357,7 @@ phase_4() {
     require_env TEAM_A_LIVEKIT_KEY
     require_env TEAM_A_LIVEKIT_SECRET
 
-    log "4.1 Reminder: edit /Users/kiteboard/prism42/mvp/911-console-live/app/prism42/api/livekit-token/route.ts"
+    log "4.1 Reminder: edit ~/prism42/mvp/911-console-live/app/prism42/api/livekit-token/route.ts"
     log "  to honor LIVEKIT_BACKEND env var. See runbook.md §4.1."
     log "  (This script does NOT auto-edit source code — Team R authors the runbook;"
     log "   integrator applies the edit + commits.)"

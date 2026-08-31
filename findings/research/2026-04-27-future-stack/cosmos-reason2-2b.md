@@ -29,7 +29,7 @@ Sources:
 
 ### 2a. RadSlice DICOM pipeline (🟢 HIGHEST FIT — ~75% of leverage)
 
-`/Users/kiteboard/radslice/` is a multimodal radiology VLM benchmark:
+`~/radslice/` is a multimodal radiology VLM benchmark:
 - 330 tasks across X-ray, CT, MRI, ultrasound (per `radslice-details.md` and
   CLAUDE.md memory).
 - DICOM ingest via `dicom.py` (pydicom + windowing).
@@ -49,14 +49,14 @@ unreliable for pass decisions (75% of L0 passes are judge-false-positives)
 
 ### 2b. healthcraft clinical tasks (🟡 MODERATE — ~20%)
 
-`/Users/kiteboard/healthcraft/`: 195 eval tasks, 24 MCP tools, all
+`~/healthcraft/`: 195 eval tasks, 24 MCP tools, all
 text-based today. No image ingestion. Vision would be NEW surface (e.g.,
 new MCP tool `analyzeImage(study_id)` for radiograph review). Possible but
 requires task redesign.
 
 ### 2c. prism42 voice (🔴 LOWEST — < 5%)
 
-`/Users/kiteboard/prism42/`: voice path is audio + text only. CLAUDE.md §0
+`~/prism42/`: voice path is audio + text only. CLAUDE.md §0
 hackathon constraint: "voice path is audio/text only; no caller image
 input today." Adding vision is net-new surface, not a drop-in. Latency
 budget is 1.5 s p95 end-to-end — adding 200–500 ms vision step

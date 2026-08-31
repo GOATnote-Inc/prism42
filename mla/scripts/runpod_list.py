@@ -1,7 +1,7 @@
 """Read-only RunPod check: confirm API key works, list pods, show status.
 
 No cost. No mutations. Intended as the very first thing you run after
-`source /Users/kiteboard/lostbench/.env`.
+`source /path/to/your/.env`.
 
 Usage:
     RUNPOD_API_KEY=... .venv/bin/python scripts/runpod_list.py

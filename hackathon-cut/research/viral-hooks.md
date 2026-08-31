@@ -1,5 +1,5 @@
 # Viral-Hook Research — Sub-60s Bio Opening
-**Mission:** 3-min "Built with Opus 4.7" hackathon demo. Sub-60s opening bio segment on Brandon Dent, MD. News-magazine register. Two recurring AI-character hosts (Ken Fox anchor + Fizzlepuff felted-puppet sidekick). VO already cut to 28.8s (`/Users/kiteboard/prism42/hackathon-cut/vo/bio-intro-mix.mp3`).
+**Mission:** 3-min "Built with Opus 4.7" hackathon demo. Sub-60s opening bio segment on Brandon Dent, MD. News-magazine register. Two recurring AI-character hosts (Ken Fox anchor + Fizzlepuff felted-puppet sidekick). VO already cut to 28.8s (`~/prism42/hackathon-cut/vo/bio-intro-mix.mp3`).
 
 This file is consumed directly by terminal-Claude for assembly. Read top-to-bottom.
 

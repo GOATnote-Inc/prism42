@@ -10,7 +10,7 @@ from pathlib import Path
 
 ART = Path(__file__).resolve().parent
 TRACKER_PATH = Path(
-    "/Users/kiteboard/prism42/findings/voice/cycle2M_steadiness/2026-04-26T051841Z/team_mv_analyze.py"
+    "~/prism42/findings/voice/cycle2M_steadiness/2026-04-26T051841Z/team_mv_analyze.py"
 )
 
 

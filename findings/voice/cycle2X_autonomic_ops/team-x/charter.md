@@ -164,7 +164,7 @@ The custom tool surface bound to the coordinator agent on `claude.beta.agents.cr
 | Tool | Read/Mutate | Gate level | Purpose |
 |---|---|---|---|
 | `agent_toolset_20260401` | mixed | passive_read | Anthropic-built (bash/read/write/edit/glob/grep/web_fetch/web_search) |
-| `pod_ssh_readonly` | read | passive_read | `ssh prism-mla-b300-h4h5 <whitelisted-cmd>` — `nvidia-smi`, `journalctl`, `systemctl is-active`, `vllm-health-curl` only |
+| `pod_ssh_readonly` | read | passive_read | `ssh b300-pod <whitelisted-cmd>` — `nvidia-smi`, `journalctl`, `systemctl is-active`, `vllm-health-curl` only |
 | `pod_smi` | read | passive_read | `nvidia-smi --query-gpu=...` shorthand |
 | `pod_journalctl` | read | passive_read | scoped to `prism42-worker`, `prism42-fish`, `prism42-vllm`, `caddy`, `b300-livekit-1` |
 | `livekit_health` | read | passive_read | `curl https://prism42.thegoatnote.com/` + LiveKit Cloud REST list-rooms |

@@ -48,7 +48,7 @@
 ## Files delivered
 
 ```
-/Users/kiteboard/prism42/findings/voice/cycle2S_b300_memory/team-m/
+~/prism42/findings/voice/cycle2S_b300_memory/team-m/
 ├── profile.md                      # Phase 1: full B300 + vLLM state
 ├── levers.md                       # Phase 2: 15-lever ranked table
 ├── recommendation.md               # This file

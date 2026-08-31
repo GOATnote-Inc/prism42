@@ -128,6 +128,6 @@ The B300 augmentations do not close the 20 % → 100 % gap on hardest clinical c
 
 - Spec: `docs/spec-b300-voice.md` (B300 augmentations, self-verification L1-L4).
 - Live console baseline: `mvp/911-console-live/` (current `/prism42`).
-- Kernel anchors: `/Users/kiteboard/prism/mla/claims/CLAIM_001_*.md`, `CLAIM_002_*.md`.
+- Kernel anchors: `~/prism/mla/claims/CLAIM_001_*.md`, `CLAIM_002_*.md`.
 - Charter: `CLAUDE.md` (verification discipline, one-commit-per-task, baseline citation rules).
 - ElevenLabs blueprint: `docs/anthropic-elevenlabs-agent-bp-2026-04-21.md` (§5 decode-latency budget).

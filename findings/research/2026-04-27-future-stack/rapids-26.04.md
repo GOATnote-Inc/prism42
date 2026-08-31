@@ -41,7 +41,7 @@ https://pypi.org/project/cudf-cu12/
 ### #1 — healthcraft (HIGHEST LEVERAGE)
 
 - **What:** 14-type entity graph, 3,987 entities at seed=42
-  (`/Users/kiteboard/healthcraft/CLAUDE.md:38`), 24 MCP tools, 195 eval tasks.
+  (`~/healthcraft/CLAUDE.md:38`), 24 MCP tools, 195 eval tasks.
 - **RAPIDS fit:**
   - **cuVS** for embedding-based condition retrieval (drop-in replacement for
     LanceDB cosine search). 7× lower query latency, 40× faster index build.
@@ -53,7 +53,7 @@ https://pypi.org/project/cudf-cu12/
 ### #2 — openem-corpus (HIGH LEVERAGE)
 
 - **What:** 370 OpenEM conditions, LanceDB index at
-  `/Users/kiteboard/openem-corpus/data/index/openem.lance/` (rebuilt
+  `~/openem-corpus/data/index/openem.lance/` (rebuilt
   2026-03-13).
 - **RAPIDS fit:** cuVS as a sidecar to LanceDB. 370 × 384-dim embeddings is
   small (~0.6 MB raw + ~5–10× index overhead); GPU win is index-build

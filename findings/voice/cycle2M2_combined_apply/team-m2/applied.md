@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-26
 **Operator:** Team M2 (integrator)
-**Pod:** prism-mla-b300-h4h5
+**Pod:** b300-pod
 **Worker restart:** 17:38:04 UTC, came back active 17:38:05 (registered worker `AW_CWmEF4BNH5P4`)
 **vLLM service:** untouched (no restart)
 
@@ -31,13 +31,13 @@ Each step ran cleanly after the corresponding edit, before commit.
 ## Pod deployment
 
 ```
-scp /Users/kiteboard/prism42/agents/livekit/orchestrator.py    prism-mla-b300-h4h5:/tmp/
-scp /Users/kiteboard/prism42/agents/livekit/worker.py          prism-mla-b300-h4h5:/tmp/
-scp /Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py  prism-mla-b300-h4h5:/tmp/
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/orchestrator.py    /opt/prism42/agents/livekit/orchestrator.py'
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/worker.py          /opt/prism42/agents/livekit/worker.py'
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/dispatcher_fsm.py  /opt/prism42/agents/livekit/dispatcher_fsm.py'
-ssh prism-mla-b300-h4h5 'sudo systemctl restart prism42-worker && sleep 5 && systemctl is-active prism42-worker'
+scp ~/prism42/agents/livekit/orchestrator.py    b300-pod:/tmp/
+scp ~/prism42/agents/livekit/worker.py          b300-pod:/tmp/
+scp ~/prism42/agents/livekit/dispatcher_fsm.py  b300-pod:/tmp/
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/orchestrator.py    /opt/prism42/agents/livekit/orchestrator.py'
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/worker.py          /opt/prism42/agents/livekit/worker.py'
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/dispatcher_fsm.py  /opt/prism42/agents/livekit/dispatcher_fsm.py'
+ssh b300-pod 'sudo systemctl restart prism42-worker && sleep 5 && systemctl is-active prism42-worker'
 ```
 
 File timestamps after install (all 17:37:51 UTC):

@@ -224,7 +224,7 @@ B300 has 144 cores total, but the GPU is the precious resource. livekit-server i
 
 | # | Step | Verify with |
 |---|---|---|
-| 1 | SSH to pod: `ssh prism-mla-b300-h4h5` | `hostname` |
+| 1 | SSH to pod: `ssh b300-pod` | `hostname` |
 | 2 | Install: `curl -sSL https://get.livekit.io \| bash` | `livekit-server --version` shows v1.11.x |
 | 3 | Write `/opt/livekit/livekit.yaml` (config from §3 above; generate fresh API key/secret with `openssl rand -hex 32` for both) | `livekit-server --config /opt/livekit/livekit.yaml --bind 127.0.0.1 --dev` runs cleanly |
 | 4 | Install Caddy 2.x via `apt install caddy` (or download binary) | `caddy version` |
@@ -279,4 +279,4 @@ B300 has 144 cores total, but the GPU is the precious resource. livekit-server i
 - [localtonet.com/blog/cloudflare-tunnel-alternative](https://localtonet.com/blog/cloudflare-tunnel-alternative) (Cloudflare Tunnel UDP limitation)
 - [developers.cloudflare.com/tunnel/configuration/](https://developers.cloudflare.com/tunnel/configuration/) (Cloudflare Tunnel docs)
 - [developers.cloudflare.com/realtime/turn/faq/](https://developers.cloudflare.com/realtime/turn/faq/) (Cloudflare Realtime TURN — separate paid service)
-- Internal: [/Users/kiteboard/prism42/docs/livekit-kb/04-deployment-patterns.md](../../../docs/livekit-kb/04-deployment-patterns.md), [/Users/kiteboard/prism42/docs/livekit-kb/15-cloud-swap-alternatives.md](../../../docs/livekit-kb/15-cloud-swap-alternatives.md), [/Users/kiteboard/prism42/CLAUDE.md](../../../CLAUDE.md) §0
+- Internal: [~/prism42/docs/livekit-kb/04-deployment-patterns.md](../../../docs/livekit-kb/04-deployment-patterns.md), [~/prism42/docs/livekit-kb/15-cloud-swap-alternatives.md](../../../docs/livekit-kb/15-cloud-swap-alternatives.md), [~/prism42/CLAUDE.md](../../../CLAUDE.md) §0

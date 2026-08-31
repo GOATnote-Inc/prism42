@@ -11,7 +11,7 @@ log-grep predicate.
 Capture the bug signature so post-deploy verification can prove it's gone.
 
 ```bash
-ssh prism-mla-b300-h4h5 'wc -l /tmp/prism42-logs/worker.log'
+ssh b300-pod 'wc -l /tmp/prism42-logs/worker.log'
 # Note the line number — call it $BASELINE
 ```
 
@@ -24,7 +24,7 @@ ssh prism-mla-b300-h4h5 'wc -l /tmp/prism42-logs/worker.log'
 ```
 
 ```bash
-ssh prism-mla-b300-h4h5 'tail -n +$BASELINE /tmp/prism42-logs/worker.log | \
+ssh b300-pod 'tail -n +$BASELINE /tmp/prism42-logs/worker.log | \
     awk "/fishspeech.t0/" | wc -l'
 # Expected pre-fix: ~6-7 (3 turns × 2 utterances per turn = 6, plus 1 filler)
 # Expected post-fix: 3 (3 turns × 1 utterance each)
@@ -39,7 +39,7 @@ Save the pre-fix count. Post-fix should drop by ~50%.
 ### V1.1 — Bytecode is rebuilt after deploy
 
 ```bash
-ssh prism-mla-b300-h4h5 'stat -c "%Y %n" /opt/prism42/agents/livekit/orchestrator.py /opt/prism42/agents/livekit/__pycache__/orchestrator.cpython-3*.pyc'
+ssh b300-pod 'stat -c "%Y %n" /opt/prism42/agents/livekit/orchestrator.py /opt/prism42/agents/livekit/__pycache__/orchestrator.cpython-3*.pyc'
 # Both timestamps should be after `systemctl restart` time
 ```
 
@@ -47,7 +47,7 @@ ssh prism-mla-b300-h4h5 'stat -c "%Y %n" /opt/prism42/agents/livekit/orchestrato
 
 ```bash
 # Run the canonical 3-turn scenario, then:
-ssh prism-mla-b300-h4h5 'tail -n 500 /tmp/prism42-logs/worker.log | \
+ssh b300-pod 'tail -n 500 /tmp/prism42-logs/worker.log | \
     grep -c "using preemptive generation"'
 # Expected: 0 (was 4 in the f2c54453 baseline)
 ```
@@ -55,7 +55,7 @@ ssh prism-mla-b300-h4h5 'tail -n 500 /tmp/prism42-logs/worker.log | \
 ### V1.3 — Exactly ONE fishspeech.t0 per fsm.transition
 
 ```bash
-ssh prism-mla-b300-h4h5 'tail -n 500 /tmp/prism42-logs/worker.log | \
+ssh b300-pod 'tail -n 500 /tmp/prism42-logs/worker.log | \
     awk "/fsm.transition/ {fsm++} /fishspeech.t0/ {tts++} END {print \"fsm:\", fsm, \"tts:\", tts}"'
 # Expected: fsm=3 tts=3 (1:1 mapping)
 # Pre-fix: fsm=3 tts=6+ (1:2 mapping)
@@ -64,7 +64,7 @@ ssh prism-mla-b300-h4h5 'tail -n 500 /tmp/prism42-logs/worker.log | \
 ### V1.4 — `fsm_turn_failed` count is still zero (StopResponse not leaking to broad except)
 
 ```bash
-ssh prism-mla-b300-h4h5 'grep -c "fsm_turn_failed" /tmp/prism42-logs/worker.log'
+ssh b300-pod 'grep -c "fsm_turn_failed" /tmp/prism42-logs/worker.log'
 # Expected: 0 (StopResponse should propagate cleanly to LiveKit; if it's
 # being caught by the broad `except Exception`, we'd see fsm_turn_failed
 # warnings, indicating the fix's else-branch placement is wrong)
@@ -91,7 +91,7 @@ Pre-fix symptom (per user attestation):
 ### V2.1 — `filler.spoken` count drops to zero across the canonical 3-turn run
 
 ```bash
-ssh prism-mla-b300-h4h5 'tail -n 500 /tmp/prism42-logs/worker.log | \
+ssh b300-pod 'tail -n 500 /tmp/prism42-logs/worker.log | \
     grep -c "filler.spoken"'
 # Expected: 0
 # Pre-fix: 1+ (filler fired during VERIFY_SURFACE pause in the f2c54453 baseline)
@@ -100,7 +100,7 @@ ssh prism-mla-b300-h4h5 'tail -n 500 /tmp/prism42-logs/worker.log | \
 ### V2.2 — `filler.suppressed_intake` count grows to cover all phase events
 
 ```bash
-ssh prism-mla-b300-h4h5 'tail -n 500 /tmp/prism42-logs/worker.log | \
+ssh b300-pod 'tail -n 500 /tmp/prism42-logs/worker.log | \
     grep filler.suppressed_intake | awk "{print \$NF}" | sort | uniq -c'
 # Expected output should include: phase=critical_verify, phase=key_questions
 # (in addition to phase=intake and phase=address_confirmed which already worked)
@@ -119,7 +119,7 @@ dispatcher question/instruction.
 This is the integrator's go-to single-command repro:
 
 ```bash
-ssh prism-mla-b300-h4h5 'cd /opt/prism42/agents/livekit && \
+ssh b300-pod 'cd /opt/prism42/agents/livekit && \
     .venv/bin/python synthetic_caller.py \
     --transcript "twelve riverside drive my friend stopped breathing yes on the floor flat on their back" \
     --turns 3 \
@@ -128,7 +128,7 @@ ssh prism-mla-b300-h4h5 'cd /opt/prism42/agents/livekit && \
 
 Then:
 ```bash
-ssh prism-mla-b300-h4h5 'awk "
+ssh b300-pod 'awk "
     /fsm.transition/ { fsm++ }
     /fishspeech.t0/ { tts++ }
     /using preemptive generation/ { preempt++ }
@@ -168,14 +168,14 @@ If we need to revert Fix #1 fast:
 
 ```bash
 # Disable the response gate; cycle-2Q FSM-rewritten-prompt path takes over.
-ssh prism-mla-b300-h4h5 'sudo rm /etc/systemd/system/prism42-worker.service.d/140-cycle2T-response-gate.conf'
-ssh prism-mla-b300-h4h5 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
+ssh b300-pod 'sudo rm /etc/systemd/system/prism42-worker.service.d/140-cycle2T-response-gate.conf'
+ssh b300-pod 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
 
 # Verify fallback:
-ssh prism-mla-b300-h4h5 'sudo systemctl show prism42-worker -p Environment | grep RESPONSE_GATE || echo "FLAG REMOVED"'
+ssh b300-pod 'sudo systemctl show prism42-worker -p Environment | grep RESPONSE_GATE || echo "FLAG REMOVED"'
 # Expected: FLAG REMOVED
 
-ssh prism-mla-b300-h4h5 'tail -n 100 /tmp/prism42-logs/worker.log | \
+ssh b300-pod 'tail -n 100 /tmp/prism42-logs/worker.log | \
     grep -c "orchestrator.gate_template_ms"'
 # Expected: 0 (gate path skipped)
 ```
@@ -183,8 +183,8 @@ ssh prism-mla-b300-h4h5 'tail -n 100 /tmp/prism42-logs/worker.log | \
 If we need to revert H2 fix only:
 ```bash
 # Set the env back to suppress only INTAKE phases (the cycle-2I baseline):
-ssh prism-mla-b300-h4h5 'sudo sed -i "s/PRISM42_FILLER_INTAKE_DISABLE=1/PRISM42_FILLER_INTAKE_DISABLE=0/" /etc/systemd/system/prism42-worker.service.d/130-cycle2I-barge-in.conf'
-ssh prism-mla-b300-h4h5 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
+ssh b300-pod 'sudo sed -i "s/PRISM42_FILLER_INTAKE_DISABLE=1/PRISM42_FILLER_INTAKE_DISABLE=0/" /etc/systemd/system/prism42-worker.service.d/130-cycle2I-barge-in.conf'
+ssh b300-pod 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
 # Filler returns to all phases (the pre-cycle-2I behavior).
 ```
 

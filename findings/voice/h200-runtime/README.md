@@ -1,4 +1,4 @@
-# prism42-h200 runtime — health snapshots
+# h200-worker runtime — health snapshots
 
 Periodic JSON snapshots of the H200 voice-agent pod state, written from
 the deploying session and committed to main so out-of-band observers
@@ -27,9 +27,9 @@ to read without SSH access to the pod.
 - **LLM:** Nemotron-Nano-30B-A3B BF16 on local vLLM (Hopper SM 9.0, 186 ms / 50 tok measured Team A)
 - **TTS:** Magpie-Multilingual.EN-US.Leo via NVCF
 - **Orchestration:** LiveKit Agents 1.5.6 + `livekit-plugins-nvidia`
-- **Public URL:** `https://prism42-h200-demo.vercel.app/`
+- **Public URL:** `https://<h200-demo>.vercel.app/`
 - **LK Cloud project:** `wss://ai-therapy-v3svfd9o.livekit.cloud`
-- **Worker agent_name:** `prism42-h200`
+- **Worker agent_name:** `h200-worker`
 
 The architecture brief at
 [`../../research/2026-04-27-future-stack/nvidia-voice-stack-architecture.md`](../../research/2026-04-27-future-stack/nvidia-voice-stack-architecture.md)
