@@ -18,20 +18,20 @@ For ANY individual fix, the workflow is identical (substitute the SHA):
 
 ```
 # 1. Revert in the local repo (creates a new commit; does NOT rewrite history)
-cd /Users/kiteboard/prism42
+cd ~/prism42
 git revert <SHA>
 
 # 2. scp the affected file(s) back to the pod
-scp /Users/kiteboard/prism42/agents/livekit/<file>.py prism-mla-b300-h4h5:/tmp/
+scp ~/prism42/agents/livekit/<file>.py b300-pod:/tmp/
 
 # 3. Install on the pod
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/<file>.py /opt/prism42/agents/livekit/<file>.py'
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/<file>.py /opt/prism42/agents/livekit/<file>.py'
 
 # 4. Restart worker
-ssh prism-mla-b300-h4h5 'sudo systemctl restart prism42-worker && sleep 5 && systemctl is-active prism42-worker'
+ssh b300-pod 'sudo systemctl restart prism42-worker && sleep 5 && systemctl is-active prism42-worker'
 
 # 5. Confirm worker re-registered
-ssh prism-mla-b300-h4h5 'tail -20 /tmp/prism42-logs/worker.log | grep "registered worker" | tail -1'
+ssh b300-pod 'tail -20 /tmp/prism42-logs/worker.log | grep "registered worker" | tail -1'
 ```
 
 ## Per-fix rollback recipes
@@ -40,9 +40,9 @@ ssh prism-mla-b300-h4h5 'tail -20 /tmp/prism42-logs/worker.log | grep "registere
 
 ```
 git revert fce8115
-scp /Users/kiteboard/prism42/agents/livekit/orchestrator.py prism-mla-b300-h4h5:/tmp/
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/orchestrator.py /opt/prism42/agents/livekit/orchestrator.py'
-ssh prism-mla-b300-h4h5 'sudo systemctl restart prism42-worker'
+scp ~/prism42/agents/livekit/orchestrator.py b300-pod:/tmp/
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/orchestrator.py /opt/prism42/agents/livekit/orchestrator.py'
+ssh b300-pod 'sudo systemctl restart prism42-worker'
 ```
 
 Effect: the dead-code `raise StopResponse()` returns; double-utterance bug returns. Use only if the StopResponse cancel breaks the LLM-fallthrough path.
@@ -51,9 +51,9 @@ Effect: the dead-code `raise StopResponse()` returns; double-utterance bug retur
 
 ```
 git revert b7eb08c
-scp /Users/kiteboard/prism42/agents/livekit/worker.py prism-mla-b300-h4h5:/tmp/
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/worker.py /opt/prism42/agents/livekit/worker.py'
-ssh prism-mla-b300-h4h5 'sudo systemctl restart prism42-worker'
+scp ~/prism42/agents/livekit/worker.py b300-pod:/tmp/
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/worker.py /opt/prism42/agents/livekit/worker.py'
+ssh b300-pod 'sudo systemctl restart prism42-worker'
 ```
 
 Effect: filler `"I'm with you."` returns to firing in CRITICAL_VERIFY and KEY_QUESTIONS phases.
@@ -62,9 +62,9 @@ Effect: filler `"I'm with you."` returns to firing in CRITICAL_VERIFY and KEY_QU
 
 ```
 git revert d232b44
-scp /Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py prism-mla-b300-h4h5:/tmp/
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/dispatcher_fsm.py /opt/prism42/agents/livekit/dispatcher_fsm.py'
-ssh prism-mla-b300-h4h5 'sudo systemctl restart prism42-worker'
+scp ~/prism42/agents/livekit/dispatcher_fsm.py b300-pod:/tmp/
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/dispatcher_fsm.py /opt/prism42/agents/livekit/dispatcher_fsm.py'
+ssh b300-pod 'sudo systemctl restart prism42-worker'
 ```
 
 Effect: cardiac short-circuit reverts to wide-net behavior; first-person "I can't breathe" mis-routes to CRITICAL_VERIFY again.
@@ -75,9 +75,9 @@ Note: dispatcher_fsm.py contains 3 fixes (A1 + A3 + C3). When reverting one, the
 
 ```
 git revert 8710f6b
-scp /Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py prism-mla-b300-h4h5:/tmp/
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/dispatcher_fsm.py /opt/prism42/agents/livekit/dispatcher_fsm.py'
-ssh prism-mla-b300-h4h5 'sudo systemctl restart prism42-worker'
+scp ~/prism42/agents/livekit/dispatcher_fsm.py b300-pod:/tmp/
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/dispatcher_fsm.py /opt/prism42/agents/livekit/dispatcher_fsm.py'
+ssh b300-pod 'sudo systemctl restart prism42-worker'
 ```
 
 Effect: `_intent_in_verify` no longer routes direct questions; "Should I move him?" mid-verify gets re-asked the verify question.
@@ -86,9 +86,9 @@ Effect: `_intent_in_verify` no longer routes direct questions; "Should I move hi
 
 ```
 git revert f670979
-scp /Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py prism-mla-b300-h4h5:/tmp/
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/dispatcher_fsm.py /opt/prism42/agents/livekit/dispatcher_fsm.py'
-ssh prism-mla-b300-h4h5 'sudo systemctl restart prism42-worker'
+scp ~/prism42/agents/livekit/dispatcher_fsm.py b300-pod:/tmp/
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/dispatcher_fsm.py /opt/prism42/agents/livekit/dispatcher_fsm.py'
+ssh b300-pod 'sudo systemctl restart prism42-worker'
 ```
 
 Effect: "one hundred ocean avenue" no longer latches address on turn 1; STT output must contain a literal digit.
@@ -97,13 +97,13 @@ Effect: "one hundred ocean avenue" no longer latches address on turn 1; STT outp
 
 ```
 git revert f670979 8710f6b d232b44 b7eb08c fce8115
-scp /Users/kiteboard/prism42/agents/livekit/orchestrator.py    prism-mla-b300-h4h5:/tmp/
-scp /Users/kiteboard/prism42/agents/livekit/worker.py          prism-mla-b300-h4h5:/tmp/
-scp /Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py  prism-mla-b300-h4h5:/tmp/
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/orchestrator.py    /opt/prism42/agents/livekit/orchestrator.py'
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/worker.py          /opt/prism42/agents/livekit/worker.py'
-ssh prism-mla-b300-h4h5 'sudo install -o shadeform -g shadeform -m 644 /tmp/dispatcher_fsm.py  /opt/prism42/agents/livekit/dispatcher_fsm.py'
-ssh prism-mla-b300-h4h5 'sudo systemctl restart prism42-worker && sleep 5 && systemctl is-active prism42-worker'
+scp ~/prism42/agents/livekit/orchestrator.py    b300-pod:/tmp/
+scp ~/prism42/agents/livekit/worker.py          b300-pod:/tmp/
+scp ~/prism42/agents/livekit/dispatcher_fsm.py  b300-pod:/tmp/
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/orchestrator.py    /opt/prism42/agents/livekit/orchestrator.py'
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/worker.py          /opt/prism42/agents/livekit/worker.py'
+ssh b300-pod 'sudo install -o shadeform -g shadeform -m 644 /tmp/dispatcher_fsm.py  /opt/prism42/agents/livekit/dispatcher_fsm.py'
+ssh b300-pod 'sudo systemctl restart prism42-worker && sleep 5 && systemctl is-active prism42-worker'
 ```
 
 Returns the agent to its pre-cycle-2M2 state (cycle-2L deploy with the dead-code StopResponse).

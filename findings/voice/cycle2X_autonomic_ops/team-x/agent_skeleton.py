@@ -74,7 +74,7 @@ AGENT_ID_FILE = HERE / ".agent_id"
 # ─────────────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """\
 You are the prism42 autonomic-ops coordinator agent. You wrap the prism42
-voice stack on the Brev B300 pod (prism-mla-b300-h4h5). You DO NOT sit on
+voice stack on the Brev B300 pod (b300-pod). You DO NOT sit on
 the voice critical path. You are a sidecar.
 
 Your loop, per heartbeat tick (default 30 s):
@@ -308,7 +308,7 @@ def _custom_tool_descriptions() -> dict[str, str]:
     """
     return {
         "pod_smi": (
-            "Query nvidia-smi over SSH on the prism-mla-b300-h4h5 pod. Returns "
+            "Query nvidia-smi over SSH on the b300-pod pod. Returns "
             "parsed JSON of GPU memory, utilization, temperature, and power. "
             "Read-only; never mutates pod state. Call this tool BEFORE every "
             "heartbeat tick, AND immediately before/after any gated action so "
@@ -471,7 +471,7 @@ def create_agent(payload: dict[str, Any]) -> str:
     if not os.environ.get("ANTHROPIC_API_KEY"):
         raise SystemExit(
             "ANTHROPIC_API_KEY missing. Source the canonical "
-            "/Users/kiteboard/lostbench/.env per memory note "
+            "~/lostbench/.env per memory note "
             "api_keys_canonical_env.md."
         )
 

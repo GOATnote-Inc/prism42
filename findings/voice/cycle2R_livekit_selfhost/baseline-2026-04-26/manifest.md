@@ -17,7 +17,7 @@ The behavior, not the files. The script is idempotent and restores:
 
 ## Baseline state captured
 
-**Pod**: `prism-mla-b300-h4h5` / public IPv4 `31.22.104.100`
+**Pod**: `b300-pod` / public IPv4 `31.22.104.100`
 
 **Service states at capture**:
 - `prism42-worker.service` = `active`
@@ -65,7 +65,7 @@ The behavior, not the files. The script is idempotent and restores:
 ## Restore procedure
 
 ```bash
-cd /Users/kiteboard/prism42/findings/voice/cycle2R_livekit_selfhost/baseline-2026-04-26
+cd ~/prism42/findings/voice/cycle2R_livekit_selfhost/baseline-2026-04-26
 ./restore.sh                # full restore
 ./restore.sh --pod-only     # restore only pod state
 ./restore.sh --vercel-only  # restore only Vercel env

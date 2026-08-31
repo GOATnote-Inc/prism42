@@ -21,7 +21,7 @@ WORKER_ENV="/opt/prism42/agents/livekit/.env"
 #   say -v Samantha -o /tmp/psap_ref.aiff \
 #     "Nine one one, what is the address of your emergency. Stay on the line with me, help is on the way. Are you able to speak in full sentences right now. Help is coming."
 #   ffmpeg -y -i /tmp/psap_ref.aiff -ar 44100 -ac 1 -sample_fmt s16 /tmp/psap_ref.wav
-#   scp /tmp/psap_ref.wav prism-mla-b300-h4h5:/tmp/psap_ref.wav
+#   scp /tmp/psap_ref.wav b300-pod:/tmp/psap_ref.wav
 
 # Step 2 — on the pod, install into Fish's references/ dir.
 sudo mkdir -p "$REF_ROOT"

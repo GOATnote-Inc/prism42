@@ -1,14 +1,14 @@
 # Cycle-2M2 Team M2 — verification
 
 **Date:** 2026-04-26
-**Pod:** prism-mla-b300-h4h5
+**Pod:** b300-pod
 **Method:** 3 probes per Phase 3 of the M2 spec; supplemental classify/transition checks for full FSM-fix coverage
 
 ## Probe 1 — synthetic_caller PASS_2R baseline
 
 Command:
 ```
-ssh prism-mla-b300-h4h5 'cd /opt/prism42/agents/livekit && timeout 60 .venv/bin/python synthetic_caller.py 2>&1 | tail -25'
+ssh b300-pod 'cd /opt/prism42/agents/livekit && timeout 60 .venv/bin/python synthetic_caller.py 2>&1 | tail -25'
 ```
 
 Result (last frame and verdict):
@@ -63,7 +63,7 @@ greeting.911.dispatched: 1
 ## Probe 3 — P-fix C3 verification (spelled-cardinal normalizer on pod)
 
 ```
-ssh prism-mla-b300-h4h5 'cd /opt/prism42/agents/livekit && .venv/bin/python -c "
+ssh b300-pod 'cd /opt/prism42/agents/livekit && .venv/bin/python -c "
 from dispatcher_fsm import _normalize_spelled_cardinals as n, classify
 print(\"normalize:\")
 print(repr(n(\"one hundred ocean avenue\")))
@@ -126,10 +126,10 @@ A3 routes all three direct-question patterns correctly when in CRITICAL_VERIFY.
 ## Worker stability post-restart
 
 ```
-ssh prism-mla-b300-h4h5 'systemctl is-active prism42-worker'
+ssh b300-pod 'systemctl is-active prism42-worker'
 -> active
 
-ssh prism-mla-b300-h4h5 'tail -200 /tmp/prism42-logs/worker.log | grep -E "ERROR|CRITICAL|Traceback"'
+ssh b300-pod 'tail -200 /tmp/prism42-logs/worker.log | grep -E "ERROR|CRITICAL|Traceback"'
 -> (no matches)
 ```
 

@@ -126,14 +126,14 @@ Pick one and write it into `decision.txt`:
 ## Deploy command (after picking a winner)
 
 ```bash
-ssh prism-mla-b300-h4h5
+ssh b300-pod
 sudo tee /etc/systemd/system/prism42-worker.service.d/70-cycle2k-pacetag.conf <<'EOF'
 [Service]
 Environment=PRISM42_FISH_PACE_TAG=[urgent dispatcher pace]
 EOF
 sudo systemctl daemon-reload && sudo systemctl restart prism42-worker
 # verify watchdog:
-bash /Users/kiteboard/prism42/findings/b300_bench/cycle2_guard/2026-04-25T13-56-50Z/health_check.sh
+bash ~/prism42/findings/b300_bench/cycle2_guard/2026-04-25T13-56-50Z/health_check.sh
 # (ignore vllm.pid stale fail — HTTP probes are the truth)
 ```
 

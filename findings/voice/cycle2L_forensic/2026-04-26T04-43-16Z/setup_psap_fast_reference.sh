@@ -5,7 +5,7 @@
 # /opt/prism42/infra/b300/services/fish-speech/references/psap-fast/.
 #
 # Usage: bash setup_psap_fast_reference.sh
-# Requires: macOS (for `say` + `afconvert`), ssh alias prism-mla-b300-h4h5.
+# Requires: macOS (for `say` + `afconvert`), ssh alias b300-pod.
 
 set -euo pipefail
 
@@ -23,8 +23,8 @@ afconvert -d LEI16@44100 -c 1 -f WAVE "$WORK_AIFF" "$WORK_WAV"
 file "$WORK_WAV"
 
 # Install on pod (idempotent — overwrites prior file).
-scp "$WORK_WAV" prism-mla-b300-h4h5:/tmp/psap-fast-staging.wav
-ssh prism-mla-b300-h4h5 '
+scp "$WORK_WAV" b300-pod:/tmp/psap-fast-staging.wav
+ssh b300-pod '
   sudo mkdir -p /opt/prism42/infra/b300/services/fish-speech/references/psap-fast
   sudo mv /tmp/psap-fast-staging.wav /opt/prism42/infra/b300/services/fish-speech/references/psap-fast/ref.wav
   sudo cp -n /opt/prism42/infra/b300/services/fish-speech/references/psap/ref.lab /opt/prism42/infra/b300/services/fish-speech/references/psap-fast/ref.lab

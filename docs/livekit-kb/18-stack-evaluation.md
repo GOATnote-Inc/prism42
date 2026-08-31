@@ -169,7 +169,7 @@ product.
 - **Submission narrative skeleton**: `docs/livekit-kb/19-glasswing-aligned-submission.md` — what the demo shows + writeup template.
 - **Subagent role files**: `.claude/agents/*.md` — 8 files.
 - **Lever registry update**: `docs/livekit-kb/16a-lever-registry.yaml` — adds Mythos-aligned artifacts as levers 14-21.
-- **Memory pointer**: `~/.claude/projects/-Users-kiteboard/memory/project_goatnote_911_console.md` — append the Glasswing reframe.
+- **Memory pointer**: `<owner-memory>/project_goatnote_911_console.md` — append the Glasswing reframe.
 
 ## Sources
 

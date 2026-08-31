@@ -10,13 +10,13 @@ Everything below is the "what do I read when that script says FAIL" layer.
 From the laptop:
 
 ```
-brev exec prism-mla-b300-h4h5 'bash /opt/prism42/scripts/b300_runbook.sh'
+brev exec b300-pod 'bash /opt/prism42/scripts/b300_runbook.sh'
 ```
 
 Add `--heal` to attempt auto-recovery on any failing service:
 
 ```
-brev exec prism-mla-b300-h4h5 'bash /opt/prism42/scripts/b300_runbook.sh --heal'
+brev exec b300-pod 'bash /opt/prism42/scripts/b300_runbook.sh --heal'
 ```
 
 Exit 0 means the full voice path (Parakeet → Redis → worker → Fish) round-trips
@@ -27,7 +27,7 @@ script tells you which.
 
 | Symptom | Fix |
 | --- | --- |
-| Fish TTS returns 500 with `nvrtc: NVRTC_ERROR` | `brev exec prism-mla-b300-h4h5 'pkill -9 -f services/fish-speech; systemctl restart prism42-fish 2>/dev/null \|\| true'` — Fish's SGLang backend needs a fresh CUDA context after a long idle. |
+| Fish TTS returns 500 with `nvrtc: NVRTC_ERROR` | `brev exec b300-pod 'pkill -9 -f services/fish-speech; systemctl restart prism42-fish 2>/dev/null \|\| true'` — Fish's SGLang backend needs a fresh CUDA context after a long idle. |
 | Worker disappears when SSH session ends | Means it was launched ad-hoc, not via systemd. Run `systemctl restart prism42-worker` on the pod. The starter unit is at `agents/livekit/prism42-worker.service` — `systemctl enable --now prism42-worker`. |
 | Browser connects but agent never speaks | Check `/tmp/prism42-logs/worker.log` for `registered worker` AND the LiveKit URL. If URL mismatches the token-mint URL, the worker is registered against the wrong LiveKit cluster. |
 | Vercel alias `prism42-console.vercel.app` serves an old build | Git-based auto-deploy is wired (see Part 1 of the durability task) but Root Directory must be `mvp/911-console-live/` in the Vercel dashboard or the build fails silently. If the alias is stale, `vercel --prod` from `mvp/911-console-live/` as a recovery path. |

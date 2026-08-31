@@ -2,7 +2,7 @@
 
 Researched 2026-04-25 from publicly indexed NVIDIA docs, NVIDIA AI Blueprints, NVIDIA developer blog, Pipecat reference repos, Daily.co engineering blog, and the NVIDIA NIM Speech support matrix. Stack we are stuck on: Fish Speech S2-Pro standalone HTTP service on B300 (sm_103, Blackwell Ultra), co-resident with vLLM 0.20 + Nemotron-3-Nano NVFP4 + Parakeet TDT v3, measured TTS TTFB p95=2627ms / RTF=2.07. SOTA bar is <300ms TTFB.
 
-Independent of prior expert-wiring research at `/Users/kiteboard/prism42/findings/b300_bench/nvidia-research/expert-wiring.md` which covered Nemotron LLM tuning. This file is orthogonal — TTS, STT, and same-GPU multi-model co-residency.
+Independent of prior expert-wiring research at `~/prism42/findings/b300_bench/nvidia-research/expert-wiring.md` which covered Nemotron LLM tuning. This file is orthogonal — TTS, STT, and same-GPU multi-model co-residency.
 
 ## Bottom line (must answer)
 

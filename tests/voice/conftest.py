@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-POD = os.environ.get("PRISM42_POD_HOST", "prism-mla-b300-h4h5")
+POD = os.environ.get("PRISM42_POD_HOST", "b300-pod")
 BENCH_REMOTE_DIR = "/opt/prism42/agents/livekit"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

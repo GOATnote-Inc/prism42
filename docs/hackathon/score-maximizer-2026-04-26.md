@@ -4,21 +4,21 @@ date: 2026-04-26
 audience: Brandon Dent (operator), Anthropic hackathon judges (downstream)
 status: drafted T-minus-hours-to-deadline; act on the digest at the bottom first
 sources:
-  - /Users/kiteboard/prism42/README.md
-  - /Users/kiteboard/prism42/docs/pipeline-narrative.md
-  - /Users/kiteboard/prism42/docs/dispatch-protocol-v0.1.md
-  - /Users/kiteboard/prism42/docs/positioning-2026-04-22.md
-  - /Users/kiteboard/prism42/docs/dual-target-thesis.md
-  - /Users/kiteboard/prism42/docs/livekit-architecture.md
-  - /Users/kiteboard/prism42/docs/sota-portfolio.md
-  - /Users/kiteboard/prism42/docs/opus47-baseline-card.md
-  - /Users/kiteboard/prism42/docs/seed-stability-2026-04-22.md
-  - /Users/kiteboard/prism42/docs/anthropic-elevenlabs-agent-bp-2026-04-21.md
-  - /Users/kiteboard/prism42/findings/voice/cycle2R_livekit_selfhost/synthetic-caller-demo-2026-04-26.md
-  - /Users/kiteboard/prism42/findings/voice/cycle2R_livekit_selfhost/cutover-2026-04-26.md
-  - /Users/kiteboard/prism42/findings/smoke-session-2026-04-22.md
-  - /Users/kiteboard/prism42/agents/manifest.yaml
-  - /Users/kiteboard/prism42/skills/manifest.yaml
+  - ~/prism42/README.md
+  - ~/prism42/docs/pipeline-narrative.md
+  - ~/prism42/docs/dispatch-protocol-v0.1.md
+  - ~/prism42/docs/positioning-2026-04-22.md
+  - ~/prism42/docs/dual-target-thesis.md
+  - ~/prism42/docs/livekit-architecture.md
+  - ~/prism42/docs/sota-portfolio.md
+  - ~/prism42/docs/opus47-baseline-card.md
+  - ~/prism42/docs/seed-stability-2026-04-22.md
+  - ~/prism42/docs/anthropic-elevenlabs-agent-bp-2026-04-21.md
+  - ~/prism42/findings/voice/cycle2R_livekit_selfhost/synthetic-caller-demo-2026-04-26.md
+  - ~/prism42/findings/voice/cycle2R_livekit_selfhost/cutover-2026-04-26.md
+  - ~/prism42/findings/smoke-session-2026-04-22.md
+  - ~/prism42/agents/manifest.yaml
+  - ~/prism42/skills/manifest.yaml
 ---
 
 # Prism42 — Hackathon Score Maximizer
@@ -31,13 +31,13 @@ sources:
 this repo falls inside the Apr 21–26 window.** No code in the repo
 was written outside the window. This satisfies the hackathon "built
 entirely within the window" rule cleanly. Personal `~/.claude/`
-config and prior-art `prism2` history are out of scope by rule and
+config and prior-art private-predecessor history are out of scope by rule and
 are not part of this repo.
 
 **Honest caveat about provenance.** The five-role agent-yaml
 contracts (`agents/prism-{coordinator,defender,attacker,synthesizer,
 executor,adjudicator}.yaml`), the GEDP v0.1 dispatch protocol, and
-the HealthBench-Hard runner all originated in `prism2` (private)
+the HealthBench-Hard runner all originated in the private predecessor repo
 work earlier in April. They were copied into the public `prism42`
 repo on Apr 23 in `f807903 Initial release`. The repo's git history
 only sees them committed inside the window — but the *design* of

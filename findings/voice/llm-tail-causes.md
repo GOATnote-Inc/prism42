@@ -1,6 +1,6 @@
 # LLM first-token tail forensics — 2026-04-25 Team E run
 
-Forensic source: `/Users/kiteboard/prism42/findings/b300_bench/e2e_voice/20260425T113808Z/`
+Forensic source: `~/prism42/findings/b300_bench/e2e_voice/20260425T113808Z/`
 Test window: `2026-04-25T11:40:00Z .. 2026-04-25T11:50:00Z` (10 turns)
 
 ## Bottom line

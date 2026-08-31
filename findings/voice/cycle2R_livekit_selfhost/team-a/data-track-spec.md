@@ -1,7 +1,7 @@
 # Cycle-2R Team A — LiveKit data-track JSON spec for the dispatcher UI
 
 **Author:** Team A (cycle-2R, 2026-04-26)
-**Code skeleton:** `/Users/kiteboard/prism42/agents/livekit/dispatch_publisher.py`
+**Code skeleton:** `~/prism42/agents/livekit/dispatch_publisher.py`
 
 ## Goal
 

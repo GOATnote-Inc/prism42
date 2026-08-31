@@ -16,7 +16,7 @@ the perf-driver and is user-led.
 
 Usage
 -----
-    cd /Users/kiteboard/prism42
+    cd ~/prism42
     python scripts/build_seed_kg.py                    # default → data/seed_kg/graph.gpickle
     python scripts/build_seed_kg.py --output /tmp/seed.gpickle
     python scripts/build_seed_kg.py --validate         # build + run sanity queries; non-zero exit on failure

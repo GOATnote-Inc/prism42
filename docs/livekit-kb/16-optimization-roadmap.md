@@ -47,7 +47,7 @@ claims "up to 85% TTFT reduction on hits." One-liner:
 ```python
 AnthropicLLM(model="claude-sonnet-4-6", caching="ephemeral")
 ```
-Edit `/Users/kiteboard/prism42/agents/livekit/worker.py:242`.
+Edit `~/prism42/agents/livekit/worker.py:242`.
 
 ### 4. Confirm the Sonnet-4.6 pin actually holds
 KB 14 §1 flags a bench-vs-repo mismatch: `worker.py:242` says
@@ -56,7 +56,7 @@ KB 14 §1 flags a bench-vs-repo mismatch: `worker.py:242` says
 matches our 8.5 s p50 / 15.4 s p99 too cleanly to ignore. SSH the pod,
 read the actually-loaded config:
 ```bash
-ssh prism-mla-b300-h4h5 'grep -n "claude-" /opt/prism42/agents/livekit/worker.py'
+ssh b300-pod 'grep -n "claude-" /opt/prism42/agents/livekit/worker.py'
 ```
 If it's Opus 4.7, changing the literal to `claude-sonnet-4-6` is an
 immediate 5× LLM-hop improvement.

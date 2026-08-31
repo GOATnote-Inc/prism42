@@ -30,11 +30,11 @@ on a self-hosted Fish-Speech server resolves to: **on-disk lookup,
 no cloud delegation**. Specifically:
 
 - `TTSInferenceEngine.inference()` at
-  `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/inference_engine/__init__.py:48-52`
+  `~/prism42/vendor/fish-speech/fish_speech/inference_engine/__init__.py:48-52`
   branches on `req.reference_id` and calls
   `self.load_by_id(ref_id, req.use_memory_cache)`.
 - `ReferenceLoader.load_by_id()` at
-  `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/inference_engine/reference_loader.py:62-97`
+  `~/prism42/vendor/fish-speech/fish_speech/inference_engine/reference_loader.py:62-97`
   builds `ref_folder = Path("references") / id`, calls
   `ref_folder.mkdir(parents=True, exist_ok=True)` (note: silently
   creates an empty dir if absent), and lists audio files via
@@ -44,12 +44,12 @@ no cloud delegation**. Specifically:
   proceeds with NO conditioning — silently falling back to the
   base model's distribution.
 - ID validation regex at
-  `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/inference_engine/reference_loader.py:20`:
+  `~/prism42/vendor/fish-speech/fish_speech/inference_engine/reference_loader.py:20`:
   `^[a-zA-Z0-9\-_ ]+$`, max 255 chars. A Fish-cloud 32-char hex
   slug passes the regex (alphanumeric only) but the on-disk dir
   doesn't exist — silent no-op + silent `mkdir` of an empty dir.
 - The schema-comment hint at
-  `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/utils/schema.py:91-93`:
+  `~/prism42/vendor/fish-speech/fish_speech/utils/schema.py:91-93`:
   `# For example, if you want use https://fish.audio/m/7f92f8afb8ec43bf81429cc1c9199cb1/` /
   `# Just pass 7f92f8afb8ec43bf81429cc1c9199cb1` is misleading
   for self-hosted users. It only works against `api.fish.audio`
@@ -68,7 +68,7 @@ folder ships empty.
 
 ### What's actually on the pod's `references/` dir today
 
-Inferred from `/Users/kiteboard/prism42/infra/b300/services/fish-speech/setup_psap_reference.sh`
+Inferred from `~/prism42/infra/b300/services/fish-speech/setup_psap_reference.sh`
 (verified-by-source):
 
 | preset_id | voice character | cadence | license | source | hosted at |
@@ -84,7 +84,7 @@ on-disk state.
 
 ### What ships in the `vendor/fish-speech/` tree
 
-Verified by `find /Users/kiteboard/prism42/vendor/fish-speech -name "*.lab"`
+Verified by `find ~/prism42/vendor/fish-speech -name "*.lab"`
 and `find … -type d -name "references"`: **zero results**. The
 upstream repo ships **no sample voices, no preset voices, no demo
 voices**.
@@ -136,7 +136,7 @@ problem is **not** the reference voice. K1's audit is investigating
 the speed-knob symptom (`temperature 0.1`, `top_p 0.7`,
 `chunk_length 200`, `seed 911`, frame_buffer 200 ms). Per the
 current adapter at
-`/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py:60-73`,
+`~/prism42/agents/livekit/fish_speech_tts.py:60-73`,
 all four sampling/streaming knobs are at the schema floor —
 voice-cloning input timbre cannot rescue tokenizer-level pacing if
 those knobs aren't right. A voice swap would just exchange one
@@ -154,7 +154,7 @@ narrator" cadence). If we re-record at conversational dispatcher
 speed (e.g. `say -v Samantha -r 230` for 230 wpm vs `say`'s ~175
 wpm default), the cloned voice should inherit that cadence.
 Verified-by-source: K1's research probe (referenced in the durable
-findings memo at `~/.claude/projects/-Users-kiteboard/memory/prism42_b300_voice_durable_findings.md`,
+findings memo at `<owner-memory>/prism42_b300_voice_durable_findings.md`,
 finding #1) confirms determinism with `seed=911`, so the influence
 of reference-clip cadence is testable in isolation.
 
@@ -164,8 +164,8 @@ How to enable (for K3 / integrator):
 say -v Samantha -r 230 -o /tmp/psap_fast.aiff \
   "Nine one one, what is the address of your emergency. Stay on the line with me, help is on the way. Are you able to speak in full sentences right now. Help is coming."
 ffmpeg -y -i /tmp/psap_fast.aiff -ar 44100 -ac 1 -sample_fmt s16 /tmp/psap_fast.wav
-scp /tmp/psap_fast.wav prism-mla-b300-h4h5:/tmp/psap_fast.wav
-ssh prism-mla-b300-h4h5 'sudo mkdir -p /opt/prism42/infra/b300/services/fish-speech/references/psap-fast && \
+scp /tmp/psap_fast.wav b300-pod:/tmp/psap_fast.wav
+ssh b300-pod 'sudo mkdir -p /opt/prism42/infra/b300/services/fish-speech/references/psap-fast && \
   sudo cp /tmp/psap_fast.wav /opt/prism42/infra/b300/services/fish-speech/references/psap-fast/ref.wav && \
   echo "Nine one one, what is the address of your emergency. Stay on the line with me, help is on the way. Are you able to speak in full sentences right now. Help is coming." | \
     sudo tee /opt/prism42/infra/b300/services/fish-speech/references/psap-fast/ref.lab >/dev/null'
@@ -251,7 +251,7 @@ for most phrases." That symptom signature is consistent with the
 sampling stack at the schema floor (current adapter:
 `temperature=0.1`, `top_p=0.7`, `repetition_penalty=1.1`,
 `chunk_length=200`, `seed=911`,
-`/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py:60-73`)
+`~/prism42/agents/livekit/fish_speech_tts.py:60-73`)
 producing low-entropy decoding that gravitates to the audiobook
 prior in Fish's training distribution. Adding a different reference
 voice exchanges one audiobook-prior voice for another; the prior
@@ -269,7 +269,7 @@ zero technical benefit on this symptom.
 
 ## Sources
 
-[1]: `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/inference_engine/reference_loader.py` lines 20-97 (regex + load_by_id) — verified-by-source 2026-04-26.
+[1]: `~/prism42/vendor/fish-speech/fish_speech/inference_engine/reference_loader.py` lines 20-97 (regex + load_by_id) — verified-by-source 2026-04-26.
 [2]: `https://docs.fish.audio/developer-guide/self-hosting/running-inference` — claimed-by-website, retrieval 2026-04-25.
 [3]: `https://fish.audio/plan/` — claimed-by-website, retrieval 2026-04-26.
 [4]: `https://fish.audio/m/c2623f0c075b4492ac367989aee1576f/` (Paula) — claimed-by-website, retrieval 2026-04-26.
@@ -278,14 +278,14 @@ zero technical benefit on this symptom.
 
 Additional verified-by-source citations:
 
-- `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/inference_engine/__init__.py:48-57` — reference precedence (id wins over inline; silent drop of inline when both set). Retrieval 2026-04-26.
-- `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/utils/schema.py:60-103` — `ServeReferenceAudio` and `ServeTTSRequest` Pydantic schemas, including the misleading `reference_id` cloud-URL comment. Retrieval 2026-04-26.
-- `/Users/kiteboard/prism42/vendor/fish-speech/tools/server/views.py:208-211` — `/v1/references/{add,list,delete,update}` admin routes (proves on-disk-only model). Retrieval 2026-04-26.
-- `/Users/kiteboard/prism42/vendor/fish-speech/docs/en/server.md:54-62` — upstream documentation that `--reference_id` selects "a saved reference voice" (i.e. server-side preset on disk). Retrieval 2026-04-26.
-- `/Users/kiteboard/prism42/vendor/fish-speech/README.md:46` — Fish Audio Research License (FARL) on weights and code. Retrieval 2026-04-26.
-- `/Users/kiteboard/prism42/infra/b300/services/fish-speech/setup_psap_reference.sh:15-51` — defines the only preset currently installed on the pod (`psap`, macOS `say -v Samantha`). Retrieval 2026-04-26.
-- `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py:28-29, 37, 60-73, 184-207` — adapter env wiring (`FISH_SPEECH_REFERENCE_ID`), default sampling knobs, body construction. Retrieval 2026-04-26.
-- `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T014938Z/team_j0_static_audit.md` lines 18-100 — prior J0 audit confirming the two reference paths and their semantics. Retrieval 2026-04-26.
-- `~/.claude/projects/-Users-kiteboard/memory/prism42_b300_voice_durable_findings.md` finding #3 — Fish S2-Pro inline `[tag]` prosody-control discovery (alternative to reference-voice swap). Retrieval 2026-04-26.
+- `~/prism42/vendor/fish-speech/fish_speech/inference_engine/__init__.py:48-57` — reference precedence (id wins over inline; silent drop of inline when both set). Retrieval 2026-04-26.
+- `~/prism42/vendor/fish-speech/fish_speech/utils/schema.py:60-103` — `ServeReferenceAudio` and `ServeTTSRequest` Pydantic schemas, including the misleading `reference_id` cloud-URL comment. Retrieval 2026-04-26.
+- `~/prism42/vendor/fish-speech/tools/server/views.py:208-211` — `/v1/references/{add,list,delete,update}` admin routes (proves on-disk-only model). Retrieval 2026-04-26.
+- `~/prism42/vendor/fish-speech/docs/en/server.md:54-62` — upstream documentation that `--reference_id` selects "a saved reference voice" (i.e. server-side preset on disk). Retrieval 2026-04-26.
+- `~/prism42/vendor/fish-speech/README.md:46` — Fish Audio Research License (FARL) on weights and code. Retrieval 2026-04-26.
+- `~/prism42/infra/b300/services/fish-speech/setup_psap_reference.sh:15-51` — defines the only preset currently installed on the pod (`psap`, macOS `say -v Samantha`). Retrieval 2026-04-26.
+- `~/prism42/agents/livekit/fish_speech_tts.py:28-29, 37, 60-73, 184-207` — adapter env wiring (`FISH_SPEECH_REFERENCE_ID`), default sampling knobs, body construction. Retrieval 2026-04-26.
+- `~/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T014938Z/team_j0_static_audit.md` lines 18-100 — prior J0 audit confirming the two reference paths and their semantics. Retrieval 2026-04-26.
+- `<owner-memory>/prism42_b300_voice_durable_findings.md` finding #3 — Fish S2-Pro inline `[tag]` prosody-control discovery (alternative to reference-voice swap). Retrieval 2026-04-26.
 
 Co-Authored-By: Claude Opus 4.7 (do not commit; integrator commits.)

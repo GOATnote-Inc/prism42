@@ -11,7 +11,7 @@
 #   bash scripts/install_launchd.sh uninstall
 #
 # Requires ANTHROPIC_API_KEY in a location launchd can read. We point
-# the plist at /Users/kiteboard/prism/.env (gitignored) and the
+# the plist at ~/prism/.env (gitignored) and the
 # orchestrator sources it — same as interactive runs.
 
 set -euo pipefail

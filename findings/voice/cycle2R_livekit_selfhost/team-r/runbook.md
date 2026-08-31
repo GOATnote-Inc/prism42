@@ -21,16 +21,16 @@ Companion files:
 
 | Fact | Value | Source |
 |---|---|---|
-| Pod hostname | `prism-mla-b300-h4h5` | main agent recon |
+| Pod hostname | `b300-pod` | main agent recon |
 | Pod public IPv4 | `31.22.104.100` (eth0, not NATed) | main agent recon |
 | livekit-server already running | bare-process pid 76823, on tcp/7880, tcp/7881, udp/7882 | main agent recon |
 | Firewall posture | UFW active, default DROP, only 22 + 2222 (SSH) allowed | main agent recon |
 | cloudflared running | pid 11240, Brev's TCP-only tunnel — **not usable for media UDP** | main agent recon |
 | DNS staged earlier | `prism42.thegoatnote.com` → may already resolve to 31.22.104.100; verify in Phase 0 | CLAUDE.md |
-| Domain registrar | GoDaddy; API key sourced from `/Users/kiteboard/lostbench/.env` (DO NOT read directly per hard-rule) | CLAUDE.md |
+| Domain registrar | GoDaddy; API key sourced from `~/lostbench/.env` (DO NOT read directly per hard-rule) | CLAUDE.md |
 | Vercel project | `mvp/911-console-live/` (Next.js), preview at `prism42-console.vercel.app` | repo |
-| Token route | `/Users/kiteboard/prism42/mvp/911-console-live/app/prism42/api/livekit-token/route.ts` (signs JWT, returns `livekit_url` to client) | repo |
-| LiveKit page | `/Users/kiteboard/prism42/mvp/911-console-live/app/prism42/livekit/page.tsx` (uses `<LiveCallRoom>`; URL comes from token-route response, no env read in page itself) | repo |
+| Token route | `~/prism42/mvp/911-console-live/app/prism42/api/livekit-token/route.ts` (signs JWT, returns `livekit_url` to client) | repo |
+| LiveKit page | `~/prism42/mvp/911-console-live/app/prism42/livekit/page.tsx` (uses `<LiveCallRoom>`; URL comes from token-route response, no env read in page itself) | repo |
 | Fallback URL to preserve | `/prism42-v3` (ElevenLabs path) — must keep working post-cutover | task spec |
 
 ---
@@ -73,7 +73,7 @@ GoDaddy Domains API v1 reference: <https://developer.godaddy.com/doc/endpoint/do
 API endpoint shape: `PUT https://api.godaddy.com/v1/domains/{domain}/records/{type}/{name}` — replaces all records of `type` with name `name`. Auth header: `Authorization: sso-key <KEY>:<SECRET>`.
 
 **Prereqs:**
-- `GODADDY_API_KEY` and `GODADDY_API_SECRET` set in environment (the integrator sources these from `/Users/kiteboard/lostbench/.env` per hard-rule — DO NOT read that file directly).
+- `GODADDY_API_KEY` and `GODADDY_API_SECRET` set in environment (the integrator sources these from `~/lostbench/.env` per hard-rule — DO NOT read that file directly).
 
 ```bash
 # GATE_G2 — DNS auth required
@@ -540,7 +540,7 @@ echo "Verify: ss -tunlp | grep 7880 ; ps aux | grep livekit-server"
 
 ### 4.1 Modify the token route
 
-Edit `/Users/kiteboard/prism42/mvp/911-console-live/app/prism42/api/livekit-token/route.ts`:
+Edit `~/prism42/mvp/911-console-live/app/prism42/api/livekit-token/route.ts`:
 
 ```typescript
 // Replace lines 25-35 with:
@@ -582,10 +582,10 @@ The rest of the file (body parse, identity derivation, `AccessToken` constructio
 Vercel CLI ref: <https://vercel.com/docs/cli/env> (fetched 2026-04-26).
 
 ```bash
-# Run from /Users/kiteboard/prism42/mvp/911-console-live
+# Run from ~/prism42/mvp/911-console-live
 # Auth: VERCEL_TOKEN env var must be set (sourced by integrator from
 # the canonical .env). DO NOT commit the token.
-cd /Users/kiteboard/prism42/mvp/911-console-live
+cd ~/prism42/mvp/911-console-live
 
 # Preview env only (NOT production) — production stays cloud through Phase 5.
 vercel env add LIVEKIT_BACKEND preview <<<"selfhost"
@@ -634,7 +634,7 @@ sudo journalctl -u prism42-worker --since="30 sec ago" -n 50 | \
 ### 4.4 Vercel preview deploy (G5)
 
 ```bash
-cd /Users/kiteboard/prism42/mvp/911-console-live
+cd ~/prism42/mvp/911-console-live
 vercel --prod=false   # preview deploy
 # Capture the preview URL printed.
 ```
@@ -645,7 +645,7 @@ vercel --prod=false   # preview deploy
 
 ```bash
 # Revert env on Vercel preview
-cd /Users/kiteboard/prism42/mvp/911-console-live
+cd ~/prism42/mvp/911-console-live
 vercel env rm LIVEKIT_BACKEND preview --yes
 vercel env rm NEXT_PUBLIC_LIVEKIT_URL_SELFHOST preview --yes
 vercel env rm LIVEKIT_API_KEY_SELFHOST preview --yes
@@ -656,7 +656,7 @@ sudo mv "${WORKER_ENV}.cycle2R-backup" "$WORKER_ENV"
 sudo systemctl restart prism42-worker
 
 # Revert token-route code change (git revert / undo edit)
-cd /Users/kiteboard/prism42 && git diff mvp/911-console-live/app/prism42/api/livekit-token/route.ts
+cd ~/prism42 && git diff mvp/911-console-live/app/prism42/api/livekit-token/route.ts
 # Manual: re-edit route.ts to remove backend branching.
 ```
 
@@ -762,7 +762,7 @@ sudo iptables -L INPUT -n -v | grep -E "50000|60000"
 
 ```bash
 # GATE_G6 — production cutover auth required
-cd /Users/kiteboard/prism42/mvp/911-console-live
+cd ~/prism42/mvp/911-console-live
 
 # Add same env vars to PRODUCTION environment (same values as preview)
 vercel env add LIVEKIT_BACKEND production <<<"selfhost"
@@ -805,7 +805,7 @@ curl -sI https://www.thegoatnote.com/prism42-v3 | head -5
 
 ```bash
 # Single-command revert: flip backend env back to cloud and redeploy.
-cd /Users/kiteboard/prism42/mvp/911-console-live
+cd ~/prism42/mvp/911-console-live
 vercel env rm LIVEKIT_BACKEND production --yes
 # (Cloud env vars LIVEKIT_API_KEY, LIVEKIT_API_SECRET, NEXT_PUBLIC_LIVEKIT_URL
 #  remain in production — backend defaults to "cloud" when LIVEKIT_BACKEND is unset.)

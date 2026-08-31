@@ -28,7 +28,7 @@ POD_PUBLIC_IP="31.22.104.100"
 LIVEKIT_DOMAIN="prism42.thegoatnote.com"
 TURN_DOMAIN="turn-prism42.thegoatnote.com"
 WORKER_ENV_PATH="/opt/prism42/worker/.env"
-VERCEL_PROJECT_DIR="/Users/kiteboard/prism42/mvp/911-console-live"
+VERCEL_PROJECT_DIR="~/prism42/mvp/911-console-live"
 
 DRY_RUN=0
 

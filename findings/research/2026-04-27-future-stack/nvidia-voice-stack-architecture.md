@@ -72,8 +72,8 @@ Goal: working public URL with NVIDIA-stack voice loop on H200.
 
 | Step | Owner | ETA | Blocker |
 |---|---|---|---|
-| Vercel public URL `prism42-h200-demo.vercel.app` | shipped | done | — |
-| Worker registered as `prism42-h200` on LK Cloud | shipped | done | — |
+| Vercel public URL `<h200-demo>.vercel.app` | shipped | done | — |
+| Worker registered as `h200-worker` on LK Cloud | shipped | done | — |
 | Nemotron BF16 vLLM serving | shipped | done | — |
 | **Populate `NVIDIA_API_KEY` in `.env`** | user | 30 s | hard blocker |
 | Pull `nvcr.io/nim/nvidia/parakeet-streaming` to pod | assistant | 5 min | NVIDIA_API_KEY |

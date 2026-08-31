@@ -45,7 +45,7 @@ custom_tools:
   - name: pod_smi
     permission: passive_read
     description: |
-      Query nvidia-smi over SSH on prism-mla-b300-h4h5. Returns parsed JSON
+      Query nvidia-smi over SSH on b300-pod. Returns parsed JSON
       from --query-gpu. Never mutates pod state. Use this BEFORE every
       heartbeat tick AND before/after every gated_destructive action.
     args:
@@ -278,7 +278,7 @@ custom_tools:
 # ─────────────────────────────────────────────────────────────────────
 sandbox:
   scratch_root: /opt/prism42/scratch         # all active_mutate writes confined here
-  ssh_target:   prism-mla-b300-h4h5
+  ssh_target:   b300-pod
   ssh_user:     shadeform                    # never root via ssh
   ssh_keyfile:  ~/.brev/brev.pem             # per memory `brev_ssh_bypass.md`
   forbidden_paths:

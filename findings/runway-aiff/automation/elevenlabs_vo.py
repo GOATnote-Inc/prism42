@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = ROOT.parent
 AUDIO_DIR = PROJECT_ROOT / "audio"
 LEDGER = ROOT / "spend-log.csv"
-SCRIPT_PATH = Path("/Users/kiteboard/prism42/script.md")
+SCRIPT_PATH = Path("~/prism42/script.md")
 
 # v2 — documentary register. BRIAN as narrator + CHARLIE as field stringer (one call-in
 # + one button at the end). Maps to script-v2.md.

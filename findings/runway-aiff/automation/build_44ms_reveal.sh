@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-OUT=/Users/kiteboard/prism42/findings/runway-aiff/clips/HERO_44ms.mp4
+OUT=~/prism42/findings/runway-aiff/clips/HERO_44ms.mp4
 FONT=/System/Library/Fonts/Helvetica.ttc
 
 # Color palette

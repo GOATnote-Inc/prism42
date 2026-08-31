@@ -21,11 +21,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-readonly POD="prism-mla-b300-h4h5"
+readonly POD="b300-pod"
 readonly TARBALL="pod-state.local.tgz"
 readonly EXPECTED_SHA="107f8aa68522dc9c6155526610100de3bc4cb0e39587bcf1be2ec4c0e5e50581"
 readonly CLOUD_URL="wss://ai-therapy-v3svfd9o.livekit.cloud"
-readonly VERCEL_PROJECT_DIR="/Users/kiteboard/prism42/mvp/911-console-live"
+readonly VERCEL_PROJECT_DIR="~/prism42/mvp/911-console-live"
 
 # Vercel env vars added by cycle-2R that must be removed on restore
 readonly CYCLE2R_NEW_ENV_VARS=(

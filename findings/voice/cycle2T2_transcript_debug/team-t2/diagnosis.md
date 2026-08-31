@@ -87,9 +87,9 @@ The local orchestrator.py also contains cycle-2L scaffolding (StopResponse impor
 
 Once user grants permission to scp + restart:
 
-1. `scp /Users/kiteboard/prism42/agents/livekit/{orchestrator,worker,dispatch_publisher}.py prism-mla-b300-h4h5:/opt/prism42/agents/livekit/`
-2. `ssh prism-mla-b300-h4h5 'sudo systemctl restart prism42-worker'`
-3. `ssh prism-mla-b300-h4h5 'tail -F /tmp/prism42-logs/worker.log | grep dispatch_publisher' &`  → expect:
+1. `scp ~/prism42/agents/livekit/{orchestrator,worker,dispatch_publisher}.py b300-pod:/opt/prism42/agents/livekit/`
+2. `ssh b300-pod 'sudo systemctl restart prism42-worker'`
+3. `ssh b300-pod 'tail -F /tmp/prism42-logs/worker.log | grep dispatch_publisher' &`  → expect:
    - `dispatch_publisher.attach_attempt` (one per session)
    - `dispatch_publisher.attached`
    - `dispatch_publisher.init`
@@ -106,12 +106,12 @@ Once user grants permission to scp + restart:
 
 ## Per-flag rollback
 
-To roll back without code: `ssh prism-mla-b300-h4h5 'sudo rm /etc/systemd/system/prism42-worker.service.d/150-cycle2U-dispatch-publisher.conf && sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'`. With this drop-in absent, `PRISM42_ENABLE_DISPATCH_PUBLISHER` is unset → `is_enabled()` returns False → every publish call is a no-op.
+To roll back without code: `ssh b300-pod 'sudo rm /etc/systemd/system/prism42-worker.service.d/150-cycle2U-dispatch-publisher.conf && sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'`. With this drop-in absent, `PRISM42_ENABLE_DISPATCH_PUBLISHER` is unset → `is_enabled()` returns False → every publish call is a no-op.
 
 To roll back orchestrator.py / worker.py / dispatch_publisher.py changes: `git checkout bf41a2d -- agents/livekit/orchestrator.py agents/livekit/worker.py agents/livekit/dispatch_publisher.py` then re-deploy. cycle-2J state restored.
 
 ## Files changed (local)
 
-- `/Users/kiteboard/prism42/agents/livekit/orchestrator.py`
-- `/Users/kiteboard/prism42/agents/livekit/worker.py`
-- `/Users/kiteboard/prism42/agents/livekit/dispatch_publisher.py`
+- `~/prism42/agents/livekit/orchestrator.py`
+- `~/prism42/agents/livekit/worker.py`
+- `~/prism42/agents/livekit/dispatch_publisher.py`

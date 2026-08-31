@@ -354,9 +354,9 @@ All web sources fetched 2026-04-26.
   - `livekit/agents/voice/agent_activity.py:1969-1977` — `await self._agent.on_user_turn_completed(...)` then `except StopResponse: return` is the cancel path
   - `livekit/agents/voice/agent_activity.py:2020-2046` — preemptive generation is consumed: if chat_ctx is unchanged, `_schedule_speech` is called and "using preemptive generation" is logged. **This is what we see in our logs after every gate template path.**
 - Local files (path-anchored):
-  - `/Users/kiteboard/prism42/agents/livekit/orchestrator.py:336-483` (the broken cycle-2L block)
-  - `/Users/kiteboard/prism42/findings/voice/cycle2L_logic_regression/team-l/diagnosis.md` (cycle-2L's correct diagnosis but broken fix)
-  - `/Users/kiteboard/prism42/findings/voice/cycle2T2_transcript_debug/team-t2/diagnosis.md` — explicit note: "the actual `raise StopResponse()` re-raise outside the broad `except` is NOT yet present (the comment 'StopResponse raised below' points at code that doesn't exist)" — this was Team T2's belief at the time of T2's write; subsequent commit DID add the raise but with the broken control flow
+  - `~/prism42/agents/livekit/orchestrator.py:336-483` (the broken cycle-2L block)
+  - `~/prism42/findings/voice/cycle2L_logic_regression/team-l/diagnosis.md` (cycle-2L's correct diagnosis but broken fix)
+  - `~/prism42/findings/voice/cycle2T2_transcript_debug/team-t2/diagnosis.md` — explicit note: "the actual `raise StopResponse()` re-raise outside the broad `except` is NOT yet present (the comment 'StopResponse raised below' points at code that doesn't exist)" — this was Team T2's belief at the time of T2's write; subsequent commit DID add the raise but with the broken control flow
 - Live worker log sample (canonical, non-redacted):
   `/tmp/prism42-logs/worker.log` 17:15:54-17:18:00 UTC, session
   `f2c54453-2a81-4377-390e-5145196d859b`

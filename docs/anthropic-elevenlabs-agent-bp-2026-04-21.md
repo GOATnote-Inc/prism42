@@ -257,8 +257,8 @@ Concrete optimization priorities in 911-UX order:
 ### Cross-reference
 
 - Measured kernel source: `<off-tree benchmark corpus>`, `.../CLAIM_002_b300_blackwell_ultra_torch_ceiling.md`.
-- Decode bench driver: `/Users/kiteboard/prism/mla/scripts/isolated_bench.py` + `_bench_worker.py`.
+- Decode bench driver: `~/prism/mla/scripts/isolated_bench.py` + `_bench_worker.py`.
 - Hypothesis closures gating these numbers: H2.3.1 (cross-pod protocol), H5 (NVFP4 unreachable from torch.compile), H4 (FlashInfer cutlass deferred).
-- 911 console implementation: `/Users/kiteboard/goatnote-911/console.html` (6 subsystems; IRB-pilot ready).
+- 911 console implementation: `~/goatnote-911/console.html` (6 subsystems; IRB-pilot ready).
 
 *Last measured 2026-04-23. Re-measure when FlashInfer ≥ 0.7 ships sm_103 kernels (adds the Blackwell FI column), or when ElevenLabs publishes a new Flash STT latency tier.*

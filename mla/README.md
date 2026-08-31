@@ -56,7 +56,7 @@ prism-mla/
 ```
 
 ## Anchor references
-- Archive root: `/Users/kiteboard/prism-mla-archive/`
+- Archive root: `~/prism-mla-archive/`
 - Scaffold spec: `prism-mla-archive/scaffold/prism-mla-scaffold.md`
 - State of the art: `prism-mla-archive/STATE-OF-THE-ART.md`
 - Physics ceiling: `prism-mla-archive/mental-models/einstein-first-principles.md`

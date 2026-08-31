@@ -1,7 +1,7 @@
 # 07 · Repo Audit — `@function_tool` type-hint surface in `agents/livekit/`
 
 **Date:** 2026-04-23
-**Scope:** every `@function_tool`-decorated function under `/Users/kiteboard/prism42/agents/livekit/`
+**Scope:** every `@function_tool`-decorated function under `~/prism42/agents/livekit/`
 **Context:** LiveKit Agents' `@function_tool` derives a JSON-schema from the function's
 Python type hints. Anthropic's Messages API (2026+) rejects any `type:object` schema
 whose `additionalProperties` is `true` or absent. `dict[str, Any]` hints produce
@@ -16,13 +16,13 @@ fixing the declared types at the source.
 ## 1. Inventory
 
 Files in scope:
-- `/Users/kiteboard/prism42/agents/livekit/specialists.py` — 8 `@function_tool` functions
-- `/Users/kiteboard/prism42/agents/livekit/orchestrator.py` — 0 (imports `TOOL_CATALOG`, no tools of its own)
-- `/Users/kiteboard/prism42/agents/livekit/worker.py` — 0 (runtime + monkey-patch)
-- `/Users/kiteboard/prism42/agents/livekit/grader.py` — 0 (plain async functions, not LiveKit tools)
-- `/Users/kiteboard/prism42/agents/livekit/state.py` — 0 (Pydantic + Redis only)
-- `/Users/kiteboard/prism42/agents/livekit/parakeet_stt.py` — 0 (STT plugin)
-- `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py` — 0 (TTS plugin)
+- `~/prism42/agents/livekit/specialists.py` — 8 `@function_tool` functions
+- `~/prism42/agents/livekit/orchestrator.py` — 0 (imports `TOOL_CATALOG`, no tools of its own)
+- `~/prism42/agents/livekit/worker.py` — 0 (runtime + monkey-patch)
+- `~/prism42/agents/livekit/grader.py` — 0 (plain async functions, not LiveKit tools)
+- `~/prism42/agents/livekit/state.py` — 0 (Pydantic + Redis only)
+- `~/prism42/agents/livekit/parakeet_stt.py` — 0 (STT plugin)
+- `~/prism42/agents/livekit/fish_speech_tts.py` — 0 (TTS plugin)
 
 Non-tool, non-Pydantic functions whose signatures also contain `dict[str, Any]`
 (for completeness — not decorated, but reviewed):
@@ -221,7 +221,7 @@ currently does).
 
 ## 3. Proposed diffs
 
-See `/Users/kiteboard/prism42/docs/livekit-kb/07-proposed-code-fixes.diff`.
+See `~/prism42/docs/livekit-kb/07-proposed-code-fixes.diff`.
 
 The diff shows **both** Option A (Pydantic model) and Option B (remove + read
 from SessionStore) in separate hunks — the reader can pick one strategy and

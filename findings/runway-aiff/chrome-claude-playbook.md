@@ -179,7 +179,7 @@ Report `PHASE 3 STATUS` after each Act-Two shot completes.
    - Click the clip thumbnail.
    - Click the `Download HD` button. If a `4K Upscale` toggle is available (it costs 0 credits on Unlimited, takes 1–2 min wall-clock), enable it for the 6 Act-Two shots and S19 (the hero graphic backdrop). The other 18 are fine at 1080p.
    - Save with the filename: `<shot_id>.mp4` (e.g., `S01.mp4`, `S07.mp4`, etc.).
-3. **Save target folder:** ask the user to set the browser's default download folder to `/Users/kiteboard/prism42/findings/runway-aiff/clips/` before starting. Otherwise, the user manually moves files after.
+3. **Save target folder:** ask the user to set the browser's default download folder to `~/prism42/findings/runway-aiff/clips/` before starting. Otherwise, the user manually moves files after.
 
 ### Step 4.2 — Verify completeness
 

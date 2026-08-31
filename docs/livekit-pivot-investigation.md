@@ -440,7 +440,7 @@ In order:
 1. **Create the LiveKit Cloud project** (free tier). User does this
    in their LiveKit dashboard; I can't from the sandbox.
 2. **Paste `LIVEKIT_URL` + `LIVEKIT_API_KEY` + `LIVEKIT_API_SECRET`
-   into `/Users/kiteboard/prism42/.env`** — user does this.
+   into `~/prism42/.env`** — user does this.
 3. **Scaffold `agents/livekit/`** — worker.py with Pattern A (3 core
    tools), token-mint endpoint, LiveCallRoom component. Ships behind
    `/prism42/livekit` route so the existing ElevenLabs path at

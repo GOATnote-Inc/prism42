@@ -13,7 +13,7 @@
 
 set -u
 
-POD_INSTANCE="prism-mla-b300-h4h5"
+POD_INSTANCE="b300-pod"
 APP_HOST="prism42-console.vercel.app"
 APP_BASE="https://${APP_HOST}"
 EXPECTED_URL_PATTERN="livekit\\.cloud"   # change to brevlab.com when flipped to self-host

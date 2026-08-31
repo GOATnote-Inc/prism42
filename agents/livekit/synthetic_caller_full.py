@@ -5,7 +5,7 @@ to Parakeet STT), publishes it on the LiveKit room, then measures whether
 the agent responds with audible speech within a reasonable window.
 
 Run on the pod where livekit + httpx + ormsgpack + Fish are reachable:
-    brev exec prism-mla-b300-h4h5 'cd /opt/prism42/agents/livekit && \
+    brev exec b300-pod 'cd /opt/prism42/agents/livekit && \
         .venv/bin/python synthetic_caller_full.py "I have chest pain and shortness of breath."'
 
 Reports per turn:

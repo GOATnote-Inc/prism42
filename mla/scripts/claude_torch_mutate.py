@@ -9,7 +9,7 @@ API key must already be sourced (ANTHROPIC_API_KEY in env). Nothing goes to
 the network except the Claude calls. No GPU needed here.
 
 Usage:
-    set -a && source /Users/kiteboard/lostbench/.env && set +a && \\
+    set -a && source /path/to/your/.env && set +a && \\
     .venv/bin/python scripts/claude_torch_mutate.py
 """
 from __future__ import annotations

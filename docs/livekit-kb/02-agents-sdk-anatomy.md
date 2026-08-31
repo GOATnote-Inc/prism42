@@ -1,6 +1,6 @@
 # livekit-agents 1.5.6 + livekit-plugins-anthropic 1.5.6 — tool-schema anatomy
 
-Deep source trace through the installed packages on `prism-mla-b300-h4h5`
+Deep source trace through the installed packages on `b300-pod`
 (`/opt/prism42/agents/livekit/.venv/lib/python3.12/site-packages/...`).
 
 Root-cause of the 400 `tools.0.custom: additionalProperties: true is not supported` is
@@ -198,7 +198,7 @@ Verify which of the three by: (a) log `id(tools[0])` inside the patch AND inside
 ## 5. Reproduction (confirmed on the pod)
 
 ```python
-# On prism-mla-b300-h4h5 with the venv active:
+# On b300-pod with the venv active:
 from livekit.agents import llm
 from livekit.agents.llm import utils
 from typing import Any

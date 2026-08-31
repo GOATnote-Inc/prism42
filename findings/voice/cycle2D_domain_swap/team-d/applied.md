@@ -65,7 +65,7 @@ Vercel anycast targets (76.76.21.x and 66.33.60.x) are the standard `cname.verce
 ## Step 2 — Vercel custom domain attach
 
 ```
-$ cd /Users/kiteboard/prism42/mvp/911-console-live/
+$ cd ~/prism42/mvp/911-console-live/
 $ vercel domains add prism42-app.thegoatnote.com
 > Adding domain prism42-app.thegoatnote.com to project prism42-console
 > Success! Domain prism42-app.thegoatnote.com added to project prism42-console. [156ms]
@@ -92,7 +92,7 @@ $ curl -sS -H "Authorization: Bearer ${VERCEL_TOKEN}" \
 
 ## Step 3 — `vercel.json` redirects
 
-Edited `/Users/kiteboard/prism42/mvp/911-console-live/vercel.json` to add scoped redirects so a user typing the bare hostname or `/prism42` lands directly on the LiveKit demo:
+Edited `~/prism42/mvp/911-console-live/vercel.json` to add scoped redirects so a user typing the bare hostname or `/prism42` lands directly on the LiveKit demo:
 
 ```jsonc
 "redirects": [
@@ -129,18 +129,18 @@ Workaround: the **cycle-2R project.json swap trick** — temporarily swap the re
 
 ```
 # Backup
-$ cp /Users/kiteboard/prism42/.vercel/project.json /tmp/d-team-prism42-project.json.bak
+$ cp ~/prism42/.vercel/project.json /tmp/d-team-prism42-project.json.bak
 
 # Swap
-$ cp /Users/kiteboard/prism42/mvp/911-console-live/.vercel/project.json /Users/kiteboard/prism42/.vercel/project.json
+$ cp ~/prism42/mvp/911-console-live/.vercel/project.json ~/prism42/.vercel/project.json
 
 # Deploy
-$ cd /Users/kiteboard/prism42/ && vercel --prod --yes
-> Production: https://prism42-console-ll55ogcvl-goatnote.vercel.app [READY]
+$ cd ~/prism42/ && vercel --prod --yes
+> Production: https://prism42-console-<hash>-goatnote.vercel.app [READY]
 > Deployment id: dpl_Vaz8jCjq3nRoBML1LnXw4CvqkUUd
 
 # Restore
-$ cp /tmp/d-team-prism42-project.json.bak /Users/kiteboard/prism42/.vercel/project.json
+$ cp /tmp/d-team-prism42-project.json.bak ~/prism42/.vercel/project.json
 ```
 
 The new deployment carries the updated `vercel.json` redirects and is the first build associated with `prism42-app.thegoatnote.com`, which triggered Vercel's TLS provisioning.

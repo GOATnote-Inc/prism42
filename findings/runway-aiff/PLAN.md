@@ -21,7 +21,7 @@ Anthropic hackathon = revenue/research/recruitment value. AIFF = portfolio. If c
 
 ### 3. xAI video API verified working
 
-API key `xai-vO...` is named "prism42", grants access to `grok-imagine-video` (Aurora). Endpoint pattern via `xai-sdk` v1.11.0: `client.video.generate(prompt, model="grok-imagine-video", image_url=..., reference_image_urls=[...], aspect_ratio="16:9", resolution="720p", duration=...)`. Pricing **$0.07/sec at 720p** with native synced audio. 1080p not available until Imagine 2.0.
+The xAI API key grants access to `grok-imagine-video` (Aurora). Endpoint pattern via `xai-sdk` v1.11.0: `client.video.generate(prompt, model="grok-imagine-video", image_url=..., reference_image_urls=[...], aspect_ratio="16:9", resolution="720p", duration=...)`. Pricing **$0.07/sec at 720p** with native synced audio. 1080p not available until Imagine 2.0.
 
 ### 4. Routing intelligence (consolidated from Agents 2 + 4)
 

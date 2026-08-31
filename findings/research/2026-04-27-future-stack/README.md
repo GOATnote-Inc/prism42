@@ -28,7 +28,7 @@ the work scoped here. Adoption decisions stay with the user.
 1. **BioNeMo dropped.** Researched, surfaced as biomolecular (not clinical-encounter); user agreed to drop. See `medical-fine-tune-plan.md` for the path chosen instead.
 2. **vLLM brief retired in favor of TRT-LLM brief.** Two-runtime split: TRT-LLM serves Nemotron, vLLM keeps serving Cosmos (NVIDIA's official Cosmos runtime).
 3. **Karpathy attribution dual-credited** in the hero diagram caption ("DSPy GEPA · tweaks retrieval, ranking, subgraph logic. Runs nightly.") — Karpathy keeps the headline (pattern lineage), DSPy GEPA cited as implementation.
-4. **B300 bench plan added** for the research pod `final-gold-ox`. Four scoped agent teams with explicit outcomes, halt conditions, cost ceilings.
+4. **B300 bench plan added** for the research pod `research-pod`. Four scoped agent teams with explicit outcomes, halt conditions, cost ceilings.
 
 ## Versions pinned for the future stack
 
@@ -54,5 +54,5 @@ The deployed surface is canonically:
 No file under `mvp/911-console-live/`, `agents/livekit/`, `infra/b300/`,
 `vendor/`, or any lockfile is modified by this research dir. Any future
 adoption work picks up from these briefs and lands in a separate sandbox
-pod (`final-gold-ox` is the current research pod) — never mutating the
+pod (`research-pod` is the current research pod) — never mutating the
 demo paths in place.

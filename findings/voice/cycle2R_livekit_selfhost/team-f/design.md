@@ -169,7 +169,7 @@ JSON shipped to `mvp/911-console-live/lib/dispatch-fixtures/cardiac-arrest-demo.
 Phase-3 verification follows §3 in the team brief:
 
 ```bash
-cd /Users/kiteboard/prism42/mvp/911-console-live
+cd ~/prism42/mvp/911-console-live
 NEXT_PUBLIC_DISPATCH_FIXTURE_MODE=1 npm run build  # exits 0
 NEXT_PUBLIC_DISPATCH_FIXTURE_MODE=1 npm run lint   # exits 0
 NEXT_PUBLIC_DISPATCH_FIXTURE_MODE=1 npm run dev    # background

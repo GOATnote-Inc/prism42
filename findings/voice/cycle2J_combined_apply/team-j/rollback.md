@@ -14,8 +14,8 @@ worker restart.
 ### Cycle-2I rollback
 
 ```
-ssh prism-mla-b300-h4h5 'sudo rm /etc/systemd/system/prism42-worker.service.d/130-cycle2I-barge-in.conf'
-ssh prism-mla-b300-h4h5 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
+ssh b300-pod 'sudo rm /etc/systemd/system/prism42-worker.service.d/130-cycle2I-barge-in.conf'
+ssh b300-pod 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
 ```
 
 Result: filler suppression OFF (P1 disabled because
@@ -28,8 +28,8 @@ Environment="PRISM42_FILLER_INTAKE_DISABLE=0"
 Environment="PRISM42_ENDPOINT_MIN_DELAY_S=0.6"
 Environment="PRISM42_ENDPOINT_MAX_DELAY_S=4.0"
 Environment="PRISM42_VAD_MIN_SILENCE_S=0.55"' | \
-  ssh prism-mla-b300-h4h5 'sudo tee /etc/systemd/system/prism42-worker.service.d/130-cycle2I-barge-in.conf'
-ssh prism-mla-b300-h4h5 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
+  ssh b300-pod 'sudo tee /etc/systemd/system/prism42-worker.service.d/130-cycle2I-barge-in.conf'
+ssh b300-pod 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
 ```
 
 That restores cycle-2Q values byte-equivalently
@@ -39,8 +39,8 @@ the Silero default — equivalent to omitting the kwarg).
 ### Cycle-2T rollback
 
 ```
-ssh prism-mla-b300-h4h5 'sudo rm /etc/systemd/system/prism42-worker.service.d/140-cycle2T-response-gate.conf'
-ssh prism-mla-b300-h4h5 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
+ssh b300-pod 'sudo rm /etc/systemd/system/prism42-worker.service.d/140-cycle2T-response-gate.conf'
+ssh b300-pod 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
 ```
 
 Result: `should_use_response_gate()` returns False, gate is None,
@@ -50,8 +50,8 @@ to the cycle-2Q LLM path. Byte-equivalent to pre-2T behavior.
 ### Cycle-2U rollback
 
 ```
-ssh prism-mla-b300-h4h5 'sudo rm /etc/systemd/system/prism42-worker.service.d/150-cycle2U-dispatch-publisher.conf'
-ssh prism-mla-b300-h4h5 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
+ssh b300-pod 'sudo rm /etc/systemd/system/prism42-worker.service.d/150-cycle2U-dispatch-publisher.conf'
+ssh b300-pod 'sudo systemctl daemon-reload && sudo systemctl restart prism42-worker'
 ```
 
 Result: `is_enabled()` returns False, the publisher is constructed but
@@ -63,7 +63,7 @@ path is unaffected).
 ### Full rollback (all three)
 
 ```
-ssh prism-mla-b300-h4h5 '\
+ssh b300-pod '\
   sudo rm /etc/systemd/system/prism42-worker.service.d/130-cycle2I-barge-in.conf \
          /etc/systemd/system/prism42-worker.service.d/140-cycle2T-response-gate.conf \
          /etc/systemd/system/prism42-worker.service.d/150-cycle2U-dispatch-publisher.conf && \
@@ -140,8 +140,8 @@ ignores `caller_partial` events instead of rendering a transient line.
 
 ```
 curl -sIo /dev/null -w "%{http_code}\n" https://prism42-console.vercel.app/prism42/livekit
-ssh prism-mla-b300-h4h5 'systemctl is-active prism42-worker'
-ssh prism-mla-b300-h4h5 'cd /opt/prism42/agents/livekit && timeout 60 .venv/bin/python synthetic_caller.py 2>&1 | tail -10'
+ssh b300-pod 'systemctl is-active prism42-worker'
+ssh b300-pod 'cd /opt/prism42/agents/livekit && timeout 60 .venv/bin/python synthetic_caller.py 2>&1 | tail -10'
 ```
 
 Expected: `200`, `active`, and `VERDICT: PASS — agent spoke ...`.

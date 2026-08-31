@@ -7,7 +7,7 @@
 **Goal.** Free vLLM HBM for the duration of the spike, restore vLLM after the spike clears, with TTFT regression < 10% post-restore.
 
 **Pod facts (frozen, see `restore.sh`):**
-- Pod hostname: `prism-mla-b300-h4h5`
+- Pod hostname: `b300-pod`
 - vLLM service unit: `prism42-vllm` (per Team M drop-ins; if not yet adopted, vLLM runs as a manual screen process and `pid` must be discovered via `pgrep -f vllm`)
 - Driver: 580 (cuda-checkpoint full feature set available)
 - CUDA: 13.0 (no MLOPart, but `cuda-checkpoint` is driver-bundled and unaffected)
@@ -18,27 +18,27 @@
 
 ```
 # 1. Confirm we are in a low-call window OR have explicit user override
-ssh prism-mla-b300-h4h5 'docker exec b300-livekit-1 lk room list | wc -l'
+ssh b300-pod 'docker exec b300-livekit-1 lk room list | wc -l'
 # Expected: 0-1 (1 = the in-progress call we are protecting)
 
 # 2. Discover vLLM PID
-VLLM_PID=$(ssh prism-mla-b300-h4h5 'pgrep -f "vllm.*--model.*nemotron" | head -1')
+VLLM_PID=$(ssh b300-pod 'pgrep -f "vllm.*--model.*nemotron" | head -1')
 [ -z "$VLLM_PID" ] && { echo "FATAL: vLLM PID not found"; exit 1; }
 echo "vLLM PID = $VLLM_PID"
 
 # 3. Confirm cuda-checkpoint is present + driver supports it
-ssh prism-mla-b300-h4h5 'cuda-checkpoint --get-state --pid '"$VLLM_PID"
+ssh b300-pod 'cuda-checkpoint --get-state --pid '"$VLLM_PID"
 # Expected output: "running" (verifies tool works AND PID has CUDA state to checkpoint)
 
 # 4. Confirm UVM is NOT in use (cuda-checkpoint limitation per README)
-ssh prism-mla-b300-h4h5 'nvidia-smi --query-gpu=name --format=csv | head -1'
-ssh prism-mla-b300-h4h5 'grep -l "uvm" /proc/'"$VLLM_PID"'/maps' && {
+ssh b300-pod 'nvidia-smi --query-gpu=name --format=csv | head -1'
+ssh b300-pod 'grep -l "uvm" /proc/'"$VLLM_PID"'/maps' && {
     echo "FATAL: UVM detected in vLLM process; cuda-checkpoint cannot snapshot UVM mappings"
     exit 1
 }
 
 # 5. Snapshot current TTFT baseline
-ssh prism-mla-b300-h4h5 'curl -fsS -X POST http://127.0.0.1:8001/v1/chat/completions \
+ssh b300-pod 'curl -fsS -X POST http://127.0.0.1:8001/v1/chat/completions \
     -H "Content-Type: application/json" \
     -d "{\"model\":\"nemotron\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":8}" \
     -o /dev/null -w "%{time_starttransfer}\n"'
@@ -52,8 +52,8 @@ If any pre-flight check fails, **abort and emit `prism42.alert` severity `degrad
 ## Step 1 — Lock vLLM (block new requests)
 
 ```
-ssh prism-mla-b300-h4h5 'cuda-checkpoint --action lock --pid '"$VLLM_PID"' --timeout 5000'
-ssh prism-mla-b300-h4h5 'cuda-checkpoint --get-state --pid '"$VLLM_PID"
+ssh b300-pod 'cuda-checkpoint --action lock --pid '"$VLLM_PID"' --timeout 5000'
+ssh b300-pod 'cuda-checkpoint --get-state --pid '"$VLLM_PID"
 # Expected: "locked"
 ```
 
@@ -78,10 +78,10 @@ The dispatcher FSM is engineered to tolerate brief LLM unavailability — `respo
 ## Step 3 — Checkpoint (HBM → host RAM)
 
 ```
-ssh prism-mla-b300-h4h5 'cuda-checkpoint --action checkpoint --pid '"$VLLM_PID"
-ssh prism-mla-b300-h4h5 'cuda-checkpoint --get-state --pid '"$VLLM_PID
+ssh b300-pod 'cuda-checkpoint --action checkpoint --pid '"$VLLM_PID"
+ssh b300-pod 'cuda-checkpoint --get-state --pid '"$VLLM_PID
 # Expected: "checkpointed"
-ssh prism-mla-b300-h4h5 'nvidia-smi --query-gpu=memory.used,memory.free --format=csv,noheader'
+ssh b300-pod 'nvidia-smi --query-gpu=memory.used,memory.free --format=csv,noheader'
 # Expected: memory.used drops by ~89 GiB (was 89 GiB before; should be ~0-5 GiB after)
 ```
 
@@ -105,8 +105,8 @@ While vLLM is checkpointed, the voice path is in **TTS-only mode** for any turn 
 ## Step 5 — Restore (host RAM → HBM)
 
 ```
-ssh prism-mla-b300-h4h5 'cuda-checkpoint --action restore --pid '"$VLLM_PID
-ssh prism-mla-b300-h4h5 'cuda-checkpoint --get-state --pid '"$VLLM_PID
+ssh b300-pod 'cuda-checkpoint --action restore --pid '"$VLLM_PID
+ssh b300-pod 'cuda-checkpoint --get-state --pid '"$VLLM_PID
 # Expected: "locked" (post-restore, still locked from Step 1's lock)
 ```
 
@@ -117,8 +117,8 @@ Restore is the PCIe copy in reverse; budget 5 s.
 ## Step 6 — Unlock vLLM
 
 ```
-ssh prism-mla-b300-h4h5 'cuda-checkpoint --action unlock --pid '"$VLLM_PID
-ssh prism-mla-b300-h4h5 'cuda-checkpoint --get-state --pid '"$VLLM_PID
+ssh b300-pod 'cuda-checkpoint --action unlock --pid '"$VLLM_PID
+ssh b300-pod 'cuda-checkpoint --get-state --pid '"$VLLM_PID
 # Expected: "running"
 ```
 
@@ -129,7 +129,7 @@ ssh prism-mla-b300-h4h5 'cuda-checkpoint --get-state --pid '"$VLLM_PID
 ```
 # Run 5 TTFT probes; compute mean.
 for i in $(seq 1 5); do
-    ssh prism-mla-b300-h4h5 'curl -fsS -X POST http://127.0.0.1:8001/v1/chat/completions \
+    ssh b300-pod 'curl -fsS -X POST http://127.0.0.1:8001/v1/chat/completions \
         -H "Content-Type: application/json" \
         -d "{\"model\":\"nemotron\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":8}" \
         -o /dev/null -w "%{time_starttransfer}\n"'

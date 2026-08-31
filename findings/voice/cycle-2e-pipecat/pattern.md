@@ -1,6 +1,6 @@
 # Pipecat speculative-speech pattern — extracted for cycle-2e retrofit
 
-Researched 2026-04-25, read-only. Sources: `github.com/pipecat-ai/nemotron-january-2026` (the reference implementation T4 cited in [`findings/voice/nvidia-tts-patterns.md`](../nvidia-tts-patterns.md) ref #7), the main `github.com/pipecat-ai/pipecat` repo, livekit-agents 1.5.6 source installed at `/Users/kiteboard/prism42/agents/livekit/.venv/lib/python3.14/site-packages/livekit/agents/`, and `agents/livekit/worker.py` + `orchestrator.py` from this tree. Every architectural claim cites a file:line.
+Researched 2026-04-25, read-only. Sources: `github.com/pipecat-ai/nemotron-january-2026` (the reference implementation T4 cited in [`findings/voice/nvidia-tts-patterns.md`](../nvidia-tts-patterns.md) ref #7), the main `github.com/pipecat-ai/pipecat` repo, livekit-agents 1.5.6 source installed at `~/prism42/agents/livekit/.venv/lib/python3.14/site-packages/livekit/agents/`, and `agents/livekit/worker.py` + `orchestrator.py` from this tree. Every architectural claim cites a file:line.
 
 This is the pattern only. No code is applied. The companion file [`worker-target-locations.md`](worker-target-locations.md) maps it onto our worker.
 
@@ -240,7 +240,7 @@ All retrieval dates 2026-04-25 unless noted.
 3. `github.com/pipecat-ai/nemotron-january-2026/blob/main/docs/streaming-pipeline-architecture.md` — quoted token-cap defaults, "100% KV cache reuse" claim, per-leg latency breakdown.
 4. `github.com/pipecat-ai/nemotron-january-2026/blob/main/pipecat_bots/bot_interleaved_streaming.py` — pipeline wiring shape `stt → context_aggregator.user() → context_timing → llm → tts → v2v_metrics → transport.output()`.
 5. `github.com/pipecat-ai/pipecat/blob/main/CHANGELOG.md` — v0.0.104 (2026-03-02): `text_aggregation_mode={"SENTENCE","TOKEN"}` on `TTSService`, replacing deprecated `aggregate_sentences`. Confirms the segmentation pattern is mainline-Pipecat, not just the Nemotron reference.
-6. **Installed livekit-agents 1.5.6 source** at `/Users/kiteboard/prism42/agents/livekit/.venv/lib/python3.14/site-packages/livekit/agents/`:
+6. **Installed livekit-agents 1.5.6 source** at `~/prism42/agents/livekit/.venv/lib/python3.14/site-packages/livekit/agents/`:
    - `voice/generation.py:49,183-185` — `text_ch: aio.Chan[str | FlushSentinel]`, populated by `text_ch.send_nowait(chunk.delta.content)`.
    - `voice/agent_activity.py:2407-2417` — `text_tee = utils.aio.itertools.tee(llm_gen_data.text_ch, 2)` then `perform_tts_inference(input=tts_text_input)`.
    - `voice/agent.py:342-367` — `Agent.tts_node()` definition and override docstring.

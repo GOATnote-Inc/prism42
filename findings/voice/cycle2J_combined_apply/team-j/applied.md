@@ -118,7 +118,7 @@ cp /tmp/prism42-root-project.json.bak .vercel/project.json
 ```
 
 **Deploy result:** `dpl_A27v5xMSQHSuvPCK2sXmvix4zDC8` (READY, target=production)
-- Production URL: `https://prism42-console-ckqvghdaj-goatnote.vercel.app`
+- Production URL: `https://prism42-console-<hash>-goatnote.vercel.app`
 - Aliased to: `https://prism42-console.vercel.app`
 - Build time: 15s
 - Total deploy time: 47s

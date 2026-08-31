@@ -37,7 +37,7 @@ from sample_clinical_subset import (  # noqa: E402
     stratify,
 )
 
-SOURCE = Path("/Users/kiteboard/healthbench_frozen/healthbench_hard_canonical_1000.jsonl")
+SOURCE = Path.home() / "healthbench_frozen" / "healthbench_hard_canonical_1000.jsonl"
 MANIFEST = REPO / "corpus" / "clinical_subset.yaml"
 SOURCE_AVAILABLE = SOURCE.exists()
 MANIFEST_AVAILABLE = MANIFEST.exists()

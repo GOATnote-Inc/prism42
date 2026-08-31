@@ -103,7 +103,7 @@ gate logic mutated. Default-OFF preserved by reusing the existing
 On B300 after deploy:
 
 ```bash
-ssh prism-mla-b300-h4h5
+ssh b300-pod
 sudo systemctl restart prism42-worker.service
 tail -F /tmp/prism42-logs/worker.log | grep -E "fsm\.transition|response_gate|orchestrator\.gate_template_ms|fishspeech.done"
 ```

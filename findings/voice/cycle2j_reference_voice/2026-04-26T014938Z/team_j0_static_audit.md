@@ -1,9 +1,9 @@
 # Team J0 - Fish reference-audio static audit
 
 Read-only static audit. No mutations applied. All citations resolve to local
-vendored Fish source at `/Users/kiteboard/prism42/vendor/fish-speech/` (cloned
+vendored Fish source at `~/prism42/vendor/fish-speech/` (cloned
 from `github.com/fishaudio/fish-speech`) and to the live adapter at
-`/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py`. Retrieval date
+`~/prism42/agents/livekit/fish_speech_tts.py`. Retrieval date
 on all upstream-doc claims: 2026-04-25.
 
 Auditor scope: only the LiveKit adapter contract with the running upstream
@@ -405,7 +405,7 @@ All upstream-doc retrievals dated **2026-04-25**.
    note, voice-cloning capability claim.
 9. Upstream repo URL: `https://github.com/fishaudio/fish-speech`
    (retrieval date 2026-04-25; vendored at
-   `/Users/kiteboard/prism42/vendor/fish-speech/`).
+   `~/prism42/vendor/fish-speech/`).
 10. `findings/voice/best_in_class_2026-04-25/research.md` (lines 92-93,
     461) - cycle-2h prior note on reference-id voice-preset L4 mitigation;
     confirmed `reference_id` path is already env-tunable, the inline

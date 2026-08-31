@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Idempotent setup of a vLLM-served Llama-3-70B (bf16 on B300; NVFP4 if
-# a quantized checkpoint is available) on the prism-mla-b300-h4h5 pod.
+# a quantized checkpoint is available) on the b300-pod pod.
 #
 # Invocation:
-#   brev copy scripts/b300_setup_rubric.sh prism-mla-b300-h4h5:/tmp/
-#   brev exec prism-mla-b300-h4h5 -- bash /tmp/b300_setup_rubric.sh
+#   brev copy scripts/b300_setup_rubric.sh b300-pod:/tmp/
+#   brev exec b300-pod -- bash /tmp/b300_setup_rubric.sh
 #
 # Expected outcome: vLLM OpenAI-compatible endpoint on 0.0.0.0:8000.
 # The host side then:
-#   brev port-forward prism-mla-b300-h4h5 --port=8000:8000
+#   brev port-forward b300-pod --port=8000:8000
 #   export PRISM42_B300_RUBRIC_URL=http://localhost:8000/v1/chat/completions
 
 set -euo pipefail

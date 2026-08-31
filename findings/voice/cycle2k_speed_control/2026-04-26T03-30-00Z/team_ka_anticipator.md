@@ -310,30 +310,30 @@ change loses the empirical signal about which lever did what.
 
 ## Sources
 
-- `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py:184-205`
+- `~/prism42/agents/livekit/fish_speech_tts.py:184-205`
   — adapter request body construction site (proposed cycle-2k wrap target).
-- `/Users/kiteboard/prism42/agents/livekit/worker.py:78-111` — cycle-2f
+- `~/prism42/agents/livekit/worker.py:78-111` — cycle-2f
   flag wiring + FILLERS variant selector.
-- `/Users/kiteboard/prism42/agents/livekit/worker.py:152-296` — cycle-2i
+- `~/prism42/agents/livekit/worker.py:152-296` — cycle-2i
   greeting-cache parallel synthesis path.
-- `/Users/kiteboard/prism42/agents/livekit/worker.py:1026-1095` —
+- `~/prism42/agents/livekit/worker.py:1026-1095` —
   greeting dispatch order vs session.start.
-- `/Users/kiteboard/prism42/agents/livekit/orchestrator.py:227-387` —
+- `~/prism42/agents/livekit/orchestrator.py:227-387` —
   FAST_DISPATCHER_SYSTEM_PROMPT (no `[calm soft]` direction; stage
   directions explicitly prohibited at line 385).
-- `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/text/clean.py:24-37`
+- `~/prism42/vendor/fish-speech/fish_speech/text/clean.py:24-37`
   — only documented text-cleaner; no tag-stripping logic.
-- `/Users/kiteboard/prism42/vendor/fish-speech/README.md:111-115` —
+- `~/prism42/vendor/fish-speech/README.md:111-115` —
   S2-Pro tag system documentation; canonical 30-tag short list +
   three named free-form examples (`[whisper in small voice]`,
   `[professional broadcast tone]`, `[pitch up]`).
-- `/Users/kiteboard/prism42/findings/b300_bench/cycle2f_prosody/2026-04-25T21-32-45Z/brackets_check.txt`
+- `~/prism42/findings/b300_bench/cycle2f_prosody/2026-04-25T21-32-45Z/brackets_check.txt`
   — empirical proof that `[soft]` and `[calm soft]` render silently
   on the live pod; does NOT extend to `[urgent dispatcher pace]` or
   any out-of-canonical-list tag.
-- `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T031403Z/team_k1_speed_audit.md`
+- `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T031403Z/team_k1_speed_audit.md`
   — K1 audit; cadence table per-phrase.
-- `/Users/kiteboard/prism42/findings/voice/cycle2k_speed_control/2026-04-26T03-15-00Z/team_k2_preset_catalog.md`
+- `~/prism42/findings/voice/cycle2k_speed_control/2026-04-26T03-15-00Z/team_k2_preset_catalog.md`
   — K2 catalog; current `psap` preset is the only on-disk reference.
 
 ---

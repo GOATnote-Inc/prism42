@@ -105,8 +105,8 @@ pod-internal numbers on the same stack:
 ## Reproducibility
 
 ```bash
-# On the Brev pod (prism-mla-b300-h4h5), agents/livekit directory on pod.
-brev exec prism-mla-b300-h4h5 'cd /opt/prism42/agents/livekit && \
+# On the Brev pod (b300-pod), agents/livekit directory on pod.
+brev exec b300-pod 'cd /opt/prism42/agents/livekit && \
     .venv/bin/python bench_b300.py --n 10 --sleep-s 15'
 ```
 

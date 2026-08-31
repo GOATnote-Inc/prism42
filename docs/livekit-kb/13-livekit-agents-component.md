@@ -3,7 +3,7 @@
 Scope: `livekit-agents==1.5.6` at
 `/opt/prism42/agents/livekit/.venv/.../livekit/agents/`.
 Inspection copy: `/tmp/lkdeepdive/.venv/.../livekit/agents/`. Worker:
-`/Users/kiteboard/prism42/agents/livekit/worker.py`. Net-new vs 02/03/04/05/08.
+`~/prism42/agents/livekit/worker.py`. Net-new vs 02/03/04/05/08.
 
 ## 1. Top lever
 

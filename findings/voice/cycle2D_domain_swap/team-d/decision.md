@@ -22,7 +22,7 @@ Mission: end the public demo URL `prism42-console.vercel.app/prism42/livekit` an
 
 Vercel custom domains attached to `prism42-console`: **none** (only auto-generated `*.vercel.app`).
 
-GoDaddy domain registration (`thegoatnote.com`): "Third Party" registrar entry, but `vercel domains ls` confirms Vercel is the DNS terminus only via individual record points. Apex still administered via GoDaddy API (we have valid `GODADDY_API_KEY` + `GODADDY_API_SECRET` in `/Users/kiteboard/prism42/.env`, names verified by `grep -c`, values not read).
+GoDaddy domain registration (`thegoatnote.com`): "Third Party" registrar entry, but `vercel domains ls` confirms Vercel is the DNS terminus only via individual record points. Apex still administered via GoDaddy API (we have valid `GODADDY_API_KEY` + `GODADDY_API_SECRET` in `~/prism42/.env`, names verified by `grep -c`, values not read).
 
 Cycle-2R cutover doc (`findings/voice/cycle2R_livekit_selfhost/cutover-2026-04-26.md`) referenced `https://www.thegoatnote.com/prism42/api/livekit-token` as the production endpoint, but that was **aspirational** — the rewrite from `www.thegoatnote.com/prism42*` to the `prism42-console` project does not exist as of this probe. The production demo lives at `prism42-console.vercel.app/prism42/livekit` only.
 
@@ -75,7 +75,7 @@ If the user later wants `thegoatnote.com/prism42` literally as the URL, that bec
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| GoDaddy API responds 4xx (auth, rate limit) | Low | Medium | Re-check `set -a && source /Users/kiteboard/prism42/.env && set +a`; `grep -c` confirms keys are present (already verified). Retry with explicit `-w '%{http_code}'`. |
+| GoDaddy API responds 4xx (auth, rate limit) | Low | Medium | Re-check `set -a && source ~/prism42/.env && set +a`; `grep -c` confirms keys are present (already verified). Retry with explicit `-w '%{http_code}'`. |
 | Vercel rejects domain ownership verification | Low | Medium | Vercel auto-verifies via DNS record match; we control the zone. Worst case: Vercel issues a TXT challenge → add via GoDaddy API. |
 | TLS cert issuance lag | Medium | Low | Vercel's edge-managed Let's Encrypt typically takes 30-90s. Phase 4 verification has a 5-min wait window. |
 | Rollback on partial failure | Low | Low | DNS is single record (DELETE removes); Vercel domain detach is single CLI call. Rollback procedure documented in `rollback.md`. |

@@ -2,8 +2,8 @@
 
 UTC timestamp: 20260426T064358Z
 Reviewer: Team Q2 (read-only Fish-Speech engine specialist, glasswing-discipline)
-Vendored Fish source: `/Users/kiteboard/prism42/vendor/fish-speech/` (HEAD `3dd1f85`, 2026-04-06; clone date 2026-04-25)
-Adapter reviewed: `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py`
+Vendored Fish source: `~/prism42/vendor/fish-speech/` (HEAD `3dd1f85`, 2026-04-06; clone date 2026-04-25)
+Adapter reviewed: `~/prism42/agents/livekit/fish_speech_tts.py`
 
 ## Top finding
 
@@ -247,18 +247,18 @@ log line.
 
 All citations dated **2026-04-26** unless otherwise noted.
 
-1. `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/inference_engine/__init__.py:48-57` — engine reference precedence (`reference_id` first, else `references`). Vendored HEAD `3dd1f85` (2026-04-06).
-2. `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/utils/schema.py:60-103` — `ServeReferenceAudio` and `ServeTTSRequest` Pydantic schemas. `reference_id: str | None = None`.
-3. `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/inference_engine/reference_loader.py:54-97` — `_validate_id` regex `^[a-zA-Z0-9\-_ ]+$` and `load_by_id` body. Empty string fails validation (regex requires `+`).
-4. `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/inference_engine/reference_loader.py:99-131` — `load_by_hash`: per-request inline reference path; cache keyed by sha256(audio).
-5. `/Users/kiteboard/prism42/vendor/fish-speech/fish_speech/inference_engine/vq_manager.py:24-53` — `encode_reference` cold-encode site (per-new-audio cost).
-6. `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py:166-193, 219-222` — adapter mutex (correct: `not self._opts.reference_id` gates inline assembly) and body construction (`if self._opts.reference_id: body["reference_id"] = ...`).
+1. `~/prism42/vendor/fish-speech/fish_speech/inference_engine/__init__.py:48-57` — engine reference precedence (`reference_id` first, else `references`). Vendored HEAD `3dd1f85` (2026-04-06).
+2. `~/prism42/vendor/fish-speech/fish_speech/utils/schema.py:60-103` — `ServeReferenceAudio` and `ServeTTSRequest` Pydantic schemas. `reference_id: str | None = None`.
+3. `~/prism42/vendor/fish-speech/fish_speech/inference_engine/reference_loader.py:54-97` — `_validate_id` regex `^[a-zA-Z0-9\-_ ]+$` and `load_by_id` body. Empty string fails validation (regex requires `+`).
+4. `~/prism42/vendor/fish-speech/fish_speech/inference_engine/reference_loader.py:99-131` — `load_by_hash`: per-request inline reference path; cache keyed by sha256(audio).
+5. `~/prism42/vendor/fish-speech/fish_speech/inference_engine/vq_manager.py:24-53` — `encode_reference` cold-encode site (per-new-audio cost).
+6. `~/prism42/agents/livekit/fish_speech_tts.py:166-193, 219-222` — adapter mutex (correct: `not self._opts.reference_id` gates inline assembly) and body construction (`if self._opts.reference_id: body["reference_id"] = ...`).
 7. https://github.com/fishaudio/fish-speech/pull/1207 — "fix: add reference ID validation to prevent path traversal" (merged 2026-03-23). Adds `_validate_id` regex check to `load_by_id` and the delete/update endpoints.
 8. https://github.com/fishaudio/fish-speech/pull/1276 — "security: bound audio bytes + harden path/bytes discrimination in reference_loader" (merged 2026-04-25). Caps audio at 25 MB / list at 16 items; explicit `isinstance(bytes)` in `load_audio`. Does not change precedence.
 9. https://github.com/fishaudio/fish-speech/issues/1053 — "Reference audio not being applied in /partial API calls" (2025-06-23, closed). Closest precedent for silent-reference-drop family of bugs.
 10. https://github.com/fishaudio/fish-speech/issues/1260 — "How to achieve voice consistency, without cloning" (2026-04-07). Confirms S2-Pro has no per-request voice determinism without `reference_id` or `references`.
 11. https://github.com/fishaudio/fish-speech/commits/main — Commit history surveyed via `gh api repos/fishaudio/fish-speech/commits` for window 2026-03-25 → 2026-04-25 (retrieved 2026-04-26 06:42 UTC).
-12. `/Users/kiteboard/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T014938Z/team_j0_static_audit.md:117-134` — J0's earlier cite of the same precedence point. Confirmed unchanged on 2026-04-26 build.
-13. `/Users/kiteboard/prism42/findings/voice/cycle2N_bug_investigation/20260426T064303Z/team_q1_code_review.md` — Q1's static review of the systemd EnvironmentFile vs drop-in semantics. Q2 corroborates Q1's adapter-side claim from the Fish-engine angle.
+12. `~/prism42/findings/voice/cycle2j_reference_voice/2026-04-26T014938Z/team_j0_static_audit.md:117-134` — J0's earlier cite of the same precedence point. Confirmed unchanged on 2026-04-26 build.
+13. `~/prism42/findings/voice/cycle2N_bug_investigation/20260426T064303Z/team_q1_code_review.md` — Q1's static review of the systemd EnvironmentFile vs drop-in semantics. Q2 corroborates Q1's adapter-side claim from the Fish-engine angle.
 
 Co-Authored-By: Claude Opus 4.7 (do not commit; integrator commits.)

@@ -2,8 +2,8 @@
 
 UTC timestamp: 20260426T064303Z
 Reviewer: Team Q1 (read-only code review, glasswing-discipline)
-Repo HEAD reviewed: `/Users/kiteboard/prism42/agents/livekit/`
-Pod canonical reviewed: `prism-mla-b300-h4h5:/opt/prism42/agents/livekit/`
+Repo HEAD reviewed: `~/prism42/agents/livekit/`
+Pod canonical reviewed: `b300-pod:/opt/prism42/agents/livekit/`
 
 ## Bottom line
 
@@ -60,7 +60,7 @@ Net inherited environment for worker process: **`FISH_SPEECH_REFERENCE_ID=psap`*
 
 ## Adapter mutex (fish_speech_tts.py)
 
-File: `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py`
+File: `~/prism42/agents/livekit/fish_speech_tts.py`
 (repo SHA differs from pod by Cycle-2L comma-to-period block at
 pod-only lines 200-207, irrelevant to this bug).
 
@@ -116,7 +116,7 @@ re-bind it.
 
 ## Greeting cache code path (worker.py)
 
-File: `/Users/kiteboard/prism42/agents/livekit/worker.py` lines 161-340.
+File: `~/prism42/agents/livekit/worker.py` lines 161-340.
 
 The greeting at the top of every call ("Nine one one. Where is your
 emergency?") is rendered via a SEPARATE httpx call inside
@@ -258,14 +258,14 @@ matching once the conversation starts.
 3. `/etc/systemd/system/prism42-worker.service.d/{10,20,50,70}-*.conf` (other drop-ins, alphabetical order verified by `ls -la`)
 4. `/opt/prism42/agents/livekit/.env:11` — `FISH_SPEECH_REFERENCE_ID=psap`
 5. `/proc/$(pgrep -f worker.py)/environ` (read 2026-04-26T06:42Z) confirming `FISH_SPEECH_REFERENCE_ID=psap` in running process
-6. `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py:29` — `DEFAULT_REFERENCE_ID = os.environ.get("FISH_SPEECH_REFERENCE_ID", "")`
-7. `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py:56` — dataclass default binding
-8. `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py:166-193` — mutex on `not self._opts.reference_id`
-9. `/Users/kiteboard/prism42/agents/livekit/fish_speech_tts.py:199-222` — body assembly, `body["reference_id"] = self._opts.reference_id` when truthy
-10. `/Users/kiteboard/prism42/agents/livekit/worker.py:210-295` — greeting `_warm_greeting_cache_blocking`, `body["references"] = []` hard-coded line 236, no `reference_id` key
-11. `/Users/kiteboard/prism42/agents/livekit/worker.py:304-306` — greeting cache invariant (`_GREETING_PCM_BYTES is not None`); never invalidated mid-process
-12. `/Users/kiteboard/prism42/agents/livekit/worker.py:54,659` — only one `FishSpeechTTS` construction site in the worker
-13. `/Users/kiteboard/prism42/agents/livekit/synthetic_caller_full.py:42,66` — separate test fixture, not a runtime path on the prism42-worker service
+6. `~/prism42/agents/livekit/fish_speech_tts.py:29` — `DEFAULT_REFERENCE_ID = os.environ.get("FISH_SPEECH_REFERENCE_ID", "")`
+7. `~/prism42/agents/livekit/fish_speech_tts.py:56` — dataclass default binding
+8. `~/prism42/agents/livekit/fish_speech_tts.py:166-193` — mutex on `not self._opts.reference_id`
+9. `~/prism42/agents/livekit/fish_speech_tts.py:199-222` — body assembly, `body["reference_id"] = self._opts.reference_id` when truthy
+10. `~/prism42/agents/livekit/worker.py:210-295` — greeting `_warm_greeting_cache_blocking`, `body["references"] = []` hard-coded line 236, no `reference_id` key
+11. `~/prism42/agents/livekit/worker.py:304-306` — greeting cache invariant (`_GREETING_PCM_BYTES is not None`); never invalidated mid-process
+12. `~/prism42/agents/livekit/worker.py:54,659` — only one `FishSpeechTTS` construction site in the worker
+13. `~/prism42/agents/livekit/synthetic_caller_full.py:42,66` — separate test fixture, not a runtime path on the prism42-worker service
 14. systemd EnvironmentFile vs Environment= precedence — see `man systemd.exec` ("Environment", "EnvironmentFile", "UnsetEnvironment"): `Environment=NAME=` is value-set, `UnsetEnvironment=NAME` is the unset primitive
 15. Pod fish_speech_tts.py SHA `98406d6f...` (has Cycle-2L comma-to-period block) vs repo SHA `8519ec4a...` — diff is irrelevant to this bug; both versions have the identical mutex logic at lines 166-193 and body-build at 199-222
 16. Pod worker.py SHA `a1ca91ab...` matches repo SHA `a1ca91ab...` exactly (no drift)

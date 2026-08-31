@@ -76,7 +76,7 @@ breathing." But two design problems show:
 
 One row per Intent value, the regex(es) that trigger it, and at least one
 real or plausible mis-match. All regexes sourced verbatim from
-`/Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py:153-208`.
+`~/prism42/agents/livekit/dispatcher_fsm.py:153-208`.
 
 | Intent | Trigger pathway | Matches correctly | Mis-matches / over-fire |
 |---|---|---|---|
@@ -245,10 +245,10 @@ output. Live STT output is not clean.
 
 ## Sources
 
-- `/Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py` (regexes lines 153-208,
+- `~/prism42/agents/livekit/dispatcher_fsm.py` (regexes lines 153-208,
    transition lines 318-400, sub-FSM lines 461-487)
-- `/Users/kiteboard/prism42/agents/livekit/templates.py` (lines 106-235)
-- `/Users/kiteboard/prism42/agents/livekit/response_gate.py` (`cpr_safe` lines 227-244,
+- `~/prism42/agents/livekit/templates.py` (lines 106-235)
+- `~/prism42/agents/livekit/response_gate.py` (`cpr_safe` lines 227-244,
    `_SAFETY_TEMPLATE_ONLY` lines 193-204)
 - pod `/tmp/prism42-logs/worker.log` lines @ 2026-04-26 17:04 - 17:18 (sessions
    `9d71b1e4`, `b4880122`, `f2c54453`)

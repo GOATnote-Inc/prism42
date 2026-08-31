@@ -47,7 +47,7 @@ Per-example fields written to clinical_subset.yaml mirror corpus/kernel_bugs.yam
 Usage:
 
     python scripts/sample_clinical_subset.py \\
-        --source /Users/kiteboard/healthbench_frozen/healthbench_hard_canonical_1000.jsonl \\
+        --source ~/healthbench_frozen/healthbench_hard_canonical_1000.jsonl \\
         --out corpus/clinical_subset.yaml \\
         --seed 42
 
@@ -67,7 +67,7 @@ import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 
-DEFAULT_SOURCE = Path("/Users/kiteboard/healthbench_frozen/healthbench_hard_canonical_1000.jsonl")
+DEFAULT_SOURCE = Path.home() / "healthbench_frozen" / "healthbench_hard_canonical_1000.jsonl"
 DEFAULT_OUT = REPO / "corpus" / "clinical_subset.yaml"
 DEFAULT_SEED = 42
 

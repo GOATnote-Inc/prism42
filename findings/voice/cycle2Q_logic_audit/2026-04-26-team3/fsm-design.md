@@ -4,9 +4,9 @@
 **Author:** Team-3 FSM Architect
 **Date:** 2026-04-26
 **Files shipped:**
-- `/Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py` — 470 lines, new module
-- `/Users/kiteboard/prism42/agents/livekit/orchestrator.py` — `FsmDispatcherAgent` subclass + lazy import
-- `/Users/kiteboard/prism42/agents/livekit/worker.py` — anti-repetition feed in `_on_item`
+- `~/prism42/agents/livekit/dispatcher_fsm.py` — 470 lines, new module
+- `~/prism42/agents/livekit/orchestrator.py` — `FsmDispatcherAgent` subclass + lazy import
+- `~/prism42/agents/livekit/worker.py` — anti-repetition feed in `_on_item`
 
 ---
 
@@ -162,7 +162,7 @@ Measured on developer Mac (Apple Silicon, Python 3.14): FSM transition + prompt 
 
 ### H. Code skeleton
 
-#### `/Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py` — new file
+#### `~/prism42/agents/livekit/dispatcher_fsm.py` — new file
 
 The full module is ~470 lines. Key shape:
 
@@ -214,7 +214,7 @@ def fsm_for_session(session_id: str) -> DispatcherFSM:
     return DispatcherFSM()
 ```
 
-Full implementation in `/Users/kiteboard/prism42/agents/livekit/dispatcher_fsm.py`.
+Full implementation in `~/prism42/agents/livekit/dispatcher_fsm.py`.
 
 #### Patch points in `orchestrator.py` (file:line markers)
 
