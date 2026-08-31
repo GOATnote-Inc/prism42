@@ -34,7 +34,7 @@ that found the kernel bugs.
    benchmark-gaming detectors (`mla/prism/gaming_patterns.py`). Six
    mechanisms counter the "AI-slop benchmark number" pattern.
 3. **Prove clinical-reasoning lift — reasoning layer.** HealthBench Hard
-   (OpenAI `simple-evals`, Apache 2.0, vendored) as the primary rubric
+   (OpenAI `simple-evals`, MIT, cloned at a pinned commit) as the primary rubric
    grader. First public Opus 4.7 HealthBench Hard baseline: `0.196 ±
    0.068` (N = 3, 95 % CI, 30-example subset). Canonical 1000-example
    parent set pinned at `corpus/pins/healthbench-hard-1000.yaml`.
@@ -96,7 +96,7 @@ Every technique ships only after an external public-benchmark delta:
 
 | Benchmark | Role | Grader |
 |---|---|---|
-| HealthBench Hard | primary clinical metric | `simple-evals` (Apache 2.0, vendored pinned @ `third_party/simple-evals/`) |
+| HealthBench Hard | primary clinical metric | `simple-evals` (MIT, cloned at a pinned commit into `third_party/simple-evals/`, never committed in-tree) |
 | MedQA (USMLE) | null-result control — `|Δ|` must be small | exact-match |
 | PubMedQA | RAG validator — retrieval must lift ≥10 pp | exact-match |
 | MMLU-Medical-6 | breadth / null-result | exact-match |
@@ -279,7 +279,7 @@ target-specific naming, and no reproduction fingerprints.
     and red-team groups (the Frontier Red Team and predecessors) is the
     precedent for Prism's isolation, disclosure, and kernel-research
     posture (`docs/kernel-research-posture.md`).
-- **OpenAI `simple-evals`** (Apache 2.0) — HealthBench Hard rubric
+- **OpenAI `simple-evals`** (MIT) — HealthBench Hard rubric
   grader.
 - **GOATnote Emergency Dispatch Protocol (GEDP) v0.1** — developed under
   direction of Brandon Dent, MD (emergency medicine). Author: GOATnote

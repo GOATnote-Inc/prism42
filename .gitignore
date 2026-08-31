@@ -11,6 +11,7 @@ findings/**/*.local.txt
 .env.*
 !.env.example
 *.pem
+*.key
 aws-credentials*
 
 # Build

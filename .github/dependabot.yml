@@ -1,0 +1,20 @@
+# Weekly dependency update PRs. Security updates ride the same config.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /mvp/911-console-live
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: pip
+    directory: /mla
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /music-video
+    schedule:
+      interval: weekly
