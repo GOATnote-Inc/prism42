@@ -7,6 +7,7 @@
 
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { requireWorkerKey, workerAuthErrorResponse } from "@/lib/route-auth";
 import { gradeTurnOpenAI, OpenAIGraderUnavailable } from "@/lib/openai";
 import { recordGrade } from "@/lib/session-store";
 import type { PsapTurn } from "@/lib/types";
@@ -23,6 +24,13 @@ interface GradeRequestBody {
 }
 
 export async function POST(req: NextRequest) {
+  // FAIL CLOSED: this route spends OpenAI budget per call. Same
+  // shared-secret session auth as the worker turn-ingest route.
+  const auth = requireWorkerKey(req.headers.get("x-prism42-worker-key"));
+  if (!auth.ok) {
+    return workerAuthErrorResponse(auth);
+  }
+
   const body = (await req.json()) as GradeRequestBody;
   if (!body.session_id || !body.turn) {
     return NextResponse.json(

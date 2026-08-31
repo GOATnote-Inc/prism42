@@ -19,15 +19,11 @@ const SESSIONS = new Map<string, SessionRecord>();
 const LISTENERS = new Map<string, Set<Listener>>();
 const SESSION_TTL_MS = 60 * 60 * 1000; // 1 h
 
-// Cheap hand-rolled UUIDv4-ish — good enough for public demo session
-// routing, not used for any cryptographic purpose. Keeps the bundle
-// small (no `crypto.randomUUID` polyfill story in edge runtime).
+// Session ids double as LiveKit room names, so they must be
+// unguessable — use the Web Crypto CSPRNG (available in Node >= 19
+// and edge runtimes; every consumer of this module runs on Node).
 function newSessionId(): string {
-  const hex = () =>
-    Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .slice(1);
-  return `${hex()}${hex()}-${hex()}-${hex()}-${hex()}-${hex()}${hex()}${hex()}`;
+  return globalThis.crypto.randomUUID();
 }
 
 export function createSession(): SessionRecord {

@@ -7,18 +7,18 @@
 // dispatcher reply) here, and the same `recordTurn` → publish chain
 // fans the event out to subscribers of `/api/session/:id/stream`.
 //
-// Auth: minimal — accepts a shared-secret header `x-prism42-worker-key`
-// when set, otherwise relies on the LiveKit room being closed scope.
-// The session id is the LiveKit room name (already known to the
-// worker), so an attacker would need to know an active room id AND
-// the body schema to inject. Worth tightening later but not the
-// hot-path blocker tonight.
+// Auth: FAIL CLOSED — requires the shared-secret header
+// `x-prism42-worker-key` to match PRISM42_WORKER_KEY. If the env var
+// is unset the endpoint returns 503 (deployment misconfiguration)
+// rather than accepting unauthenticated turn injection. The only
+// escape is `next dev` + PRISM42_DEV_OPEN=1 (lib/route-auth.ts).
 //
 // Body: minimal PsapTurn shape. The worker sends `{ role: "user" |
 // "assistant", content: string, turn_id?: string }` and we fill the
 // rest with sane defaults so the existing dispatcher UI renders.
 
 import type { NextRequest } from "next/server";
+import { requireWorkerKey, workerAuthErrorResponse } from "@/lib/route-auth";
 import {
   attachToSession,
   recordTurn,
@@ -40,22 +40,13 @@ interface WorkerTurnPayload {
   debug?: PsapTurn["debug"];
 }
 
-function ensureWorkerKey(req: NextRequest): boolean {
-  const expected = process.env.PRISM42_WORKER_KEY;
-  if (!expected) return true; // unset = open (dev / private demo)
-  const provided = req.headers.get("x-prism42-worker-key");
-  return provided === expected;
-}
-
 export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  if (!ensureWorkerKey(req)) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+  const auth = requireWorkerKey(req.headers.get("x-prism42-worker-key"));
+  if (!auth.ok) {
+    return workerAuthErrorResponse(auth);
   }
   const { id } = await ctx.params;
   let body: WorkerTurnPayload;

@@ -33,6 +33,7 @@ import {
 } from "@/lib/coordinator";
 import { coordinatorFallbackStream, getCoordinatorAgentId } from "@/lib/anthropic";
 import { gradeTurnOpenAI, OpenAIGraderUnavailable } from "@/lib/openai";
+import { devOpenEscape } from "@/lib/route-auth";
 import { createSession, getSession, recordGrade, recordTurn } from "@/lib/session-store";
 import { createSseWriter, makeOpenAIChunk, sseHeaders } from "@/lib/sse";
 import type { CustomLLMRequest, PsapTurn } from "@/lib/types";
@@ -51,15 +52,18 @@ export const maxDuration = 60; // seconds — Vercel Node cap.
 // Secret:         ELEVENLABS_SIGNING_SECRET env var
 // Stale window:   reject if |now - timestamp| > 300 seconds
 //
-// Dev escape hatch: if ELEVENLABS_SIGNING_SECRET is unset, OR if
-// NEXT_PUBLIC_VERCEL_ENV === "preview" AND PRISM42_SKIP_HMAC_PREVIEW === "1",
-// verification is skipped with a console warning. NEVER set either in prod.
+// Polarity: FAIL CLOSED. If ELEVENLABS_SIGNING_SECRET is unset the
+// endpoint returns 503 — it never serves unauthenticated traffic. The
+// only escape is `next dev` on a developer machine with an explicit
+// PRISM42_DEV_OPEN=1 (see lib/route-auth.ts); NODE_ENV=production on
+// every deployed path (Vercel production AND preview) makes that
+// escape unreachable when deployed.
 
 const HMAC_STALE_SECONDS = 300;
 
 type HmacVerifyResult =
   | { ok: true }
-  | { ok: false; status: 401; reason: string };
+  | { ok: false; status: 401 | 503; reason: string };
 
 function verifyElevenLabsSignature(
   rawBody: string,
@@ -67,25 +71,22 @@ function verifyElevenLabsSignature(
 ): HmacVerifyResult {
   const secret = process.env.ELEVENLABS_SIGNING_SECRET;
 
-  // Dev escape: no secret configured.
+  // No secret configured → fail closed (503), except under the
+  // dev-only escape.
   if (!secret) {
-    console.warn(
-      "[prism42/hmac] ELEVENLABS_SIGNING_SECRET is not set — " +
-        "HMAC verification SKIPPED. Set this env var on Vercel before going live.",
-    );
-    return { ok: true };
-  }
-
-  // Preview escape: explicit opt-out for CI preview deployments.
-  if (
-    process.env.NEXT_PUBLIC_VERCEL_ENV === "preview" &&
-    process.env.PRISM42_SKIP_HMAC_PREVIEW === "1"
-  ) {
-    console.warn(
-      "[prism42/hmac] PRISM42_SKIP_HMAC_PREVIEW=1 on a preview env — " +
-        "HMAC verification SKIPPED.",
-    );
-    return { ok: true };
+    if (devOpenEscape()) {
+      console.warn(
+        "[prism42/hmac] PRISM42_DEV_OPEN=1 under next dev — " +
+          "HMAC verification SKIPPED.",
+      );
+      return { ok: true };
+    }
+    return {
+      ok: false,
+      status: 503,
+      reason:
+        "auth_not_configured: ELEVENLABS_SIGNING_SECRET is unset; this endpoint fails closed",
+    };
   }
 
   // Header must be present.
@@ -178,8 +179,8 @@ export async function POST(req: NextRequest) {
     req.headers.get("elevenlabs-signature"),
   );
   if (!sigResult.ok) {
-    return new Response(JSON.stringify({ error: "invalid signature" }), {
-      status: 401,
+    return new Response(JSON.stringify({ error: sigResult.reason }), {
+      status: sigResult.status,
       headers: { "Content-Type": "application/json" },
     });
   }
