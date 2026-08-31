@@ -200,7 +200,7 @@ scripts/generate_clinical_demo_artifacts.py  Clinical demo artifact generator
 scripts/check_sdk_containment.py       AST guard: SDK import only inside do_commit()
 scripts/check_pipeline_invariants.py   Model pins, role-filename, egress, mounts, manifest, schemas
 corpus/clinical-demo/CLN-DEMO-*/       Synthetic clinical fixtures (not PHI)
-corpus/golden-cases/KERNEL-GOLDEN/     Synthetic kernel regression fixture
+corpus/golden-cases/KERNEL-GOLD-001/     Synthetic kernel regression fixture
 corpus/golden-cases/HBH-CLN-SYNTH/     Synthetic clinical golden case
 corpus/mla/                            MLA oracle + reference implementations
 findings/*.md                          Evidence + smoke reports (no embargoed material)
@@ -218,7 +218,7 @@ Five offline layers gate every commit. Matches `.github/workflows/verify.yml`.
 |---|---|---|
 | L1 schema | `scripts/validate_artifacts.py` | Every case-dir artifact matches its JSON Schema 2020-12 |
 | L2 agent | per-agent output validation | Agent emitted a parseable, schema-aligned verdict |
-| L3 regression | `make validate-golden` | `KERNEL-GOLDEN` and `HBH-CLN-SYNTH` fixtures still pass |
+| L3 regression | `make validate-golden` | `KERNEL-GOLD-001` and `HBH-CLN-SYNTH` fixtures still pass |
 | L4 invariants | `scripts/check_pipeline_invariants.py` | Model pins, role↔filename, egress allowlist, no-secret-mount, manifest shape, schemas compile |
 | L5 CI | `.github/workflows/verify.yml` | Offline-green on every push |
 | T3 umbrella | `make verify-all` | All of the above + generator dry-runs |

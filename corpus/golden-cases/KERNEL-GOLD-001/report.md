@@ -1,5 +1,5 @@
 ---
-case_id: KERNEL-GOLDEN
+case_id: KERNEL-GOLD-001
 target: kernel/hopper/fmha_fwd_fp8.cu
 class: precision
 severity_estimate: high
@@ -11,7 +11,7 @@ disclosure_target: N/A
 embargo_channel: N/A
 ---
 
-# KERNEL-GOLDEN -- fp8 online-softmax rescale underflow (golden-case regression anchor)
+# KERNEL-GOLD-001 -- fp8 online-softmax rescale underflow (golden-case regression anchor)
 
 > This is a fixture, not a real vendor finding. Its content is correct in kernel-auditing
 > terminology but the line numbers, file paths, and bug specifics are synthetic. It exists
@@ -83,7 +83,7 @@ All line numbers reference the `target_path`
 
 ## Cross-artifact map
 
-- Case: `case.json` (`KERNEL-GOLDEN`, domain=gpu, rail_hint=cuda)
+- Case: `case.json` (`KERNEL-GOLD-001`, domain=gpu, rail_hint=cuda)
 - Invariants: `invariants.json` round 1 (INV-001, INV-002, INV-003)
 - Attacks: `attacks.json` round 1 (ATK-001 -> INV-002, ATK-002 -> INV-001)
 - PoC: `poc.py` -- mocked; exits 1 with `VIOLATION invariant_id=INV-002`

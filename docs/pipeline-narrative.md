@@ -66,7 +66,7 @@ See `CLAUDE.md` §4 ("Verification discipline — the hard rule").
 
 **Artifacts**: verdict JSON (case-id, run-id, verdict, severity,
 cross-checks, rationale), PoC log, invariants manifest. Synthetic
-regression fixture at `corpus/golden-cases/KERNEL-GOLDEN/` exercises the
+regression fixture at `corpus/golden-cases/KERNEL-GOLD-001/` exercises the
 whole L3 verification layer without needing a real vendor finding.
 
 **Why this is hard**: the "AI-slop vulnerability report" counter-pattern.

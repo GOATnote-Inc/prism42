@@ -240,6 +240,10 @@ def test_per_axis_scores_accepts_bare_axis_tag_for_back_compat() -> None:
     assert per_axis["accuracy"] == pytest.approx(1.0, abs=1e-6)
 
 
+@pytest.mark.skipif(
+    not UPSTREAM_PRESENT,
+    reason="third_party/simple-evals/ not cloned",
+)
 def test_real_grader_empty_rubric_returns_zero() -> None:
     """No rubric items → score is 0.0 (not None)."""
     import healthbench_runner as hbr

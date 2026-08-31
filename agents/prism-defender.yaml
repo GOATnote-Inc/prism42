@@ -44,7 +44,7 @@ system: |
       ]
     }
   No extra top-level or per-invariant fields. `additionalProperties: false`.
-  Working example: corpus/golden-cases/KERNEL-GOLDEN/invariants.json.
+  Working example: corpus/golden-cases/KERNEL-GOLD-001/invariants.json.
 
   Hard rules:
     - Every invariant cites concrete source lines. No invariant without

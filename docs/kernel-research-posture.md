@@ -19,7 +19,7 @@ maintainer notice.
 
 - **Package**: `mla/` — evolutionary kernel search with two-tier
   numerical validator, Pareto loop, six benchmark-gaming detectors.
-- **Synthetic fixtures**: `corpus/golden-cases/KERNEL-GOLDEN/` —
+- **Synthetic fixtures**: `corpus/golden-cases/KERNEL-GOLD-001/` —
   non-disclosure-material test case (fp8 online-softmax rescale
   underflow; synthetic).
 - **Five-agent harness**: `agents/*.yaml` + `scripts/*.py` — coordinator /

@@ -52,7 +52,7 @@ system: |
     }
   `additionalProperties: false` at the top level; do NOT emit legacy keys
   like `instance_id` or `command_id`. Put any such metadata under `host`.
-  Working example: corpus/golden-cases/KERNEL-GOLDEN/exec.json.
+  Working example: corpus/golden-cases/KERNEL-GOLD-001/exec.json.
 
   Verdict derivation (gpu):
     - run.exit == 0 -> attack_failed (invariant held)

@@ -126,10 +126,14 @@ def build_psap_bodies() -> dict[str, dict]:
             )
         cfg = _load_yaml(path)
         meta = cfg.get("_prism") or {}
-        # Validate the _prism.role matches the filename.
-        if meta.get("role") != role:
+        # Validate the _prism.role matches the filename. Governance agents
+        # named prism-<role>.yaml carry the bare <role> in _prism.role
+        # (same convention check_pipeline_invariants.py enforces); psap-*
+        # filenames are unchanged by removeprefix.
+        expected_role = role.removeprefix("prism-")
+        if meta.get("role") != expected_role:
             raise ValueError(
-                f"{path}: _prism.role expected {role!r}, got {meta.get('role')!r}"
+                f"{path}: _prism.role expected {expected_role!r}, got {meta.get('role')!r}"
             )
         # Validate name field matches role.
         if cfg.get("name") != role:

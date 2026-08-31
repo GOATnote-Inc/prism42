@@ -5,7 +5,7 @@
 # Output: a GitHub PR comment with PASS/FAIL + per-rule rationale.
 
 _prism:
-  role: prism-ci-safety-expert
+  role: ci-safety-expert
   tier: D
   version: 0.1.0
   author: GOATnote Inc. (under direction of Brandon Dent, MD)

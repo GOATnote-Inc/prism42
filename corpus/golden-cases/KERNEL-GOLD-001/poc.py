@@ -9,7 +9,7 @@
 # stdout and a human-readable diagnostic to stderr that names the
 # invariant id and its class.
 """
-PoC for KERNEL-GOLDEN.
+PoC for KERNEL-GOLD-001.
 
 Attack:     ATK-001 (subnormal-heavy fp8 K/V tiles)
 Invariant:  INV-002 (precision -- fp8 rescale underflow)
@@ -28,7 +28,7 @@ import math
 import sys
 from dataclasses import dataclass
 
-CASE_ID = "KERNEL-GOLDEN"
+CASE_ID = "KERNEL-GOLD-001"
 ATTACK_ID = "ATK-001"
 INVARIANT_ID = "INV-002"
 INVARIANT_CLASS = "precision"

@@ -5,7 +5,7 @@
 # Output: GO or HOLD with specific hold reasons.
 
 _prism:
-  role: prism-release-gate
+  role: release-gate
   tier: D
   version: 0.1.0
   author: GOATnote Inc. (under direction of Brandon Dent, MD)

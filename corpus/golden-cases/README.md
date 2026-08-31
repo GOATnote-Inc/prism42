@@ -17,7 +17,7 @@ executor record + adjudicator verdict + human-readable report.
 
 ## Cases
 
-- `KERNEL-GOLDEN/` -- synthetic fp8 online-softmax rescale underflow.
+- `KERNEL-GOLD-001/` -- synthetic fp8 online-softmax rescale underflow.
   CONFIRMED, severity=high, rail=cuda, attack_succeeded. Exercises every
   required file, every schema, every cross-reference rule.
 
