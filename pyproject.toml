@@ -1,3 +1,13 @@
+# Repo metadata only — the root is not an installable package (the
+# sub-projects mla/ and music-video/ carry their own pyproject files).
+# [project] exists so license / python-floor scanners see the facts.
+[project]
+name = "prism42"
+version = "0.1.0"
+description = "Fail-closed clinical-AI verification harness and 911-simulation research build (not for clinical use)"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+
 [tool.pytest.ini_options]
 markers = [
     "integration: requires live B300 pod via SSH (brev.pem + network)",
