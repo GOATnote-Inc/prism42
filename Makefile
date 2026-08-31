@@ -281,7 +281,7 @@ PY         := $(shell [ -x $(VENV)/bin/python ] && echo $(VENV)/bin/python || ec
 COMMIT     ?=
 CASE       ?=
 CASE_FILE  ?= cases/$(CASE).json
-GOLDEN_DIR ?= corpus/golden-cases/KERNEL-GOLDEN
+GOLDEN_DIR ?= corpus/golden-cases/KERNEL-GOLD-001
 
 t3-help:
 	@echo "Prism T3 (Managed Agents) targets:"

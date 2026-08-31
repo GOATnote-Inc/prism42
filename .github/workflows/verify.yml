@@ -113,8 +113,28 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install 'jsonschema' 'pytest' 'pytest-asyncio' 'pyyaml>=6.0' 'numpy' 'structlog'
 
+      - name: Vendor simple-evals at pinned SHA
+        # third_party/ is never committed (third_party/README.md policy);
+        # the HealthBench grader-bridge tests verify the upstream file at
+        # this pin and skip when the clone is absent (local runs). CI
+        # clones it so those tests actually execute.
+        run: |
+          set -euo pipefail
+          PIN="ee3b0318d8d1d9d72755a4120879be65f7c07e9e"
+          git init -q third_party/simple-evals
+          git -C third_party/simple-evals remote add origin https://github.com/openai/simple-evals.git
+          git -C third_party/simple-evals fetch -q --depth 1 origin "$PIN"
+          git -C third_party/simple-evals checkout -q "$PIN"
+
+      - name: Pipeline invariants (L4)
+        run: python scripts/check_pipeline_invariants.py
+
+      - name: Golden-case validator (L1+L3)
+        run: python scripts/validate_artifacts.py --case-dir corpus/golden-cases/KERNEL-GOLD-001
+
       - name: Run tests
         run: |
           # Tests that require corpus/kernel_bugs.yaml auto-skip via conftest.py
-          # when the corpus file is absent (private).
-          python -m pytest tests/ -q || true
+          # when the corpus file is absent (private). No failure is masked:
+          # a red suite fails this job.
+          python -m pytest tests/ -q

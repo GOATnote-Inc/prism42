@@ -59,7 +59,7 @@ def _cuda_case_with_rail() -> dict[str, Any]:
 
 
 def _cuda_case_no_rail() -> dict[str, Any]:
-    """Cuda-style case with no `rail` field (KERNEL-GOLDEN shape)."""
+    """Cuda-style case with no `rail` field (KERNEL-GOLD-001 shape)."""
 
     return {
         "case_id": CUDA_CASE_ID,
@@ -158,7 +158,7 @@ class TestClinicalConditional:
     def test_missing_rail_defaults_to_non_clinical_path(
         self, tmp_path: Path
     ) -> None:
-        """No `rail` at all (KERNEL-GOLDEN shape) must still validate."""
+        """No `rail` at all (KERNEL-GOLD-001 shape) must still validate."""
 
         _write(tmp_path / "case.json", _cuda_case_no_rail())
         rc, out = _run(["--case-dir", str(tmp_path), "--artifact", "case.json"])

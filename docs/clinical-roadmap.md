@@ -90,7 +90,7 @@ Seven tasks that do not touch clinical corpus content, do not make live API call
 - **Agent**: `GP-WT`
 - **Blocks**: T4.6b (reference fixture for tests), P6
 - **Blocked by**: P1
-- **Inputs**: existing `corpus/golden-cases/KERNEL-GOLDEN/` as structural template
+- **Inputs**: existing `corpus/golden-cases/KERNEL-GOLD-001/` as structural template
 - **Outputs**: `corpus/golden-cases/HBH-CLN-SYNTH/` with `case.json` (rail=clinical, invented but plausible), `invariants.json`, `attacks.json`, `exec.json` (clinical verdict path), `verdict.json`, `report.md`, `poc.py` stub. Marked `notes: "synthetic fixture for validator tests, not a real HealthBench example"`
 - **Verification**: `python scripts/validate_artifacts.py --case-dir corpus/golden-cases/HBH-CLN-SYNTH` exit 0
 - **Size**: ~2 hours
@@ -380,7 +380,7 @@ unchanged. Write schemas/clinical-rubric.schema.json for the rubric doc.
 
 Verification (must all pass before you commit):
 1. python -c "import json, jsonschema; [jsonschema.Draft202012Validator.check_schema(json.load(open(f))) for f in <edited files>]"
-2. python scripts/validate_artifacts.py --case-dir corpus/golden-cases/KERNEL-GOLDEN  (expect PASS — no regression)
+2. python scripts/validate_artifacts.py --case-dir corpus/golden-cases/KERNEL-GOLD-001  (expect PASS — no regression)
 3. python -m pytest tests/ -q  (expect 85+ passed, 0 failed)
 4. negative-control: a synthetic clinical case missing target_axis must fail
    python scripts/validate_artifacts.py

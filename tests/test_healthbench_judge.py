@@ -35,7 +35,11 @@ SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import healthbench_runner as hbr  # noqa: E402
-from _healthbench_grader_bridge import RubricItem  # noqa: E402
+from _healthbench_grader_bridge import UPSTREAM_DIR, RubricItem  # noqa: E402
+
+# _real_grader calls assert_upstream_pinned(); tests exercising it skip
+# when third_party/simple-evals is not cloned (CI clones it at the pin).
+UPSTREAM_PRESENT = (UPSTREAM_DIR / "healthbench_eval.py").exists()
 
 
 # --------------------------------------------------------------
@@ -334,6 +338,10 @@ def test_judge_uses_grader_template_placeholders(tmp_path: Path) -> None:
 # --------------------------------------------------------------
 
 
+@pytest.mark.skipif(
+    not UPSTREAM_PRESENT,
+    reason="third_party/simple-evals/ not cloned",
+)
 def test_real_grader_recuses_items_from_failed_judge() -> None:
     """Judge returning criteria_met=None removes the item from the score."""
 
@@ -357,6 +365,10 @@ def test_real_grader_recuses_items_from_failed_judge() -> None:
     assert grade["judge_incomplete_fraction"] == pytest.approx(0.5)
 
 
+@pytest.mark.skipif(
+    not UPSTREAM_PRESENT,
+    reason="third_party/simple-evals/ not cloned",
+)
 def test_real_grader_returns_none_when_all_recused() -> None:
     def always_fail(_c: str, _i: RubricItem) -> dict:
         return {"criteria_met": None, "explanation": "broken"}

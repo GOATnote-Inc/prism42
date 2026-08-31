@@ -18,8 +18,8 @@ import pytest
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-CASE_DIR = REPO_ROOT / "corpus" / "golden-cases" / "KERNEL-GOLDEN"
-CASE_ID = "KERNEL-GOLDEN"
+CASE_DIR = REPO_ROOT / "corpus" / "golden-cases" / "KERNEL-GOLD-001"
+CASE_ID = "KERNEL-GOLD-001"
 
 JSON_FILES = ("case.json", "invariants.json", "attacks.json", "exec.json", "verdict.json")
 
@@ -75,9 +75,9 @@ def test_case_id_matches_report_front_matter(artifacts: dict) -> None:
 
 
 def test_case_id_matches_regex() -> None:
-    assert re.match(r"^[A-Z]{2,}-[A-Z]+-\d{3}$", CASE_ID) or CASE_ID == "KERNEL-GOLDEN", (
-        "golden case uses the sentinel id KERNEL-GOLDEN; if the regex is tightened in L1 "
-        "the fixture id may need re-generation"
+    assert re.match(r"^[A-Z]{2,}-[A-Z]+-[A-Z0-9]{3,}$", CASE_ID), (
+        "golden case id must satisfy the schema case_id pattern "
+        "(^[A-Z]{2,}-[A-Z]+-[A-Z0-9]{3,}$)"
     )
 
 

@@ -10,7 +10,7 @@
     "case_id": {
       "type": "string",
       "pattern": "^[A-Z]{2,}-[A-Z]+-[A-Z0-9]{3,}$",
-      "description": "Stable case identifier, e.g. HB-HARD-042 or KERNEL-GOLDEN (synthetic fixture). Numeric suffix for auto-minted cases; alphabetic suffix for named fixtures."
+      "description": "Stable case identifier, e.g. HB-HARD-042 or KERNEL-GOLD-001 (synthetic fixture). Numeric suffix for auto-minted cases; alphabetic suffix for named fixtures."
     },
     "target_domain": {
       "type": "string",

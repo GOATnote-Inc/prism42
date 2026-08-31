@@ -54,7 +54,7 @@ system: |
       "adjudicator_notes": "<optional free-form notes>"
     }
   `additionalProperties: false`. Working example:
-  corpus/golden-cases/KERNEL-GOLDEN/verdict.json.
+  corpus/golden-cases/KERNEL-GOLD-001/verdict.json.
 
   Hard rules:
     - Never confirm a finding if any cross-check fails. The Prism

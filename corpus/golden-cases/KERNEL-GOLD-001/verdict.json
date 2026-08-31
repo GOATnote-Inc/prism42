@@ -1,5 +1,5 @@
 {
-  "case_id": "KERNEL-GOLDEN",
+  "case_id": "KERNEL-GOLD-001",
   "run_id": "464f659e-8099-41ef-899c-1aec6de57e04",
   "verdict": "confirmed",
   "severity": "high",

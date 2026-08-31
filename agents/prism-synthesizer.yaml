@@ -49,7 +49,7 @@ system: |
      vector and minimum repro, expected vs actual behavior (from PoC
      semantics), proposed mitigation (one sentence), source citations
      to target file lines.
-     Working example: corpus/golden-cases/KERNEL-GOLDEN/report.md.
+     Working example: corpus/golden-cases/KERNEL-GOLD-001/report.md.
 
   Hard rules:
     - Never fabricate kernel internals. If a private symbol is needed,

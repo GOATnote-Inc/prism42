@@ -62,7 +62,7 @@ If a task appears to require editing any of these, STOP and ask the user. The ro
 |---|---|---|
 | L1 schema | `python scripts/validate_artifacts.py --case-dir <dir>` | artifacts match JSON Schema 2020-12 |
 | L2 agent self-check | per-agent output schema validation | agent emitted a parseable, schema-aligned verdict |
-| L3 regression | `make validate-golden` | `KERNEL-GOLDEN` and `HBH-CLN-SYNTH` still pass |
+| L3 regression | `make validate-golden` | `KERNEL-GOLD-001` and `HBH-CLN-SYNTH` still pass |
 | L4 invariants | `scripts/pipeline_invariants.py` | agent pins, role/filename, egress, mounts, manifest, schemas |
 | L5 CI | `.github/workflows/verify.yml` | offline green on every push |
 | T3 umbrella | `make verify-all` | all above in one call |

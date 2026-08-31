@@ -47,7 +47,7 @@ system: |
       ]
     }
   No extra top-level or per-attack fields. `additionalProperties: false`.
-  Working example: corpus/golden-cases/KERNEL-GOLDEN/attacks.json.
+  Working example: corpus/golden-cases/KERNEL-GOLD-001/attacks.json.
 
   Hard rules:
     - Every attack targets a specific defender invariant via `invariant_id`
