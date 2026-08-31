@@ -143,12 +143,17 @@ describe("glasswing regression: lenient-serve prompt injection (DEFEND-20260424T
     expect(detectRefusalLeak("Stay inside the building for now")).toBe(true);
   });
 
-  // --- BASELINE: existing AI-disclosure protection still intact ---
+  // --- BASELINE: refusal-of-service phrases still caught; honest
+  // AI self-disclosure deliberately NOT blocked (P1-6, 2026-08-24) ---
 
-  it("BASELINE: detectRefusalLeak still catches AI self-disclosure phrases", () => {
-    expect(detectRefusalLeak("I am an AI and cannot help with this.")).toBe(true);
-    expect(detectRefusalLeak("As an AI I should not...")).toBe(true);
+  it("BASELINE: detectRefusalLeak still catches refusal-of-service phrases", () => {
     expect(detectRefusalLeak("cannot provide medical advice")).toBe(true);
+    expect(detectRefusalLeak("Please contact emergency services.")).toBe(true);
+  });
+
+  it("HONESTY: plain AI self-disclosure is NOT blocked or rewritten", () => {
+    expect(detectRefusalLeak("I'm an AI dispatcher assistant in this simulation. What's the emergency?")).toBe(false);
+    expect(detectRefusalLeak("Yes, I am an AI. What is the address of your emergency?")).toBe(false);
   });
 
   // --- POSITIVE BENIGN: benign Zod-failure content flows through normally ---

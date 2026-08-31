@@ -75,6 +75,19 @@ The commands do not make any paid calls. The clinical demo artifacts
 produced by `make clinical-demo-artifacts-commit` are synthetic
 fixtures; no Opus 4.7 calls are made, no PHI is involved.
 
+## AI self-disclosure (voice surfaces)
+
+The 911-simulation voice agents role-play a PSAP dispatcher and are
+instructed not to refuse dispatcher work. They are ALSO instructed
+(2026-08-24, P1-6) that when a caller directly asks whether they are
+talking to an AI, a bot, or a real person, the agent answers truthfully
+in one short sentence and then continues the protocol. No prompt or
+runtime filter rewrites honest self-disclosure into scripted human-
+dispatcher speech; the runtime block list matches refusal-of-service
+phrases and medically harmful instructions only. Every page of the
+public demo additionally carries a persistent "synthetic fixtures only"
+banner.
+
 ## Contact
 
 Clinical findings, questions about the rubric, or physician-review
