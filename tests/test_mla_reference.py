@@ -82,15 +82,20 @@ def test_golden_reproduces_exactly(ref, config_name):
     out = ref.mla_decode_nonabsorbed(x_q, cache["c_kv"], cache["k_r"], weights, cfg)
 
     # Numeric integrity (all platforms): stored values match regenerated
-    # within JSON round-trip + cross-BLAS tolerance. JSON serializes fp32
-    # via fp64 repr (~1 fp32 ULP on re-parse); cross-platform BLAS adds a
-    # few ULP more. Real drift (an algorithm change) moves outputs far
-    # beyond 1e-6.
+    # within JSON round-trip + cross-BLAS tolerance, measured RELATIVE to
+    # the output scale. JSON serializes fp32 via fp64 repr (~1 fp32 ULP
+    # on re-parse); cross-platform BLAS reduction order adds a few ULP
+    # more (observed 7.8e-7 rel on ubuntu vs the macOS-generated golden).
+    # Real drift (an algorithm change) moves outputs orders of magnitude
+    # beyond 1e-5 rel; test_both_forms_agree uses 1e-4 rel for the same
+    # reason.
     stored = np.asarray(golden["output"], dtype=np.float32)
     assert stored.shape == out.shape
-    max_diff = float(np.abs(stored - out).max())
-    assert max_diff < 1e-6, \
-        f"{config_name}: regenerated output diverges from golden by {max_diff:.3e} (>1e-6)"
+    max_abs = float(np.abs(stored - out).max())
+    out_scale = float(np.abs(stored).max()) + 1e-9
+    max_rel = max_abs / out_scale
+    assert max_rel < 1e-5, \
+        f"{config_name}: regenerated output diverges from golden by rel={max_rel:.3e} (>1e-5)"
 
     # Bit-exact check (generating platform only): if the bytes happen to
     # match, hold that line strictly; a mismatch here with the numeric
