@@ -35,8 +35,15 @@ Safeguards hard-coded (per CLAUDE.md §3, §10 and user directive 2026-04-22):
   - Frozen paths read-only:
     docs/clinical-extension-spec.md, .env, .state/.
   - Hard-stop if `make verify-all` is red BEFORE the run.
-  - Budget cap per run (advisory, default $25 — override with --budget-cap-usd).
-  - Stream cap 900 s (override with --stream-cap-sec).
+  - Budget cap per run (advisory pre-filter on the plan's own
+    estimated_cost_usd, default $25 — override with --budget-cap-usd).
+    NOTE: the estimate is model-reported; the ENFORCED, model-
+    independent limits are the wall-clock caps below plus the
+    workflow-level timeout-minutes.
+  - Wall-clock cap on the whole run (enforced, default 1500 s —
+    override with --max-wall-sec).
+  - Stream cap 900 s on any single SDK stream / runner subprocess
+    (override with --stream-cap-sec).
   - Runs only from a clean working tree (no uncommitted edits).
 
 Evidence persists to `results/orchestrator/<stamp>/{plan.json,
@@ -391,6 +398,22 @@ def do_commit(args: argparse.Namespace) -> int:
     run_dir = OUT_ROOT / stamp
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    # Model-independent budget enforcement: a wall-clock deadline for
+    # the WHOLE run. estimated_cost_usd in the plan is advisory (the
+    # model writes it); this deadline and the per-phase stream caps are
+    # what actually bound spend.
+    t_run_start = time.monotonic()
+
+    def _wall_exceeded() -> bool:
+        elapsed = time.monotonic() - t_run_start
+        if elapsed > float(args.max_wall_sec):
+            print(
+                f"HALT: wall-clock budget exceeded "
+                f"({elapsed:.0f}s > --max-wall-sec={args.max_wall_sec})"
+            )
+            return True
+        return False
+
     # Phase 1: preflight.
     uncommitted = _check_clean_tree()
     if uncommitted:
@@ -443,6 +466,9 @@ def do_commit(args: argparse.Namespace) -> int:
               f"Rationale: {plan.get('rationale', '?')}")
         return 0
 
+    if _wall_exceeded():
+        return 9
+
     # Phase 4: execute.
     runner = plan["runner"]
     print(f"[orchestrator] executing: {runner}")
@@ -453,6 +479,10 @@ def do_commit(args: argparse.Namespace) -> int:
         print("HALT: runner returned non-zero; not committing.")
         _rollback()
         return 5
+
+    if _wall_exceeded():
+        _rollback()
+        return 9
 
     # Phase 5: post-check.
     green2, tail2 = _check_verify_all()
@@ -644,7 +674,17 @@ def main(argv: list[str] | None = None) -> int:
         "--budget-cap-usd",
         type=float,
         default=25.0,
-        help="Advisory cost cap per run (default $25).",
+        help="Advisory cost cap per run (default $25). Pre-filters the "
+        "plan's self-reported estimated_cost_usd; NOT an enforcement "
+        "mechanism — see --max-wall-sec.",
+    )
+    ap.add_argument(
+        "--max-wall-sec",
+        type=int,
+        default=1500,
+        help="Enforced wall-clock cap on the whole run (default 1500). "
+        "Independent of any model-reported estimate; the run halts and "
+        "rolls back when exceeded.",
     )
     ap.add_argument(
         "--open-pr",
