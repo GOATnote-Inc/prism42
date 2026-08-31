@@ -5,9 +5,22 @@ which (a) rejects banned tokens before parse, and (b) compiles in a
 namespace that excludes __builtins__ except a whitelist of math operations.
 
 This is the agent-side counterpart to red-team §4 (agent jailbreak) and §7
-(dependency hijack). It does not replace process-level isolation — at the
-real-hardware stage, candidates should additionally run in a subprocess
-with RLIMIT_AS/RLIMIT_CPU and network-egress disabled.
+(dependency hijack). It does not replace process-level isolation: a
+Python restricted-builtins namespace is NOT a sandbox (attribute-walk
+escapes exist), so executing model-generated source is gated (P1-8,
+2026-08-24 audit). `compile_candidate*` refuses to exec unless one of:
+
+  - PRISM_MLA_ISOLATED_WORKER=1 — set automatically by
+    scripts/_bench_worker.py, the fresh-subprocess-per-candidate path
+    spawned by scripts/isolated_bench.py (which also scrubs secrets
+    from the worker's environment); or
+  - PRISM_MLA_ALLOW_INPROCESS_EXEC=1 — an explicit operator opt-in for
+    in-process research loops (agent/mutate.py, loop/evolve.py) on a
+    host where the blast radius is accepted.
+
+Full network-egress isolation for the worker subprocess still requires
+an OS-level mechanism (unshare/nsjail on the pod) and is tracked as
+deferred work.
 
 References:
     mental-models/red-team-adversarial.md §4, §7
@@ -16,6 +29,7 @@ References:
 from __future__ import annotations
 
 import ast
+import os
 from typing import Callable
 
 import numpy as np
@@ -80,6 +94,27 @@ class UnsafeSourceError(ValueError):
     """Raised when candidate source contains a banned construct."""
 
 
+class ExecContainmentError(RuntimeError):
+    """Raised when compile_candidate* is invoked outside the isolated
+    worker subprocess without the explicit in-process opt-in."""
+
+
+def _assert_exec_allowed(caller: str) -> None:
+    """Fail closed: model-generated source only executes in the isolated
+    worker subprocess, or with an explicit operator opt-in."""
+    if os.environ.get("PRISM_MLA_ISOLATED_WORKER") == "1":
+        return
+    if os.environ.get("PRISM_MLA_ALLOW_INPROCESS_EXEC") == "1":
+        return
+    raise ExecContainmentError(
+        f"{caller}: refusing to exec model-generated source in this "
+        "process. Route candidates through scripts/isolated_bench.py "
+        "(fresh subprocess per run, secrets scrubbed from the "
+        "environment), or set PRISM_MLA_ALLOW_INPROCESS_EXEC=1 to "
+        "explicitly accept in-process execution on this host."
+    )
+
+
 def scan_tokens(source: str) -> list[str]:
     """Return the list of banned tokens found in source."""
     return [tok for tok in _BANNED_TOKENS if tok in source]
@@ -105,6 +140,7 @@ def compile_candidate(source: str, *, fn_name: str = "mla_decode_candidate") -> 
     a minimal `range`/`len` for convenience. The function is located by
     `fn_name`.
     """
+    _assert_exec_allowed("compile_candidate")
     bad_tokens = scan_tokens(source)
     if bad_tokens:
         raise UnsafeSourceError(f"banned tokens: {bad_tokens}")
@@ -161,6 +197,7 @@ def compile_candidate_torch(source: str, *, fn_name: str = "mla_decode_candidate
     torch submodules — they must stay inside the bound `torch` / `F` / `np`
     references.
     """
+    _assert_exec_allowed("compile_candidate_torch")
     bad_tokens = scan_tokens(source)
     if bad_tokens:
         raise UnsafeSourceError(f"banned tokens: {bad_tokens}")

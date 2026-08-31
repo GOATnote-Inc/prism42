@@ -8,7 +8,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from agent.safety import UnsafeSourceError, compile_candidate
+from agent.safety import ExecContainmentError, UnsafeSourceError, compile_candidate
 
 
 GOOD = """
@@ -85,3 +85,33 @@ def mla_decode_candidate(q_nope, q_rope, c_KV, k_R, W_UK, W_UV, softmax_scale):
     W_UV = np.random.randn(2, 8, 4).astype(np.float32)
     out = fn(q_nope, q_rope, None, None, W_UK, W_UV, 1.0)
     assert out.shape == (1, 2, 4)
+
+
+# --------------------------------------------------------------
+# Exec-containment gate (P1-8) — fails closed outside the isolated
+# worker subprocess unless an operator explicitly opts in.
+# --------------------------------------------------------------
+
+
+class TestExecContainmentGate:
+    def test_refuses_by_default(self, monkeypatch):
+        monkeypatch.delenv("PRISM_MLA_ALLOW_INPROCESS_EXEC", raising=False)
+        monkeypatch.delenv("PRISM_MLA_ISOLATED_WORKER", raising=False)
+        with pytest.raises(ExecContainmentError, match="isolated_bench"):
+            compile_candidate(GOOD)
+
+    def test_isolated_worker_marker_allows(self, monkeypatch):
+        monkeypatch.delenv("PRISM_MLA_ALLOW_INPROCESS_EXEC", raising=False)
+        monkeypatch.setenv("PRISM_MLA_ISOLATED_WORKER", "1")
+        assert callable(compile_candidate(GOOD))
+
+    def test_explicit_opt_in_allows(self, monkeypatch):
+        monkeypatch.delenv("PRISM_MLA_ISOLATED_WORKER", raising=False)
+        monkeypatch.setenv("PRISM_MLA_ALLOW_INPROCESS_EXEC", "1")
+        assert callable(compile_candidate(GOOD))
+
+    def test_gate_precedes_exec_even_for_bad_source(self, monkeypatch):
+        monkeypatch.delenv("PRISM_MLA_ALLOW_INPROCESS_EXEC", raising=False)
+        monkeypatch.delenv("PRISM_MLA_ISOLATED_WORKER", raising=False)
+        with pytest.raises(ExecContainmentError):
+            compile_candidate("import os")

@@ -21,6 +21,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+
+# This process IS the isolation boundary: one fresh subprocess per
+# candidate, spawned by isolated_bench.py with a scrubbed environment.
+# Mark it so agent/safety.compile_candidate* will exec here (P1-8).
+os.environ["PRISM_MLA_ISOLATED_WORKER"] = "1"
 import statistics
 import sys
 import time
