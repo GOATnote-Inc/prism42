@@ -31,7 +31,7 @@ const HMAC_STALE_SECONDS = 300;
 
 type HmacVerifyResult =
   | { ok: true }
-  | { ok: false; status: 401; reason: string };
+  | { ok: false; status: 401 | 503; reason: string };
 
 function verifyElevenLabsSignature(
   rawBody: string,
@@ -39,9 +39,12 @@ function verifyElevenLabsSignature(
   secret: string | undefined,
   nowSec?: number,
 ): HmacVerifyResult {
-  // Dev escape: no secret configured.
+  // FAIL CLOSED: no secret configured → 503. (route.ts additionally
+  // allows a `next dev` + PRISM42_DEV_OPEN=1 escape via
+  // lib/route-auth.ts devOpenEscape(); that path is exercised in
+  // route-auth.test.ts, not here.)
   if (!secret) {
-    return { ok: true }; // warning logged in route.ts; not repeated here
+    return { ok: false, status: 503, reason: "auth_not_configured" };
   }
 
   // Header must be present.
@@ -220,10 +223,20 @@ describe("verifyElevenLabsSignature — Glasswing DEFEND-20260424T1200 regressio
       expect(result.ok).toBe(true);
     });
 
-    it("no secret configured → ok (dev mode skip with warning)", () => {
-      // No ELEVENLABS_SIGNING_SECRET set — dev convenience skip.
+  });
+
+  describe("gate must fail closed on missing secret", () => {
+    it("no secret configured → 503 (never silently open)", () => {
       const result = verifyElevenLabsSignature(MINIMAL_BODY, null, undefined);
-      expect(result.ok).toBe(true);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.status).toBe(503);
+    });
+
+    it("no secret + valid-looking header → still 503", () => {
+      const header = makeSignedHeader(MINIMAL_BODY, TEST_SECRET);
+      const result = verifyElevenLabsSignature(MINIMAL_BODY, header, undefined);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.status).toBe(503);
     });
   });
 });

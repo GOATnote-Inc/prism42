@@ -7,12 +7,17 @@
 // the same room, audio flows over WebRTC, structured-turn events
 // flow over LiveKit data channels.
 //
-// Auth is by-design open for the public demo (Turnstile lands in
-// Phase 3c). The token has a 30-minute TTL and only grants subscribe
-// + publish on a single named room — abuse blast radius is one room.
+// Auth: FAIL CLOSED — the same shared-secret session auth as the
+// worker turn-ingest route (`x-prism42-worker-key` must match
+// PRISM42_WORKER_KEY; unset → 503). An unauthenticated caller must
+// not be able to mint publish-capable tokens into arbitrary rooms.
+// A public browser flow returns when a real challenge (e.g.
+// Turnstile) fronts this route; until then the server-side caller
+// holds the key. Tokens keep a 30-minute TTL scoped to one room.
 
 import { NextResponse } from "next/server";
 import { AccessToken } from "livekit-server-sdk";
+import { requireWorkerKey, workerAuthErrorResponse } from "@/lib/route-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +28,11 @@ interface MintRequest {
 }
 
 export async function POST(req: Request): Promise<Response> {
+  const auth = requireWorkerKey(req.headers.get("x-prism42-worker-key"));
+  if (!auth.ok) {
+    return workerAuthErrorResponse(auth);
+  }
+
   const apiKey = process.env.LIVEKIT_API_KEY;
   const apiSecret = process.env.LIVEKIT_API_SECRET;
   const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
