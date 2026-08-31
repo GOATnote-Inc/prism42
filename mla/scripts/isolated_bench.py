@@ -111,9 +111,23 @@ def run_one(worker: Path, subject: str, batch: int, kv_len: int, dtype: str,
     ]
     if candidates_json:
         cmd += ["--candidates-json", candidates_json]
-    env = dict(os.environ)
-    # Each subprocess gets its own torchinductor cache dir, else they share.
-    # We want shared cache (saves autotune time) so we leave TORCHINDUCTOR_CACHE_DIR.
+    # Containment (P1-8): the worker executes model-generated source, so
+    # it gets a WHITELISTED environment — never the orchestrator's full
+    # env (API keys, tokens, cloud credentials must not be reachable
+    # from candidate code). Extend the whitelist deliberately, never
+    # with a blanket copy. Network egress is not yet blocked at the OS
+    # level (deferred: unshare/nsjail on the pod).
+    _ENV_WHITELIST = (
+        "PATH", "HOME", "USER", "LANG", "LC_ALL", "TMPDIR", "SHELL",
+        "PYTHONPATH", "VIRTUAL_ENV",
+        "CUDA_HOME", "CUDA_PATH", "CUDA_VISIBLE_DEVICES",
+        "LD_LIBRARY_PATH", "LIBRARY_PATH", "CPATH",
+        "TORCH_HOME", "TORCHINDUCTOR_CACHE_DIR", "TRITON_CACHE_DIR",
+        "TORCH_CUDA_ARCH_LIST", "HF_HOME",
+    )
+    env = {k: v for k, v in os.environ.items() if k in _ENV_WHITELIST}
+    # Shared torchinductor cache (saves autotune time) is preserved via
+    # TORCHINDUCTOR_CACHE_DIR above when the orchestrator sets it.
     t0 = time.perf_counter()
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600, env=env)
