@@ -1,11 +1,12 @@
 <p align="center">
 
-> **Maintenance status (2026-09):** passive. This repository is kept available as a reference implementation; CI runs on pushes and pull requests only, Dependabot security alerts remain enabled, and no scheduled jobs or hosted services consume ongoing resources. No active development is planned.
 
   <img src="assets/prism42-medical-rag.png" alt="prism42 medical RAG · all-GPU runtime — Refract complexity. Ship the answer. User medical inquiry → NVIDIA knowledge-graph RAG → B300 all-GPU native (nx-cugraph in-VRAM graph + Nemotron Nano 30B + Cosmos vision) → five adversarial roles → safe final response, with a Karpathy autoresearch nightly feedback loop on retrieval/ranking/subgraph logic." width="100%">
 </p>
 
 # Prism42
+
+> **Maintenance status (2026-09):** passive. This repository is kept available as a reference implementation; CI runs on pushes and pull requests only, Dependabot security alerts remain enabled, and no scheduled jobs or hosted services consume ongoing resources. No active development is planned.
 
 **A full-stack trust-and-performance pipeline for high-stakes voice AI.
 Find correctness failures. Optimize the compute path. Prove clinical-
