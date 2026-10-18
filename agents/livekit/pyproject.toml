@@ -32,6 +32,9 @@ dependencies = [
     # 0.21.0 is the March 2026 stable; 0.23 not GA as of April 2026 per
     # findings/research/2026-04-27-future-stack/nvidia-voice-stack-architecture.md §2.
     "nemoguardrails==0.21.0",
+    # NeMo 0.21.0 imports dataclasses_json but does not declare it in
+    # package metadata; keep the safety library importable after a clean sync.
+    "dataclasses-json>=0.6.7,<0.7",
     # ormsgpack/orjson are imported by worker.py + livekit-agents internals;
     # explicit-listing avoids surprises when uv resolves a fresh venv.
     "ormsgpack>=1.0.0",
